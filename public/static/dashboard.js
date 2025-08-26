@@ -1,0 +1,220 @@
+// Dashboard JavaScript
+
+let currentTab = 'overview';
+
+function showTab(tabName) {
+  // Hide all tabs
+  document.querySelectorAll('.tab-content').forEach(tab => {
+    tab.style.display = 'none';
+  });
+  
+  // Remove active class from all tab buttons
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  
+  // Show selected tab
+  document.getElementById(`${tabName}-tab`).style.display = 'block';
+  
+  // Add active class to selected tab button
+  event.target.classList.add('active');
+  
+  currentTab = tabName;
+  
+  if (tabName === 'overview') {
+    loadUserContent();
+  }
+}
+
+function showMessage(message, type = 'info') {
+  const messageEl = document.getElementById('dashboard-message');
+  messageEl.textContent = message;
+  messageEl.className = `dashboard-message ${type}`;
+  messageEl.style.display = 'block';
+  
+  // Auto hide after 5 seconds
+  setTimeout(() => {
+    messageEl.style.display = 'none';
+  }, 5000);
+}
+
+async function loadUserContent() {
+  try {
+    // Load user's articles count and resources count
+    const [articlesRes, resourcesRes] = await Promise.all([
+      fetch('/api/articles', { credentials: 'include' }),
+      fetch('/api/resources', { credentials: 'include' })
+    ]);
+    
+    const articlesData = await articlesRes.json();
+    const resourcesData = await resourcesRes.json();
+    
+    if (articlesData.success) {
+      document.getElementById('user-articles-count').textContent = articlesData.articles.length;
+    }
+    
+    if (resourcesData.success) {
+      document.getElementById('user-resources-count').textContent = resourcesData.resources.length;
+    }
+    
+    // Display recent content
+    let contentHtml = '<h3>Recent Activity</h3>';
+    
+    if (articlesData.success && articlesData.articles.length > 0) {
+      contentHtml += '<h4>Your Recent Articles</h4>';
+      articlesData.articles.slice(0, 3).forEach(article => {
+        contentHtml += `
+          <div class="content-item">
+            <h5><a href="/articles/${article.id}">${article.title}</a></h5>
+            <p>${article.excerpt || 'No excerpt available'}</p>
+            <small>Published: ${new Date(article.created_at).toLocaleDateString()}</small>
+          </div>
+        `;
+      });
+    }
+    
+    if (resourcesData.success && resourcesData.resources.length > 0) {
+      contentHtml += '<h4>Your Recent Resources</h4>';
+      resourcesData.resources.slice(0, 3).forEach(resource => {
+        contentHtml += `
+          <div class="content-item">
+            <h5>${resource.title}</h5>
+            <p>${resource.description || 'No description available'}</p>
+            <small>Added: ${new Date(resource.created_at).toLocaleDateString()}</small>
+          </div>
+        `;
+      });
+    }
+    
+    if ((!articlesData.success || articlesData.articles.length === 0) && 
+        (!resourcesData.success || resourcesData.resources.length === 0)) {
+      contentHtml += '<p>No content yet. Start by creating your first article or adding a resource!</p>';
+    }
+    
+    document.getElementById('user-content').innerHTML = contentHtml;
+    
+  } catch (error) {
+    console.error('Error loading user content:', error);
+    document.getElementById('user-content').innerHTML = '<p>Error loading content</p>';
+  }
+}
+
+// Create Article Form
+document.getElementById('create-article-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const formData = new FormData(e.target);
+  const title = formData.get('title');
+  const excerpt = formData.get('excerpt');
+  const content = formData.get('content');
+  const published = formData.get('published') === 'on';
+  
+  try {
+    showMessage('Creating article...', 'info');
+    
+    const response = await fetch('/api/articles', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ title, excerpt, content, published }),
+      credentials: 'include'
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      showMessage('Article created successfully!', 'success');
+      e.target.reset();
+      
+      // Switch to overview tab to see the new article
+      setTimeout(() => {
+        showTab('overview');
+        loadUserContent();
+      }, 1000);
+    } else {
+      showMessage(data.error || 'Failed to create article', 'error');
+    }
+  } catch (error) {
+    console.error('Article creation error:', error);
+    showMessage('Network error. Please try again.', 'error');
+  }
+});
+
+// Create Resource Form
+document.getElementById('create-resource-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const formData = new FormData(e.target);
+  const title = formData.get('title');
+  const description = formData.get('description');
+  const url = formData.get('url');
+  const resource_type = formData.get('resource_type');
+  
+  try {
+    showMessage('Adding resource...', 'info');
+    
+    const response = await fetch('/api/resources', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ title, description, url, resource_type }),
+      credentials: 'include'
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      showMessage('Resource added successfully!', 'success');
+      e.target.reset();
+      
+      // Switch to overview tab to see the new resource
+      setTimeout(() => {
+        showTab('overview');
+        loadUserContent();
+      }, 1000);
+    } else {
+      showMessage(data.error || 'Failed to add resource', 'error');
+    }
+  } catch (error) {
+    console.error('Resource creation error:', error);
+    showMessage('Network error. Please try again.', 'error');
+  }
+});
+
+// Check URL for tab parameter
+document.addEventListener('DOMContentLoaded', () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const tab = urlParams.get('tab');
+  
+  if (tab && ['overview', 'create-article', 'create-resource'].includes(tab)) {
+    // Find and click the appropriate tab button
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    tabButtons.forEach(btn => {
+      if (btn.textContent.toLowerCase().includes(tab.replace('-', ' '))) {
+        btn.click();
+      }
+    });
+  } else {
+    // Load overview by default
+    loadUserContent();
+  }
+});
+
+// Global logout function
+window.logout = async function() {
+  try {
+    const response = await fetch('/api/auth/logout', {
+      method: 'POST',
+      credentials: 'include'
+    });
+    
+    if (response.ok) {
+      window.location.href = '/';
+    }
+  } catch (error) {
+    console.error('Logout error:', error);
+    window.location.href = '/';
+  }
+};
