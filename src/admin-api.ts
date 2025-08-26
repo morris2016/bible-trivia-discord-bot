@@ -20,6 +20,8 @@ import {
   deleteCategory,
   getAnalyticsData,
   getAllUsers,
+  getUserById,
+  updateUserRole,
   deleteUser,
   User,
   Article,
@@ -947,49 +949,40 @@ adminApi.delete('/categories/:id', async (c) => {
   }
 });
 
-// Mock Users Management (in real implementation, use actual database)
+// Real Users Management using database
 adminApi.get('/users', async (c) => {
   try {
-    // Mock users data (in real implementation, fetch from database)
-    const users = [
-      {
-        id: 1,
-        name: 'Faith Admin',
-        email: 'admin@faithdefenders.com',
-        role: 'admin',
-        created_at: '2025-01-15T00:00:00Z',
-        last_login: '2025-08-26T08:00:00Z',
-        status: 'active',
-        articles_count: 3,
-        resources_count: 4
-      },
-      {
-        id: 2,
-        name: 'John Believer',
-        email: 'john@example.com',
-        role: 'user',
-        created_at: '2025-01-20T00:00:00Z',
-        last_login: '2025-08-25T15:30:00Z',
-        status: 'active',
-        articles_count: 1,
-        resources_count: 2
-      },
-      {
-        id: 3,
-        name: 'Sarah Faith',
-        email: 'sarah@example.com',
-        role: 'user',
-        created_at: '2025-01-25T00:00:00Z',
-        last_login: '2025-08-20T10:15:00Z',
-        status: 'active',
-        articles_count: 0,
-        resources_count: 1
-      }
-    ];
+    // Get all users from database
+    const dbUsers = await getAllUsers();
+    
+    // Get user stats (articles and resources count for each user)
+    const usersWithStats = await Promise.all(
+      dbUsers.map(async (user) => {
+        // Count articles by this user
+        const userArticles = await getAllArticles();
+        const articlesCount = userArticles.filter(article => article.author_id === user.id).length;
+        
+        // Count resources by this user
+        const userResources = await getAllResources();
+        const resourcesCount = userResources.filter(resource => resource.author_id === user.id).length;
+        
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          created_at: user.created_at,
+          last_login: null, // TODO: Add last_login tracking to database
+          status: 'active', // TODO: Add user status to database
+          articles_count: articlesCount,
+          resources_count: resourcesCount
+        };
+      })
+    );
     
     return c.json({
       success: true,
-      users: users
+      users: usersWithStats
     });
   } catch (error) {
     console.error('Error fetching admin users:', error);
@@ -1000,31 +993,75 @@ adminApi.get('/users', async (c) => {
   }
 });
 
-// Update user role/status
-adminApi.put('/users/:id', async (c) => {
+// Get user by ID
+adminApi.get('/users/:id', async (c) => {
   try {
     const id = parseInt(c.req.param('id'));
-    const { role, status } = await c.req.json();
     
     if (isNaN(id)) {
       return c.json({ success: false, error: 'Invalid user ID' }, 400);
     }
     
-    // Mock update (in real implementation, update database)
+    const user = await getUserById(id);
+    
+    if (!user) {
+      return c.json({ success: false, error: 'User not found' }, 404);
+    }
+    
     return c.json({
       success: true,
-      message: 'User updated successfully',
-      user: { id, role, status }
+      user: user
     });
   } catch (error) {
-    console.error('Error updating admin user:', error);
+    console.error('Error fetching user:', error);
     return c.json({
       success: false,
-      error: 'Failed to update user'
+      error: 'Failed to fetch user'
     }, 500);
   }
 });
 
+// Update user role
+adminApi.put('/users/:id', async (c) => {
+  try {
+    const id = parseInt(c.req.param('id'));
+    const { role } = await c.req.json();
+    
+    if (isNaN(id)) {
+      return c.json({ success: false, error: 'Invalid user ID' }, 400);
+    }
+    
+    if (!role || !['user', 'moderator', 'admin'].includes(role)) {
+      return c.json({ success: false, error: 'Invalid role. Must be "user", "moderator", or "admin"' }, 400);
+    }
+    
+    // Prevent users from demoting themselves
+    const currentUser = c.get('user') as User;
+    if (currentUser.id === id && role !== 'admin') {
+      return c.json({ success: false, error: 'Cannot remove your own admin privileges' }, 400);
+    }
+    
+    const updatedUser = await updateUserRole(id, role);
+    
+    if (!updatedUser) {
+      return c.json({ success: false, error: 'User not found' }, 404);
+    }
+    
+    return c.json({
+      success: true,
+      message: 'User role updated successfully',
+      user: updatedUser
+    });
+  } catch (error) {
+    console.error('Error updating user role:', error);
+    return c.json({
+      success: false,
+      error: 'Failed to update user role'
+    }, 500);
+  }
+});
+
+// Delete user (with additional safety checks)
 adminApi.delete('/users/:id', async (c) => {
   try {
     const id = parseInt(c.req.param('id'));
@@ -1032,22 +1069,88 @@ adminApi.delete('/users/:id', async (c) => {
     if (isNaN(id)) {
       return c.json({ success: false, error: 'Invalid user ID' }, 400);
     }
-
+    
+    // Prevent users from deleting themselves
+    const currentUser = c.get('user') as User;
+    if (currentUser.id === id) {
+      return c.json({ success: false, error: 'Cannot delete your own account' }, 400);
+    }
+    
+    // Check if user exists first
+    const userToDelete = await getUserById(id);
+    if (!userToDelete) {
+      return c.json({ success: false, error: 'User not found' }, 404);
+    }
+    
+    // Get user's content counts for confirmation message
+    const userArticles = await getAllArticles();
+    const userResources = await getAllResources();
+    const articlesCount = userArticles.filter(article => article.author_id === id).length;
+    const resourcesCount = userResources.filter(resource => resource.author_id === id).length;
+    
     const success = await deleteUser(id);
     
     if (!success) {
-      return c.json({ success: false, error: 'User not found or failed to delete' }, 404);
+      return c.json({ success: false, error: 'Failed to delete user' }, 500);
     }
     
     return c.json({
       success: true,
-      message: 'User deleted successfully'
+      message: `User "${userToDelete.name}" deleted successfully. ${articlesCount + resourcesCount > 0 ? `Note: ${articlesCount} articles and ${resourcesCount} resources by this user were also removed.` : ''}`
     });
   } catch (error) {
-    console.error('Error deleting admin user:', error);
+    console.error('Error deleting user:', error);
     return c.json({
       success: false,
       error: 'Failed to delete user'
+    }, 500);
+  }
+});
+
+// User Statistics endpoint
+adminApi.get('/users/stats', async (c) => {
+  try {
+    const allUsers = await getAllUsers();
+    const allArticles = await getAllArticles();
+    const allResources = await getAllResources();
+    
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+    const sevenDaysAgo = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
+    
+    const recentUsers = allUsers.filter(user => new Date(user.created_at) >= thirtyDaysAgo);
+    const newUsersThisWeek = allUsers.filter(user => new Date(user.created_at) >= sevenDaysAgo);
+    
+    const adminUsers = allUsers.filter(user => user.role === 'admin');
+    const regularUsers = allUsers.filter(user => user.role === 'user');
+    
+    // Most active users (by content creation)
+    const userActivity = allUsers.map(user => ({
+      ...user,
+      articles_count: allArticles.filter(article => article.author_id === user.id).length,
+      resources_count: allResources.filter(resource => resource.author_id === user.id).length
+    })).sort((a, b) => (b.articles_count + b.resources_count) - (a.articles_count + a.resources_count));
+    
+    return c.json({
+      success: true,
+      stats: {
+        totalUsers: allUsers.length,
+        newUsersThisMonth: recentUsers.length,
+        newUsersThisWeek: newUsersThisWeek.length,
+        adminUsers: adminUsers.length,
+        regularUsers: regularUsers.length,
+        mostActiveUsers: userActivity.slice(0, 5),
+        userGrowth: {
+          thisMonth: recentUsers.length,
+          growthRate: allUsers.length > 0 ? Math.round((recentUsers.length / allUsers.length) * 100) : 0
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching user statistics:', error);
+    return c.json({
+      success: false,
+      error: 'Failed to fetch user statistics'
     }, 500);
   }
 });

@@ -8,13 +8,16 @@
 ## URLs
 - **Development**: https://3000-is7fg5sswmfe6jdg130f3.e2b.dev
 - **Admin Panel**: https://3000-is7fg5sswmfe6jdg130f3.e2b.dev/admin
+- **Admin Settings**: https://3000-is7fg5sswmfe6jdg130f3.e2b.dev/admin/settings ✨ **NEW**
+- **Admin Backup**: https://3000-is7fg5sswmfe6jdg130f3.e2b.dev/admin/backup ✨ **NEW**
+- **Admin Roles**: https://3000-is7fg5sswmfe6jdg130f3.e2b.dev/admin/roles ✨ **NEW**
 - **GitHub**: (Will be added when pushed to repository)
 
 ## Currently Completed Features
 
 ### **Main Website**
 - ✅ **Frontend Design**: Complete navigation with purple/lavender theme
-- ✅ **User Authentication**: Registration, login, logout with JWT tokens
+- ✅ **User Authentication**: Registration, login, logout with JWT tokens  
 - ✅ **Article System**: Create, read, update articles with author attribution
 - ✅ **Resource Library**: Add and browse faith-based resources (books, websites, podcasts)
 - ✅ **User Dashboard**: Tabbed interface for content management
@@ -22,6 +25,8 @@
 - ✅ **Responsive Design**: Mobile-friendly interface
 - ✅ **Sample Content**: Pre-loaded with example articles and resources
 - ✅ **Secure Authentication**: HTTP-only cookies and password hashing
+- ✅ **Comments & Likes System**: Interactive community engagement features with **like/dislike buttons**
+- ✅ **Role-Based Permissions**: Admin/Moderator/User hierarchy with content creation restrictions
 
 ### **Custom Rich Text Editor** 🎉 **NEW**
 - ✅ **Built from Scratch**: Complete custom editor replacing Quill.js and TinyMCE
@@ -40,17 +45,45 @@
 - ✅ **Form Integration**: Seamless synchronization with hidden textarea for form submission
 - ✅ **Multi-Instance**: Works across dashboard, admin panel (create & edit forms)
 
+### **Comments & Likes System** 🎉 **NEW**
+- ✅ **User Engagement**: Like articles and resources with heart button
+- ✅ **Comment System**: Threaded comments with reply functionality  
+- ✅ **Comment Like/Dislike**: Individual comment like and dislike buttons with numerical counts
+- ✅ **Real-time Interactions**: Immediate feedback and engagement updates
+- ✅ **User Authentication Required**: Comments and likes require user login
+- ✅ **Author Attribution**: Comment authors displayed with avatars
+- ✅ **Time Stamps**: Relative time display (e.g., "2 hours ago")
+- ✅ **Character Limits**: 1000 character limit for comments with live counter
+- ✅ **Reply Threading**: Nested replies for organized discussions
+- ✅ **Like Counts**: Display total likes with user's like status
+- ✅ **Professional UI**: Clean, modern comment and like interface matching reference design
+- ✅ **Comment Management**: Edit and delete functionality for comment authors and moderators
+
+### **Role-Based Permission System** 🔐 **NEW**
+- ✅ **Three-Tier Hierarchy**: Admin → Moderator → User role structure
+- ✅ **Content Creation Restrictions**: Only admins and moderators can create articles/resources
+- ✅ **User Interaction Rights**: Regular users can like and comment on existing content
+- ✅ **Dashboard Adaptation**: UI dynamically shows appropriate options based on user role
+- ✅ **Permission Middleware**: Server-side enforcement of role-based permissions
+- ✅ **User Status Management**: Active, suspended, and banned user states
+- ✅ **Moderation Tools**: Admin suspension, role changes, and user management features
+- ✅ **Authentication Security**: Enhanced user session validation and status checking
+
 ### **Admin Panel** 🆕
 - ✅ **Admin Authentication**: Separate admin access with role-based permissions
 - ✅ **Admin Dashboard**: Comprehensive site overview with metrics and statistics
 - ✅ **Article Management**: Full CRUD operations for all articles (published and drafts)
 - ✅ **Resource Management**: Add, edit, and manage community resources
-- ✅ **User Management**: View all users, update roles, manage permissions
+- ✅ **User Management**: View all users, update roles, manage permissions with enhanced moderation tools
 - ✅ **Analytics Dashboard**: Site performance metrics and engagement data
+- ✅ **Site Settings Management**: Complete settings interface (general, content, user, security settings)
+- ✅ **Backup & Export**: Database backup and content export functionality with restore options
+- ✅ **Role Management**: Comprehensive role and permissions management (promote, demote, permissions overview)
 - ✅ **Professional UI**: Separate admin interface with sidebar navigation
 - ✅ **Quick Actions**: Easy access to common administrative tasks
 - ✅ **Separate Styling**: Independent CSS and JavaScript files for admin interface
 - ✅ **Admin Panel Link**: Accessible from main dashboard for admin users only
+- ✅ **User Moderation**: Comprehensive user management with status tracking, suspension, and role management
 
 ## Rich Text Editor Features
 
@@ -146,6 +179,9 @@ Unlike traditional rich text editors (Quill.js, TinyMCE) that apply formatting t
 - `/admin/resources/new` - Add new resources to library  
 - `/admin/users` - User management (view users, change roles, manage accounts)
 - `/admin/analytics` - Site analytics and performance metrics
+- `/admin/settings` - **Complete site settings management** (general, content, user, security)
+- `/admin/backup` - **Database backup and content export functionality**
+- `/admin/roles` - **Role management and permissions system** (promote, demote, permissions overview)
 
 ### **API Endpoints**
 - `GET /api/health` - API health check
@@ -155,10 +191,23 @@ Unlike traditional rich text editors (Quill.js, TinyMCE) that apply formatting t
 - `GET /api/auth/me` - Get current user info
 - `GET /api/articles` - Get all published articles
 - `GET /api/articles/{id}` - Get specific article
-- `POST /api/articles` - Create new article (auth required)
+- `POST /api/articles` - Create new article (admin/moderator only)
 - `PUT /api/articles/{id}` - Update article (auth required)
 - `GET /api/resources` - Get all resources
-- `POST /api/resources` - Create new resource (auth required)
+- `POST /api/resources` - Create new resource (admin/moderator only)
+- `GET /api/articles/{id}/comments` - Get article comments with like/dislike counts
+- `POST /api/articles/{id}/comments` - Create comment (auth required)
+- `GET /api/resources/{id}/comments` - Get resource comments with like/dislike counts
+- `POST /api/resources/{id}/comments` - Create comment (auth required)
+- `POST /api/articles/{id}/like` - Toggle article like (auth required)
+- `POST /api/resources/{id}/like` - Toggle resource like (auth required)
+- `GET /api/articles/{id}/likes` - Get article like count and user status
+- `GET /api/resources/{id}/likes` - Get resource like count and user status
+- `POST /api/comments/{id}/like` - Like specific comment (auth required)
+- `POST /api/comments/{id}/dislike` - Dislike specific comment (auth required)
+- `GET /api/comments/{id}/likes` - Get comment like/dislike counts and user status
+- `PUT /api/comments/{id}` - Edit comment content (owner/admin/moderator only)
+- `DELETE /api/comments/{id}` - Delete comment (owner/admin/moderator only)
 
 ### **Admin API Endpoints** (requires admin role) 🆕
 - `GET /admin/api/stats` - Dashboard statistics and site metrics
@@ -175,9 +224,13 @@ Unlike traditional rich text editors (Quill.js, TinyMCE) that apply formatting t
 ## Data Architecture
 
 ### **Data Models**
-- **Users**: ID, email, name, role (admin/user), password hash, timestamps
-- **Articles**: ID, title, content, excerpt, author, published status, timestamps
-- **Resources**: ID, title, description, URL, type (book/website/podcast/etc), author, timestamps
+- **Users**: ID, email, name, role (admin/moderator/user), status (active/suspended/banned), password hash, last login, suspension details, timestamps
+- **Articles**: ID, title, content, excerpt, author, published status, category, timestamps
+- **Resources**: ID, title, description, URL, type, author, category, file upload support, timestamps
+- **Comments**: ID, content, author, article/resource reference, parent comment (for replies), approval status, timestamps
+- **Likes**: ID, user, article/resource reference, timestamps (with uniqueness constraints)
+- **User Login History**: ID, user, login timestamp, IP address, user agent, success status, failure reason
+- **User Notifications**: ID, user, title, message, type (info/warning/success/error), read status, expiration, timestamps
 
 ### **Storage Services**
 - **Development**: Mock in-memory database with sample data
@@ -197,13 +250,20 @@ Unlike traditional rich text editors (Quill.js, TinyMCE) that apply formatting t
 2. Read full articles and access external resource links
 3. Register for an account to contribute content
 
-### **For Registered Users**
+### **For Regular Users** 
 1. **Register/Login**: Use the login page to create account or sign in
-2. **Dashboard Access**: Access your dashboard to manage content
-3. **Create Articles**: Use the **comprehensive rich text editor** to write formatted articles
-4. **Rich Text Formatting**: Select text and apply headers, colors, lists, quotes, and more
-5. **Add Resources**: Share helpful resources with the community
-6. **Profile Management**: View your contributions and statistics
+2. **Browse Content**: Read articles and explore resources created by moderators
+3. **Engage with Content**: Like articles and resources that resonate with you
+4. **Join Discussions**: Comment on articles and resources, reply to other comments
+5. **Community Interaction**: Build relationships through meaningful discussion
+6. **Profile Management**: View your activity and engagement history
+
+### **For Moderators** (User role elevated by admin)
+1. **Content Creation**: Use the **comprehensive rich text editor** to write formatted articles
+2. **Resource Sharing**: Add helpful resources to the community library
+3. **Rich Text Formatting**: Select text and apply headers, colors, lists, quotes, and more
+4. **Community Moderation**: Help maintain quality discussions and content
+5. **Dashboard Access**: Access expanded dashboard with content creation tools
 
 ### **For Administrators** 🆕
 1. **Access Admin Panel**: Click "Admin Panel" button in main dashboard
@@ -273,14 +333,14 @@ Unlike traditional rich text editors (Quill.js, TinyMCE) that apply formatting t
 - Success/error response structure with detailed messages
 
 ## Features Not Yet Implemented
-- **Database Migration**: Switch from mock to PostgreSQL production database
-- **Content Moderation**: Admin approval workflow for articles
-- **Search Functionality**: Search articles and resources
-- **Comments System**: User discussion on articles
-- **Email Notifications**: Account verification and notifications
-- **Social Features**: User profiles and following system
-- **Categories/Tags**: Content organization and filtering
-- **Analytics**: Content views and user engagement metrics
+- **Database Migration**: Switch from mock to PostgreSQL production database (schema ready)
+- **Enhanced Search**: Full-text search with filters (basic search UI implemented)
+- **Email Notifications**: Account verification and notification emails
+- **Social Features**: User profiles, following system, and user-to-user interactions
+- **Content Analytics**: Detailed view tracking and engagement metrics
+- **File Upload System**: Enhanced file upload for resources with cloud storage
+- **Advanced Moderation**: Automated content filtering and approval workflows
+- **Mobile App**: Native mobile application for iOS and Android
 
 ## Recommended Next Steps
 
@@ -312,6 +372,8 @@ Unlike traditional rich text editors (Quill.js, TinyMCE) that apply formatting t
 - **Tech Stack**: Hono + TypeScript + Vite + Custom Rich Text Editor + JWT Authentication
 - **Database**: Mock (development) / PostgreSQL (production)
 - **Last Updated**: 2025-08-26
+- **New Features**: Role-based permissions, Comments & Likes system, Enhanced user management
+- **Latest Addition**: Complete comment like/dislike system with admin settings and backup functionality
 
 ## Development Commands
 ```bash

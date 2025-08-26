@@ -1373,6 +1373,17 @@ window.loadUsers = async function() {
     const data = await response.json();
     const tableBody = document.getElementById('users-table');
     
+    // Check if we're on the roles page and handle differently
+    if (!tableBody) {
+      // We're probably on the roles page, refresh role-specific data instead
+      if (typeof loadRoleStats === 'function') {
+        loadRoleStats();
+        loadUserSelects();
+        loadRoleHistory();
+      }
+      return;
+    }
+    
     if (data.success && data.users.length > 0) {
       let html = '';
       data.users.forEach(user => {
@@ -1394,7 +1405,7 @@ window.loadUsers = async function() {
             <td>${roleBadge}</td>
             <td>${statusBadge}</td>
             <td>${formatDate(user.created_at)}</td>
-            <td>${formatDateTime(user.last_login)}</td>
+            <td>${user.last_login ? formatDateTime(user.last_login) : '<span style="color: #9ca3af;">Never</span>'}</td>
             <td>
               <div class="admin-table-actions">
                 <button onclick="editUser(${user.id}, '${user.role}', '${user.status}')" class="admin-btn admin-btn-sm admin-btn-outline">
@@ -1422,26 +1433,76 @@ window.loadUsers = async function() {
     }
   } catch (error) {
     console.error('Error loading users:', error);
-    document.getElementById('users-table').innerHTML = `
-      <tr>
-        <td colspan="7" style="text-align: center; padding: 2rem; color: #dc2626;">
-          Error loading users
-        </td>
-      </tr>
-    `;
+    const tableBody = document.getElementById('users-table');
+    if (tableBody) {
+      tableBody.innerHTML = `
+        <tr>
+          <td colspan="7" style="text-align: center; padding: 2rem; color: #dc2626;">
+            Error loading users
+          </td>
+        </tr>
+      `;
+    }
   }
 };
 
+// Enhanced User Management Modal
 window.editUser = function(userId, currentRole, currentStatus) {
-  const newRole = prompt(`Change role for user (current: ${currentRole}):`, currentRole);
-  if (newRole && newRole !== currentRole) {
-    updateUserRole(userId, newRole);
-  }
+  showUserEditModal(userId, currentRole, currentStatus);
 };
+
+function showUserEditModal(userId, currentRole, currentStatus) {
+  // Create modal HTML
+  const modalHtml = `
+    <div id="user-edit-modal" class="admin-modal" style="display: flex; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000;">
+      <div class="admin-modal-content" style="background: white; padding: 2rem; border-radius: 8px; max-width: 400px; width: 90%; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+        <div class="admin-modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid #e5e7eb; padding-bottom: 1rem;">
+          <h3 style="margin: 0; color: #374151;">Edit User Role</h3>
+          <button onclick="closeUserEditModal()" style="background: none; border: none; font-size: 1.5rem; color: #6b7280; cursor: pointer;">&times;</button>
+        </div>
+        <div class="admin-modal-body">
+          <form id="user-edit-form" onsubmit="submitUserEdit(event, ${userId})">
+            <div style="margin-bottom: 1rem;">
+              <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: #374151;">Role:</label>
+              <select id="user-role-select" name="role" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem;">
+                <option value="user" ${currentRole === 'user' ? 'selected' : ''}>User</option>
+                <option value="admin" ${currentRole === 'admin' ? 'selected' : ''}>Administrator</option>
+              </select>
+              <small style="color: #6b7280; margin-top: 0.25rem; display: block;">Users can create content, Admins have full access</small>
+            </div>
+            <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+              <button type="button" onclick="closeUserEditModal()" style="flex: 1; padding: 0.75rem; background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer;">Cancel</button>
+              <button type="submit" style="flex: 1; padding: 0.75rem; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer;">Update Role</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Add modal to page
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+function closeUserEditModal() {
+  const modal = document.getElementById('user-edit-modal');
+  if (modal) {
+    modal.remove();
+  }
+}
+
+function submitUserEdit(event, userId) {
+  event.preventDefault();
+  const formData = new FormData(event.target);
+  const role = formData.get('role');
+  
+  closeUserEditModal();
+  updateUserRole(userId, role);
+}
 
 async function updateUserRole(userId, role) {
   try {
-    showAdminMessage('Updating user...', 'info');
+    showAdminMessage('Updating user role...', 'info');
     
     const response = await fetch(`/admin/api/users/${userId}`, {
       method: 'PUT',
@@ -1455,26 +1516,37 @@ async function updateUserRole(userId, role) {
     const data = await response.json();
     
     if (data.success) {
-      showAdminMessage('User updated successfully!', 'success');
+      showAdminMessage(`User role updated to ${role} successfully!`, 'success');
       setTimeout(() => {
         loadUsers();
       }, 1000);
     } else {
-      showAdminMessage(data.error || 'Failed to update user', 'error');
+      showAdminMessage(data.error || 'Failed to update user role', 'error');
     }
   } catch (error) {
-    console.error('Error updating user:', error);
-    showAdminMessage('Error updating user', 'error');
+    console.error('Error updating user role:', error);
+    showAdminMessage('Network error. Please try again.', 'error');
   }
 }
 
 window.deleteUser = async function(userId) {
-  if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+  // Get user details for confirmation
+  const userRow = document.querySelector(`[onclick="deleteUser(${userId})"]`).closest('tr');
+  const userName = userRow.querySelector('td:first-child div').textContent.trim();
+  
+  const confirmMessage = `⚠️ Delete User Confirmation\n\nUser: ${userName}\n\nThis will permanently delete:\n• The user account\n• All their articles and resources\n• This action cannot be undone\n\nType "DELETE" to confirm:`;
+  
+  const confirmation = prompt(confirmMessage);
+  
+  if (confirmation !== 'DELETE') {
+    if (confirmation !== null) {
+      showAdminMessage('Deletion cancelled. Please type "DELETE" to confirm.', 'warning');
+    }
     return;
   }
   
   try {
-    showAdminMessage('Deleting user...', 'info');
+    showAdminMessage('Deleting user and all associated content...', 'info');
     
     const response = await fetch(`/admin/api/users/${userId}`, {
       method: 'DELETE',
@@ -1484,10 +1556,10 @@ window.deleteUser = async function(userId) {
     const data = await response.json();
     
     if (data.success) {
-      showAdminMessage('User deleted successfully!', 'success');
+      showAdminMessage(data.message || 'User deleted successfully!', 'success');
       setTimeout(() => {
         loadUsers();
-      }, 1000);
+      }, 1500);
     } else {
       showAdminMessage(data.error || 'Failed to delete user', 'error');
     }
@@ -1495,6 +1567,116 @@ window.deleteUser = async function(userId) {
     console.error('Error deleting user:', error);
     showAdminMessage('Network error. Please try again.', 'error');
   }
+};
+
+// User Statistics
+window.loadUserStats = async function() {
+  try {
+    const response = await fetch('/admin/api/users/stats', {
+      credentials: 'include'
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      const stats = data.stats;
+      
+      // Update user statistics if elements exist
+      const userStatsContainer = document.getElementById('user-stats-container');
+      if (userStatsContainer) {
+        userStatsContainer.innerHTML = `
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+            <div class="admin-stat-card">
+              <div class="admin-stat-header">
+                <div class="admin-stat-title">Total Users</div>
+                <div class="admin-stat-icon blue"><i class="fas fa-users"></i></div>
+              </div>
+              <div class="admin-stat-number">${stats.totalUsers}</div>
+              <div class="admin-stat-change positive">All registered users</div>
+            </div>
+            <div class="admin-stat-card">
+              <div class="admin-stat-header">
+                <div class="admin-stat-title">New This Month</div>
+                <div class="admin-stat-icon green"><i class="fas fa-user-plus"></i></div>
+              </div>
+              <div class="admin-stat-number">${stats.newUsersThisMonth}</div>
+              <div class="admin-stat-change ${stats.growthRate > 0 ? 'positive' : ''}">${stats.growthRate}% growth rate</div>
+            </div>
+            <div class="admin-stat-card">
+              <div class="admin-stat-header">
+                <div class="admin-stat-title">Administrators</div>
+                <div class="admin-stat-icon yellow"><i class="fas fa-user-shield"></i></div>
+              </div>
+              <div class="admin-stat-number">${stats.adminUsers}</div>
+              <div class="admin-stat-change">${stats.regularUsers} regular users</div>
+            </div>
+            <div class="admin-stat-card">
+              <div class="admin-stat-header">
+                <div class="admin-stat-title">Active This Week</div>
+                <div class="admin-stat-icon red"><i class="fas fa-calendar-week"></i></div>
+              </div>
+              <div class="admin-stat-number">${stats.newUsersThisWeek}</div>
+              <div class="admin-stat-change ${stats.newUsersThisWeek > 0 ? 'positive' : ''}">New users this week</div>
+            </div>
+          </div>
+          
+          ${stats.mostActiveUsers.length > 0 ? `
+            <div class="admin-card">
+              <div class="admin-card-header">
+                <h3 class="admin-card-title">Most Active Users</h3>
+                <p class="admin-card-subtitle">Users ranked by content contributions</p>
+              </div>
+              <div class="admin-card-content">
+                ${stats.mostActiveUsers.map((user, index) => `
+                  <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid #e2e8f0;">
+                    <div>
+                      <div style="font-weight: 500; font-size: 0.9rem;">${user.name}</div>
+                      <div style="font-size: 0.8rem; color: #64748b;">${user.email}</div>
+                    </div>
+                    <div style="text-align: right;">
+                      <div style="font-size: 0.9rem; font-weight: 500;">${user.articles_count + user.resources_count} items</div>
+                      <div style="font-size: 0.8rem; color: #64748b;">${user.articles_count} articles, ${user.resources_count} resources</div>
+                    </div>
+                    <div style="margin-left: 1rem;">
+                      <span class="admin-badge ${user.role === 'admin' ? 'admin-badge-warning' : 'admin-badge-info'}">#${index + 1}</span>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          ` : ''}
+        `;
+      }
+      
+      return stats;
+    } else {
+      console.error('Failed to load user statistics:', data.error);
+    }
+  } catch (error) {
+    console.error('Error loading user statistics:', error);
+  }
+};
+
+// Enhanced User Search and Filter
+window.filterUsers = function(searchTerm, roleFilter) {
+  const table = document.getElementById('users-table');
+  const rows = table.querySelectorAll('tr');
+  
+  rows.forEach(row => {
+    if (row.querySelector('th')) return; // Skip header row
+    
+    const nameCell = row.cells[0]?.textContent.toLowerCase() || '';
+    const emailCell = row.cells[1]?.textContent.toLowerCase() || '';
+    const roleCell = row.cells[2]?.textContent.toLowerCase() || '';
+    
+    const matchesSearch = !searchTerm || 
+      nameCell.includes(searchTerm.toLowerCase()) || 
+      emailCell.includes(searchTerm.toLowerCase());
+    
+    const matchesRole = !roleFilter || roleCell.includes(roleFilter.toLowerCase());
+    
+    row.style.display = (matchesSearch && matchesRole) ? '' : 'none';
+  });
 };
 
 // Analytics

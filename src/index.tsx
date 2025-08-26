@@ -150,58 +150,60 @@ app.get('/articles', async (c) => {
             </div>
           </div>
         </nav>
-        <main className="main-content">
-          <div className="content-container">
-            <div className="page-header">
+        {/* Search and Filter Bar - Positioned higher near navigation */}
+        <div className="search-filter-container">
+          <div className="search-bar">
+            <div className="search-input-wrapper">
+              <i className="fas fa-search search-icon"></i>
+              <input 
+                type="text" 
+                id="articles-search" 
+                className="search-input" 
+                placeholder="Search articles..."
+                autoComplete="off"
+              />
+              <button type="button" id="clear-search" className="clear-search" style="display: none;">
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+          </div>
+          <div className="filter-controls">
+            <select id="category-filter" className="filter-select">
+              <option value="">All Categories</option>
+              {/* Categories loaded dynamically */}
+            </select>
+            <select id="sort-filter" className="filter-select">
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="title">A-Z</option>
+            </select>
+            <button type="button" id="toggle-filters" className="filter-toggle">
+              <i className="fas fa-sliders-h"></i>
+              <span>Filters</span>
+            </button>
+          </div>
+        </div>
+        
+        <main className="main-content has-search">
+          <div className="content-container with-search">
+            <div className="page-header with-search">
               <h1 className="page-title">Articles</h1>
               <p className="page-subtitle">Browse our collection of faith-based articles and insights.</p>
-              {user && (
+              {user && (user.role === 'admin' || user.role === 'moderator') && (
                 <a href="/dashboard?tab=create-article" className="btn-primary">Write New Article</a>
               )}
             </div>
-            
-            {/* Search and Filter Bar */}
-            <div className="search-filter-container">
-              <div className="search-bar">
-                <div className="search-input-wrapper">
-                  <i className="fas fa-search search-icon"></i>
-                  <input 
-                    type="text" 
-                    id="articles-search" 
-                    className="search-input" 
-                    placeholder="Search articles..."
-                    autocomplete="off"
-                  />
-                  <button type="button" id="clear-search" className="clear-search" style="display: none;">
-                    <i className="fas fa-times"></i>
-                  </button>
-                </div>
-              </div>
-              <div className="filter-controls">
-                <select id="category-filter" className="filter-select">
-                  <option value="">All Categories</option>
-                  {/* Categories loaded dynamically */}
-                </select>
-                <select id="sort-filter" className="filter-select">
-                  <option value="newest">Newest First</option>
-                  <option value="oldest">Oldest First</option>
-                  <option value="title">A-Z</option>
-                </select>
-                <button type="button" id="toggle-filters" className="filter-toggle">
-                  <i className="fas fa-sliders-h"></i>
-                  <span>Filters</span>
-                </button>
-              </div>
-            </div>
-            
-            {/* Search Results Info */}
-            <div id="search-results-info" className="search-results-info" style="display: none;">
-              <span id="results-count"></span>
-              <button type="button" id="clear-all-filters" className="clear-filters-btn">
-                <i className="fas fa-times"></i> Clear All
-              </button>
-            </div>
-            
+          </div>
+          
+          {/* Search Results Info */}
+          <div id="search-results-info" className="search-results-info" style="display: none;">
+            <span id="results-count"></span>
+            <button type="button" id="clear-all-filters" className="clear-filters-btn">
+              <i className="fas fa-times"></i> Clear All
+            </button>
+          </div>
+          
+          <div className="content-container">
             {articles.length > 0 ? (
               <div id="articles-container" className="articles-list">
                 {articles.map((article) => (
@@ -236,10 +238,15 @@ app.get('/articles', async (c) => {
                   This is where inspiring faith-based articles will appear. Start building our community knowledge by sharing your insights, biblical reflections, or theological discussions.
                 </p>
                 <div className="empty-state-actions">
-                  {user ? (
+                  {user && (user.role === 'admin' || user.role === 'moderator') ? (
                     <a href="/dashboard?tab=create-article" className="btn-primary">
                       ✍️ Write the First Article
                     </a>
+                  ) : user ? (
+                    <div className="empty-state-login">
+                      <p>Only moderators can create articles.</p>
+                      <a href="/about" className="btn-secondary">Learn More</a>
+                    </div>
                   ) : (
                     <div className="empty-state-login">
                       <p>Ready to contribute?</p>
@@ -322,67 +329,69 @@ app.get('/resources', async (c) => {
             </div>
           </div>
         </nav>
-        <main className="main-content">
-          <div className="content-container">
-            <div className="page-header">
+        {/* Search and Filter Bar - Positioned higher near navigation */}
+        <div className="search-filter-container">
+          <div className="search-bar">
+            <div className="search-input-wrapper">
+              <i className="fas fa-search search-icon"></i>
+              <input 
+                type="text" 
+                id="resources-search" 
+                className="search-input" 
+                placeholder="Search resources..."
+                autoComplete="off"
+              />
+              <button type="button" id="clear-search-resources" className="clear-search" style="display: none;">
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+          </div>
+          <div className="filter-controls">
+            <select id="resource-category-filter" className="filter-select">
+              <option value="">All Categories</option>
+              {/* Categories loaded dynamically */}
+            </select>
+            <select id="resource-type-filter" className="filter-select">
+              <option value="">All Types</option>
+              <option value="link">Links</option>
+              <option value="book">Books</option>
+              <option value="video">Videos</option>
+              <option value="podcast">Podcasts</option>
+              <option value="study">Study Guides</option>
+              <option value="other">Other</option>
+            </select>
+            <select id="resource-sort-filter" className="filter-select">
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="title">A-Z</option>
+            </select>
+            <button type="button" id="toggle-resource-filters" className="filter-toggle">
+              <i className="fas fa-sliders-h"></i>
+              <span>Filters</span>
+            </button>
+          </div>
+        </div>
+        
+        <main className="main-content has-search">
+          <div className="content-container with-search">
+            <div className="page-header with-search">
               <h1 className="page-title">Resources</h1>
               <p className="page-subtitle">Discover helpful resources to strengthen your faith journey.</p>
-              {user && (
+              {user && (user.role === 'admin' || user.role === 'moderator') && (
                 <a href="/dashboard?tab=create-resource" className="btn-primary">Add Resource</a>
               )}
             </div>
-            
-            {/* Search and Filter Bar */}
-            <div className="search-filter-container">
-              <div className="search-bar">
-                <div className="search-input-wrapper">
-                  <i className="fas fa-search search-icon"></i>
-                  <input 
-                    type="text" 
-                    id="resources-search" 
-                    className="search-input" 
-                    placeholder="Search resources..."
-                    autocomplete="off"
-                  />
-                  <button type="button" id="clear-search-resources" className="clear-search" style="display: none;">
-                    <i className="fas fa-times"></i>
-                  </button>
-                </div>
-              </div>
-              <div className="filter-controls">
-                <select id="resource-category-filter" className="filter-select">
-                  <option value="">All Categories</option>
-                  {/* Categories loaded dynamically */}
-                </select>
-                <select id="resource-type-filter" className="filter-select">
-                  <option value="">All Types</option>
-                  <option value="link">Links</option>
-                  <option value="book">Books</option>
-                  <option value="video">Videos</option>
-                  <option value="podcast">Podcasts</option>
-                  <option value="study">Study Guides</option>
-                  <option value="other">Other</option>
-                </select>
-                <select id="resource-sort-filter" className="filter-select">
-                  <option value="newest">Newest First</option>
-                  <option value="oldest">Oldest First</option>
-                  <option value="title">A-Z</option>
-                </select>
-                <button type="button" id="toggle-resource-filters" className="filter-toggle">
-                  <i className="fas fa-sliders-h"></i>
-                  <span>Filters</span>
-                </button>
-              </div>
-            </div>
-            
-            {/* Search Results Info */}
-            <div id="resource-search-results-info" className="search-results-info" style="display: none;">
-              <span id="resource-results-count"></span>
-              <button type="button" id="clear-all-resource-filters" className="clear-filters-btn">
-                <i className="fas fa-times"></i> Clear All
-              </button>
-            </div>
-            
+          </div>
+          
+          {/* Search Results Info */}
+          <div id="resource-search-results-info" className="search-results-info" style="display: none;">
+            <span id="resource-results-count"></span>
+            <button type="button" id="clear-all-resource-filters" className="clear-filters-btn">
+              <i className="fas fa-times"></i> Clear All
+            </button>
+          </div>
+          
+          <div className="content-container">
             {resources.length > 0 ? (
               <div id="resources-container" className="resources-grid">
                 {resources.map((resource) => (
@@ -438,8 +447,11 @@ app.get('/resources', async (c) => {
               <div id="resources-container" className="empty-state">
                 <h3>No resources yet</h3>
                 <p>Be the first to share helpful faith resources!</p>
-                {user && (
+                {user && (user.role === 'admin' || user.role === 'moderator') && (
                   <a href="/dashboard?tab=create-resource" className="btn-primary">Add the First Resource</a>
+                )}
+                {user && user.role === 'user' && (
+                  <p className="empty-state-description">Only moderators can add resources.</p>
                 )}
               </div>
             )}
@@ -573,7 +585,10 @@ app.get('/resources/:id', async (c) => {
             <div className="breadcrumb">
               <a href="/resources">← Back to Resources</a>
             </div>
-            <article className="article-detail">
+            
+            <div className="content-layout">
+              <div className="main-content-area">
+                <article className="article-detail">
               <h1 className="article-title">{resource.title}</h1>
               <div className="article-meta">
                 <span className="resource-type">{resource.resource_type}</span> • 
@@ -628,8 +643,36 @@ app.get('/resources/:id', async (c) => {
                 )}
               </div>
             </article>
+            
+            {/* Likes Section - always with main content */}
+            <div className="content-interactions">
+              <div id="likes-section">
+                {/* Likes will be loaded here */}
+              </div>
+            </div>
           </div>
-        </main>
+          
+          <div className="comments-sidebar">
+            <div id="comments-section" className="comments-section">
+              {/* Comments will be loaded here */}
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+        
+        {/* Load axios first, then comments and likes */}
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script src="/static/comments-likes.js"></script>
+        <script dangerouslySetInnerHTML={{
+          __html: `
+            document.addEventListener('DOMContentLoaded', function() {
+              if (typeof initializeCommentsAndLikes === 'function') {
+                initializeCommentsAndLikes('resource', ${id});
+              }
+            });
+          `
+        }}></script>
       </div>
     )
   } catch (error) {
@@ -690,15 +733,46 @@ app.get('/articles/:id', async (c) => {
             <div className="breadcrumb">
               <a href="/articles">← Back to Articles</a>
             </div>
-            <article className="article-detail">
-              <h1 className="article-title">{article.title}</h1>
-              <div className="article-meta">
-                By {article.author_name} • {new Date(article.created_at).toLocaleDateString()}
+            
+            <div className="content-layout">
+              <div className="main-content-area">
+                <article className="article-detail">
+                  <h1 className="article-title">{article.title}</h1>
+                  <div className="article-meta">
+                    By {article.author_name} • {new Date(article.created_at).toLocaleDateString()}
+                  </div>
+                  <div className="article-body" dangerouslySetInnerHTML={{ __html: article.content }} />
+                </article>
+                
+                {/* Likes Section - always with main content */}
+                <div className="content-interactions">
+                  <div id="likes-section">
+                    {/* Likes will be loaded here */}
+                  </div>
+                </div>
               </div>
-              <div className="article-body" dangerouslySetInnerHTML={{ __html: article.content }} />
-            </article>
+              
+              <div className="comments-sidebar">
+                <div id="comments-section" className="comments-section">
+                  {/* Comments will be loaded here */}
+                </div>
+              </div>
+            </div>
           </div>
         </main>
+        
+        {/* Load axios first, then comments and likes */}
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script src="/static/comments-likes.js"></script>
+        <script dangerouslySetInnerHTML={{
+          __html: `
+            document.addEventListener('DOMContentLoaded', function() {
+              if (typeof initializeCommentsAndLikes === 'function') {
+                initializeCommentsAndLikes('article', ${id});
+              }
+            });
+          `
+        }}></script>
       </div>
     )
   } catch (error) {
@@ -815,8 +889,12 @@ app.get('/dashboard', async (c) => {
           
           <div className="dashboard-tabs">
             <button className="tab-btn active" onclick="showTab('overview')">Overview</button>
-            <button className="tab-btn" onclick="showTab('create-article')">Create Article</button>
-            <button className="tab-btn" onclick="showTab('create-resource')">Add Resource</button>
+            {(user.role === 'admin' || user.role === 'moderator') && (
+              <button className="tab-btn" onclick="showTab('create-article')">Create Article</button>
+            )}
+            {(user.role === 'admin' || user.role === 'moderator') && (
+              <button className="tab-btn" onclick="showTab('create-resource')">Add Resource</button>
+            )}
             {user.role === 'admin' && (
               <a href="/admin" className="tab-btn" style="background: #1e40af; color: white; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
                 <i className="fas fa-shield-alt"></i>

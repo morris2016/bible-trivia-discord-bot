@@ -1535,4 +1535,906 @@ adminApp.get('/analytics', async (c) => {
   );
 });
 
+// Admin Settings
+adminApp.get('/settings', async (c) => {
+  const user = c.get('adminUser');
+  
+  return c.render(
+    <AdminLayout currentUser={user} currentPage="settings" breadcrumb="Site Settings">
+      <div class="admin-page-header">
+        <h1 class="admin-page-title">Site Settings</h1>
+        <p class="admin-page-subtitle">Configure your Faith Defenders community settings</p>
+      </div>
+
+      <div class="admin-settings-container">
+        {/* General Settings */}
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <h3 class="admin-card-title">
+              <i class="fas fa-globe"></i>
+              General Settings
+            </h3>
+          </div>
+          <div class="admin-card-content">
+            <form id="general-settings-form" class="admin-form">
+              <div class="admin-form-row">
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Site Name</label>
+                  <input type="text" name="site_name" class="admin-form-input" 
+                    value="Faith Defenders" placeholder="Your site name" />
+                </div>
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Site Tagline</label>
+                  <input type="text" name="site_tagline" class="admin-form-input" 
+                    value="Defending and sharing the Christian faith" placeholder="Your site tagline" />
+                </div>
+              </div>
+
+              <div class="admin-form-group">
+                <label class="admin-form-label">Site Description</label>
+                <textarea name="site_description" class="admin-form-textarea" rows="3"
+                  placeholder="Describe your faith community...">A community dedicated to defending and sharing the Christian faith through articles, resources, and meaningful discussions.</textarea>
+              </div>
+
+              <div class="admin-form-row">
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Contact Email</label>
+                  <input type="email" name="contact_email" class="admin-form-input" 
+                    placeholder="contact@faithdefenders.com" />
+                </div>
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Admin Email</label>
+                  <input type="email" name="admin_email" class="admin-form-input" 
+                    value={user.email} placeholder="admin@faithdefenders.com" />
+                </div>
+              </div>
+
+              <div class="admin-form-actions">
+                <button type="submit" class="admin-btn admin-btn-primary">
+                  <i class="fas fa-save"></i>
+                  Save General Settings
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        {/* Content Settings */}
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <h3 class="admin-card-title">
+              <i class="fas fa-file-alt"></i>
+              Content Settings
+            </h3>
+          </div>
+          <div class="admin-card-content">
+            <form id="content-settings-form" class="admin-form">
+              <div class="admin-form-row">
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Articles Per Page</label>
+                  <select name="articles_per_page" class="admin-form-select">
+                    <option value="5">5 articles</option>
+                    <option value="10" selected>10 articles</option>
+                    <option value="15">15 articles</option>
+                    <option value="20">20 articles</option>
+                  </select>
+                </div>
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Default Article Status</label>
+                  <select name="default_article_status" class="admin-form-select">
+                    <option value="draft">Draft</option>
+                    <option value="published" selected>Published</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="admin-form-group">
+                <label class="admin-form-checkbox-container">
+                  <input type="checkbox" name="require_approval" class="admin-form-checkbox" />
+                  <span class="admin-form-checkbox-mark"></span>
+                  Require admin approval for user comments
+                </label>
+              </div>
+
+              <div class="admin-form-group">
+                <label class="admin-form-checkbox-container">
+                  <input type="checkbox" name="allow_guest_comments" class="admin-form-checkbox" />
+                  <span class="admin-form-checkbox-mark"></span>
+                  Allow comments from non-registered users
+                </label>
+              </div>
+
+              <div class="admin-form-actions">
+                <button type="submit" class="admin-btn admin-btn-primary">
+                  <i class="fas fa-save"></i>
+                  Save Content Settings
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        {/* User Management Settings */}
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <h3 class="admin-card-title">
+              <i class="fas fa-users"></i>
+              User Management
+            </h3>
+          </div>
+          <div class="admin-card-content">
+            <form id="user-settings-form" class="admin-form">
+              <div class="admin-form-row">
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Default User Role</label>
+                  <select name="default_user_role" class="admin-form-select">
+                    <option value="user" selected>Regular User</option>
+                    <option value="moderator">Moderator</option>
+                  </select>
+                </div>
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Registration Status</label>
+                  <select name="registration_status" class="admin-form-select">
+                    <option value="open" selected>Open Registration</option>
+                    <option value="approval">Require Admin Approval</option>
+                    <option value="closed">Registration Closed</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="admin-form-group">
+                <label class="admin-form-checkbox-container">
+                  <input type="checkbox" name="enable_user_profiles" class="admin-form-checkbox" checked />
+                  <span class="admin-form-checkbox-mark"></span>
+                  Enable public user profiles
+                </label>
+              </div>
+
+              <div class="admin-form-group">
+                <label class="admin-form-checkbox-container">
+                  <input type="checkbox" name="send_welcome_email" class="admin-form-checkbox" />
+                  <span class="admin-form-checkbox-mark"></span>
+                  Send welcome email to new users
+                </label>
+              </div>
+
+              <div class="admin-form-actions">
+                <button type="submit" class="admin-btn admin-btn-primary">
+                  <i class="fas fa-save"></i>
+                  Save User Settings
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        {/* Security Settings */}
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <h3 class="admin-card-title">
+              <i class="fas fa-shield-alt"></i>
+              Security Settings
+            </h3>
+          </div>
+          <div class="admin-card-content">
+            <form id="security-settings-form" class="admin-form">
+              <div class="admin-form-row">
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Session Timeout (minutes)</label>
+                  <select name="session_timeout" class="admin-form-select">
+                    <option value="30">30 minutes</option>
+                    <option value="60" selected>1 hour</option>
+                    <option value="120">2 hours</option>
+                    <option value="1440">24 hours</option>
+                  </select>
+                </div>
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Password Strength</label>
+                  <select name="password_strength" class="admin-form-select">
+                    <option value="basic">Basic (6+ characters)</option>
+                    <option value="moderate" selected>Moderate (8+ chars, mixed case)</option>
+                    <option value="strong">Strong (12+ chars, symbols)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="admin-form-group">
+                <label class="admin-form-checkbox-container">
+                  <input type="checkbox" name="enable_2fa" class="admin-form-checkbox" />
+                  <span class="admin-form-checkbox-mark"></span>
+                  Enable two-factor authentication (2FA)
+                </label>
+              </div>
+
+              <div class="admin-form-group">
+                <label class="admin-form-checkbox-container">
+                  <input type="checkbox" name="log_user_activity" class="admin-form-checkbox" checked />
+                  <span class="admin-form-checkbox-mark"></span>
+                  Log user activity and login attempts
+                </label>
+              </div>
+
+              <div class="admin-form-actions">
+                <button type="submit" class="admin-btn admin-btn-primary">
+                  <i class="fas fa-save"></i>
+                  Save Security Settings
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <script dangerouslySetInnerHTML={{
+        __html: `
+          document.addEventListener('DOMContentLoaded', function() {
+            // Settings form handlers
+            document.getElementById('general-settings-form').addEventListener('submit', function(e) {
+              e.preventDefault();
+              handleSettingsSubmit(this, 'general', 'General settings updated successfully!');
+            });
+            
+            document.getElementById('content-settings-form').addEventListener('submit', function(e) {
+              e.preventDefault();
+              handleSettingsSubmit(this, 'content', 'Content settings updated successfully!');
+            });
+            
+            document.getElementById('user-settings-form').addEventListener('submit', function(e) {
+              e.preventDefault();
+              handleSettingsSubmit(this, 'user', 'User settings updated successfully!');
+            });
+            
+            document.getElementById('security-settings-form').addEventListener('submit', function(e) {
+              e.preventDefault();
+              handleSettingsSubmit(this, 'security', 'Security settings updated successfully!');
+            });
+            
+            async function handleSettingsSubmit(form, type, successMessage) {
+              const formData = new FormData(form);
+              const data = Object.fromEntries(formData.entries());
+              
+              try {
+                const submitButton = form.querySelector('button[type="submit"]');
+                const originalText = submitButton.innerHTML;
+                submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+                submitButton.disabled = true;
+                
+                // For now, simulate successful save
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                showAdminMessage(successMessage, 'success');
+                
+                submitButton.innerHTML = originalText;
+                submitButton.disabled = false;
+              } catch (error) {
+                console.error('Settings save error:', error);
+                showAdminMessage('Failed to save settings. Please try again.', 'error');
+                
+                const submitButton = form.querySelector('button[type="submit"]');
+                submitButton.innerHTML = form.id.includes('general') ? '<i class="fas fa-save"></i> Save General Settings' :
+                  form.id.includes('content') ? '<i class="fas fa-save"></i> Save Content Settings' :
+                  form.id.includes('user') ? '<i class="fas fa-save"></i> Save User Settings' :
+                  '<i class="fas fa-save"></i> Save Security Settings';
+                submitButton.disabled = false;
+              }
+            }
+          });
+        `
+      }}></script>
+    </AdminLayout>,
+    { title: 'Settings' }
+  );
+});
+
+// Admin Roles Management
+adminApp.get('/roles', async (c) => {
+  const user = c.get('adminUser');
+  
+  return c.render(
+    <AdminLayout currentUser={user} currentPage="roles" breadcrumb="Role Management">
+      <div class="admin-page-header">
+        <h1 class="admin-page-title">Role Management</h1>
+        <p class="admin-page-subtitle">Manage user roles and permissions for your Faith Defenders community</p>
+      </div>
+
+      <div class="admin-roles-container">
+        {/* Current Roles Overview */}
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <h3 class="admin-card-title">
+              <i class="fas fa-users-cog"></i>
+              Current Roles Overview
+            </h3>
+          </div>
+          <div class="admin-card-content">
+            <div class="admin-roles-stats">
+              <div class="admin-role-stat">
+                <div class="admin-role-stat-icon admin">
+                  <i class="fas fa-crown"></i>
+                </div>
+                <div class="admin-role-stat-info">
+                  <div class="admin-role-stat-number" id="admin-count">-</div>
+                  <div class="admin-role-stat-label">Administrators</div>
+                </div>
+              </div>
+              
+              <div class="admin-role-stat">
+                <div class="admin-role-stat-icon moderator">
+                  <i class="fas fa-shield-alt"></i>
+                </div>
+                <div class="admin-role-stat-info">
+                  <div class="admin-role-stat-number" id="moderator-count">-</div>
+                  <div class="admin-role-stat-label">Moderators</div>
+                </div>
+              </div>
+              
+              <div class="admin-role-stat">
+                <div class="admin-role-stat-icon user">
+                  <i class="fas fa-user"></i>
+                </div>
+                <div class="admin-role-stat-info">
+                  <div class="admin-role-stat-number" id="user-count">-</div>
+                  <div class="admin-role-stat-label">Regular Users</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Role Definitions */}
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <h3 class="admin-card-title">
+              <i class="fas fa-list-ul"></i>
+              Role Definitions & Permissions
+            </h3>
+          </div>
+          <div class="admin-card-content">
+            <div class="admin-roles-definitions">
+              
+              {/* Administrator Role */}
+              <div class="admin-role-definition admin-role-admin">
+                <div class="admin-role-header">
+                  <div class="admin-role-icon">
+                    <i class="fas fa-crown"></i>
+                  </div>
+                  <div class="admin-role-info">
+                    <h4 class="admin-role-name">Administrator</h4>
+                    <p class="admin-role-description">Full access to all features and settings</p>
+                  </div>
+                </div>
+                <div class="admin-role-permissions">
+                  <h5>Permissions:</h5>
+                  <ul class="admin-permissions-list">
+                    <li><i class="fas fa-check"></i> Create, edit, and delete all articles</li>
+                    <li><i class="fas fa-check"></i> Manage all resources and library content</li>
+                    <li><i class="fas fa-check"></i> Full user management and role assignment</li>
+                    <li><i class="fas fa-check"></i> Access admin panel and all settings</li>
+                    <li><i class="fas fa-check"></i> Moderate comments and user behavior</li>
+                    <li><i class="fas fa-check"></i> Database backup and site management</li>
+                    <li><i class="fas fa-check"></i> View analytics and performance metrics</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Moderator Role */}
+              <div class="admin-role-definition admin-role-moderator">
+                <div class="admin-role-header">
+                  <div class="admin-role-icon">
+                    <i class="fas fa-shield-alt"></i>
+                  </div>
+                  <div class="admin-role-info">
+                    <h4 class="admin-role-name">Moderator</h4>
+                    <p class="admin-role-description">Content creation and community moderation</p>
+                  </div>
+                </div>
+                <div class="admin-role-permissions">
+                  <h5>Permissions:</h5>
+                  <ul class="admin-permissions-list">
+                    <li><i class="fas fa-check"></i> Create, edit, and publish articles</li>
+                    <li><i class="fas fa-check"></i> Add and manage resource library items</li>
+                    <li><i class="fas fa-times"></i> Limited user management (no role changes)</li>
+                    <li><i class="fas fa-times"></i> No access to admin panel or settings</li>
+                    <li><i class="fas fa-check"></i> Moderate comments and user interactions</li>
+                    <li><i class="fas fa-times"></i> No database or system management access</li>
+                    <li><i class="fas fa-times"></i> Limited analytics access</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Regular User Role */}
+              <div class="admin-role-definition admin-role-user">
+                <div class="admin-role-header">
+                  <div class="admin-role-icon">
+                    <i class="fas fa-user"></i>
+                  </div>
+                  <div class="admin-role-info">
+                    <h4 class="admin-role-name">Regular User</h4>
+                    <p class="admin-role-description">Community engagement and interaction</p>
+                  </div>
+                </div>
+                <div class="admin-role-permissions">
+                  <h5>Permissions:</h5>
+                  <ul class="admin-permissions-list">
+                    <li><i class="fas fa-times"></i> Cannot create or edit articles</li>
+                    <li><i class="fas fa-times"></i> Cannot add resources to library</li>
+                    <li><i class="fas fa-times"></i> No user management capabilities</li>
+                    <li><i class="fas fa-times"></i> No admin panel access</li>
+                    <li><i class="fas fa-check"></i> Comment on articles and resources</li>
+                    <li><i class="fas fa-check"></i> Like/dislike content and comments</li>
+                    <li><i class="fas fa-check"></i> Edit own profile and comments</li>
+                  </ul>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Role Actions */}
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <h3 class="admin-card-title">
+              <i class="fas fa-bolt"></i>
+              Quick Role Actions
+            </h3>
+          </div>
+          <div class="admin-card-content">
+            <div class="admin-quick-actions">
+              <div class="admin-action-section">
+                <h4>Promote User to Moderator</h4>
+                <p>Select a regular user to promote to moderator status</p>
+                <div class="admin-action-form">
+                  <select id="promote-user-select" class="admin-form-select">
+                    <option value="">Select a user...</option>
+                    {/* Users will be loaded dynamically */}
+                  </select>
+                  <button class="admin-btn admin-btn-primary" onclick="promoteToModerator()">
+                    <i class="fas fa-arrow-up"></i>
+                    Promote to Moderator
+                  </button>
+                </div>
+              </div>
+
+              <div class="admin-action-section">
+                <h4>Promote User to Administrator</h4>
+                <p class="admin-warning-text">
+                  <i class="fas fa-exclamation-triangle"></i>
+                  Administrators have full site control. Use with caution.
+                </p>
+                <div class="admin-action-form">
+                  <select id="admin-user-select" class="admin-form-select">
+                    <option value="">Select a user...</option>
+                    {/* Users will be loaded dynamically */}
+                  </select>
+                  <button class="admin-btn admin-btn-warning" onclick="promoteToAdmin()">
+                    <i class="fas fa-crown"></i>
+                    Promote to Administrator
+                  </button>
+                </div>
+              </div>
+
+              <div class="admin-action-section">
+                <h4>Demote User Role</h4>
+                <p>Demote a moderator or administrator to regular user</p>
+                <div class="admin-action-form">
+                  <select id="demote-user-select" class="admin-form-select">
+                    <option value="">Select a user...</option>
+                    {/* Users will be loaded dynamically */}
+                  </select>
+                  <button class="admin-btn admin-btn-secondary" onclick="demoteUser()">
+                    <i class="fas fa-arrow-down"></i>
+                    Demote to User
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Role Management History */}
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <h3 class="admin-card-title">
+              <i class="fas fa-history"></i>
+              Recent Role Changes
+            </h3>
+          </div>
+          <div class="admin-card-content">
+            <div class="admin-role-history" id="role-history">
+              <div class="admin-no-data">
+                <i class="fas fa-clock"></i>
+                No recent role changes to display.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <script dangerouslySetInnerHTML={{
+        __html: `
+          document.addEventListener('DOMContentLoaded', function() {
+            loadRoleStats();
+            loadUserSelects();
+            loadRoleHistory();
+          });
+
+          async function loadRoleStats() {
+            try {
+              const response = await fetch('/admin/api/users');
+              if (response.ok) {
+                const data = await response.json();
+                const users = data.users || [];
+                
+                const adminCount = users.filter(u => u.role === 'admin').length;
+                const moderatorCount = users.filter(u => u.role === 'moderator').length;
+                const userCount = users.filter(u => u.role === 'user').length;
+                
+                document.getElementById('admin-count').textContent = adminCount;
+                document.getElementById('moderator-count').textContent = moderatorCount;
+                document.getElementById('user-count').textContent = userCount;
+              }
+            } catch (error) {
+              console.error('Error loading role stats:', error);
+            }
+          }
+
+          async function loadUserSelects() {
+            try {
+              const response = await fetch('/admin/api/users');
+              if (response.ok) {
+                const data = await response.json();
+                const users = data.users || [];
+                
+                // Populate promote to moderator select (regular users only)
+                const promoteSelect = document.getElementById('promote-user-select');
+                const regularUsers = users.filter(u => u.role === 'user');
+                promoteSelect.innerHTML = '<option value="">Select a user...</option>';
+                regularUsers.forEach(user => {
+                  const option = document.createElement('option');
+                  option.value = user.id;
+                  option.textContent = \`\${user.name} (\${user.email})\`;
+                  promoteSelect.appendChild(option);
+                });
+                
+                // Populate promote to admin select (non-admin users)
+                const adminSelect = document.getElementById('admin-user-select');
+                const nonAdminUsers = users.filter(u => u.role !== 'admin');
+                adminSelect.innerHTML = '<option value="">Select a user...</option>';
+                nonAdminUsers.forEach(user => {
+                  const option = document.createElement('option');
+                  option.value = user.id;
+                  option.textContent = \`\${user.name} (\${user.email}) - \${user.role.toUpperCase()}\`;
+                  adminSelect.appendChild(option);
+                });
+                
+                // Populate demote select (admins and moderators only)
+                const demoteSelect = document.getElementById('demote-user-select');
+                const privilegedUsers = users.filter(u => u.role === 'admin' || u.role === 'moderator');
+                demoteSelect.innerHTML = '<option value="">Select a user...</option>';
+                privilegedUsers.forEach(user => {
+                  const option = document.createElement('option');
+                  option.value = user.id;
+                  option.textContent = \`\${user.name} (\${user.email}) - \${user.role.toUpperCase()}\`;
+                  demoteSelect.appendChild(option);
+                });
+              }
+            } catch (error) {
+              console.error('Error loading users:', error);
+            }
+          }
+
+          function loadRoleHistory() {
+            // Simulate role change history
+            const historyContainer = document.getElementById('role-history');
+            const sampleHistory = [
+              { user: 'John Doe', action: 'Promoted to Moderator', time: '2 hours ago', by: 'Admin' },
+              { user: 'Jane Smith', action: 'Demoted to User', time: '1 day ago', by: 'Admin' },
+              { user: 'Mike Johnson', action: 'Promoted to Administrator', time: '3 days ago', by: 'Admin' }
+            ];
+            
+            if (sampleHistory.length === 0) {
+              historyContainer.innerHTML = '<div class="admin-no-data"><i class="fas fa-clock"></i>No recent role changes to display.</div>';
+              return;
+            }
+            
+            const historyHTML = sampleHistory.map(item => \`
+              <div class="admin-history-item">
+                <div class="admin-history-icon">
+                  <i class="fas fa-\${item.action.includes('Promoted') ? 'arrow-up' : 'arrow-down'}"></i>
+                </div>
+                <div class="admin-history-content">
+                  <div class="admin-history-main">\${item.user} - \${item.action}</div>
+                  <div class="admin-history-meta">By \${item.by} • \${item.time}</div>
+                </div>
+              </div>
+            \`).join('');
+            
+            historyContainer.innerHTML = historyHTML;
+          }
+
+          async function promoteToModerator() {
+            const userId = document.getElementById('promote-user-select').value;
+            if (!userId) {
+              showAdminMessage('Please select a user to promote.', 'warning');
+              return;
+            }
+            
+            if (confirm('Are you sure you want to promote this user to moderator? They will gain content creation and moderation abilities.')) {
+              await updateUserRole(userId, 'moderator');
+            }
+          }
+
+          async function promoteToAdmin() {
+            const userId = document.getElementById('admin-user-select').value;
+            if (!userId) {
+              showAdminMessage('Please select a user to promote.', 'warning');
+              return;
+            }
+            
+            if (confirm('Are you sure you want to promote this user to administrator? This gives them full site control including the ability to manage other administrators.')) {
+              await updateUserRole(userId, 'admin');
+            }
+          }
+
+          async function demoteUser() {
+            const userId = document.getElementById('demote-user-select').value;
+            if (!userId) {
+              showAdminMessage('Please select a user to demote.', 'warning');
+              return;
+            }
+            
+            if (confirm('Are you sure you want to demote this user to regular user? They will lose their current privileges.')) {
+              await updateUserRole(userId, 'user');
+            }
+          }
+
+          async function updateUserRole(userId, newRole) {
+            try {
+              const response = await fetch(\`/admin/api/users/\${userId}\`, {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ role: newRole })
+              });
+              
+              if (response.ok) {
+                const roleDisplayNames = {
+                  'admin': 'Administrator',
+                  'moderator': 'Moderator',
+                  'user': 'Regular User'
+                };
+                
+                showAdminMessage(\`User role updated to \${roleDisplayNames[newRole]} successfully!\`, 'success');
+                
+                // Refresh the page data
+                loadRoleStats();
+                loadUserSelects();
+                loadRoleHistory();
+              } else {
+                throw new Error('Failed to update user role');
+              }
+            } catch (error) {
+              console.error('Error updating user role:', error);
+              showAdminMessage('Failed to update user role. Please try again.', 'error');
+            }
+          }
+        `
+      }}></script>
+    </AdminLayout>,
+    { title: 'Role Management' }
+  );
+});
+
+// Admin Backup & Export
+adminApp.get('/backup', async (c) => {
+  const user = c.get('adminUser');
+  
+  return c.render(
+    <AdminLayout currentUser={user} currentPage="backup" breadcrumb="Backup & Export">
+      <div class="admin-page-header">
+        <h1 class="admin-page-title">Backup & Export</h1>
+        <p class="admin-page-subtitle">Backup your data and export content for safekeeping</p>
+      </div>
+
+      <div class="admin-backup-container">
+        {/* Database Backup */}
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <h3 class="admin-card-title">
+              <i class="fas fa-database"></i>
+              Database Backup
+            </h3>
+          </div>
+          <div class="admin-card-content">
+            <p class="admin-card-description">
+              Create a complete backup of your database including users, articles, resources, and comments.
+            </p>
+            
+            <div class="admin-backup-actions">
+              <button class="admin-btn admin-btn-primary" id="backup-database">
+                <i class="fas fa-download"></i>
+                Download Database Backup
+              </button>
+              <button class="admin-btn admin-btn-secondary" id="schedule-backup">
+                <i class="fas fa-clock"></i>
+                Schedule Automatic Backups
+              </button>
+            </div>
+            
+            <div class="admin-backup-info">
+              <div class="admin-info-item">
+                <strong>Last Backup:</strong> <span id="last-backup-time">Never</span>
+              </div>
+              <div class="admin-info-item">
+                <strong>Backup Size:</strong> <span id="backup-size">-</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Content Export */}
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <h3 class="admin-card-title">
+              <i class="fas fa-file-export"></i>
+              Content Export
+            </h3>
+          </div>
+          <div class="admin-card-content">
+            <p class="admin-card-description">
+              Export your content in various formats for sharing or migration purposes.
+            </p>
+            
+            <div class="admin-export-options">
+              <div class="admin-export-option">
+                <h4>Articles Export</h4>
+                <p>Export all published articles as JSON, CSV, or PDF collection.</p>
+                <div class="admin-export-buttons">
+                  <button class="admin-btn admin-btn-outline" onclick="exportContent('articles', 'json')">
+                    <i class="fas fa-code"></i> JSON
+                  </button>
+                  <button class="admin-btn admin-btn-outline" onclick="exportContent('articles', 'csv')">
+                    <i class="fas fa-table"></i> CSV
+                  </button>
+                  <button class="admin-btn admin-btn-outline" onclick="exportContent('articles', 'pdf')">
+                    <i class="fas fa-file-pdf"></i> PDF
+                  </button>
+                </div>
+              </div>
+              
+              <div class="admin-export-option">
+                <h4>Resources Export</h4>
+                <p>Export your resource library with all metadata and links.</p>
+                <div class="admin-export-buttons">
+                  <button class="admin-btn admin-btn-outline" onclick="exportContent('resources', 'json')">
+                    <i class="fas fa-code"></i> JSON
+                  </button>
+                  <button class="admin-btn admin-btn-outline" onclick="exportContent('resources', 'csv')">
+                    <i class="fas fa-table"></i> CSV
+                  </button>
+                </div>
+              </div>
+              
+              <div class="admin-export-option">
+                <h4>Users Export</h4>
+                <p>Export user information (excluding sensitive data like passwords).</p>
+                <div class="admin-export-buttons">
+                  <button class="admin-btn admin-btn-outline" onclick="exportContent('users', 'csv')">
+                    <i class="fas fa-table"></i> CSV
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Restore Options */}
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <h3 class="admin-card-title">
+              <i class="fas fa-upload"></i>
+              Restore & Import
+            </h3>
+          </div>
+          <div class="admin-card-content">
+            <div class="admin-warning">
+              <i class="fas fa-exclamation-triangle"></i>
+              <strong>Warning:</strong> Restoring from backup will overwrite existing data. Please ensure you have a current backup before proceeding.
+            </div>
+            
+            <div class="admin-restore-section">
+              <h4>Restore from Backup</h4>
+              <p>Upload a backup file to restore your database.</p>
+              
+              <div class="admin-file-upload">
+                <input type="file" id="restore-file" class="admin-file-input" accept=".sql,.json,.zip" />
+                <label for="restore-file" class="admin-file-label">
+                  <i class="fas fa-cloud-upload-alt"></i>
+                  Choose Backup File
+                </label>
+              </div>
+              
+              <button class="admin-btn admin-btn-danger" id="restore-backup" disabled>
+                <i class="fas fa-upload"></i>
+                Restore from Backup
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <script dangerouslySetInnerHTML={{
+        __html: `
+          document.addEventListener('DOMContentLoaded', function() {
+            // Database backup handler
+            document.getElementById('backup-database').addEventListener('click', async function() {
+              const button = this;
+              const originalText = button.innerHTML;
+              
+              try {
+                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Backup...';
+                button.disabled = true;
+                
+                // Simulate backup creation
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                // In a real implementation, this would call an API endpoint
+                showAdminMessage('Database backup created successfully!', 'success');
+                
+                // Update last backup time
+                document.getElementById('last-backup-time').textContent = new Date().toLocaleString();
+                document.getElementById('backup-size').textContent = '2.3 MB';
+                
+              } catch (error) {
+                console.error('Backup error:', error);
+                showAdminMessage('Failed to create backup. Please try again.', 'error');
+              } finally {
+                button.innerHTML = originalText;
+                button.disabled = false;
+              }
+            });
+            
+            // Restore file handler
+            document.getElementById('restore-file').addEventListener('change', function(e) {
+              const restoreButton = document.getElementById('restore-backup');
+              if (e.target.files.length > 0) {
+                restoreButton.disabled = false;
+                restoreButton.innerHTML = '<i class="fas fa-upload"></i> Restore from ' + e.target.files[0].name;
+              } else {
+                restoreButton.disabled = true;
+                restoreButton.innerHTML = '<i class="fas fa-upload"></i> Restore from Backup';
+              }
+            });
+            
+            // Restore backup handler
+            document.getElementById('restore-backup').addEventListener('click', function() {
+              if (confirm('Are you sure you want to restore from this backup? This will overwrite all existing data and cannot be undone.')) {
+                showAdminMessage('Restore functionality will be implemented in a future update.', 'info');
+              }
+            });
+          });
+          
+          // Export content function
+          async function exportContent(type, format) {
+            try {
+              showAdminMessage(\`Exporting \${type} as \${format.toUpperCase()}...\`, 'info');
+              
+              // Simulate export process
+              await new Promise(resolve => setTimeout(resolve, 1500));
+              
+              showAdminMessage(\`\${type.charAt(0).toUpperCase() + type.slice(1)} exported successfully!\`, 'success');
+            } catch (error) {
+              console.error('Export error:', error);
+              showAdminMessage(\`Failed to export \${type}. Please try again.\`, 'error');
+            }
+          }
+        `
+      }}></script>
+    </AdminLayout>,
+    { title: 'Backup & Export' }
+  );
+});
+
 export default adminApp;

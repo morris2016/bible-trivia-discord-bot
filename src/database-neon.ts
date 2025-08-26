@@ -1,13 +1,18 @@
 // Neon PostgreSQL database implementation for Cloudflare Workers
 import { neon } from '@neondatabase/serverless';
 
-// Interfaces (keeping the same as mock for compatibility)
+// Enhanced User interface with status and moderation fields
 export interface User {
   id: number;
   email: string;
   name: string;
-  role: string;
+  role: string; // 'admin', 'moderator', 'user'
+  status: string; // 'active', 'suspended', 'banned'
+  last_login?: Date;
   created_at: Date;
+  updated_at?: Date;
+  suspension_expires?: Date;
+  suspension_reason?: string;
 }
 
 export interface Article {
@@ -60,6 +65,48 @@ export interface Category {
   updated_at: Date;
 }
 
+export interface Comment {
+  id: number;
+  content: string;
+  author_id: number;
+  author_name?: string;
+  article_id?: number;
+  resource_id?: number;
+  parent_id?: number;
+  status: 'pending' | 'approved' | 'rejected';
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface Like {
+  id: number;
+  user_id: number;
+  article_id?: number;
+  resource_id?: number;
+  created_at: Date;
+}
+
+export interface UserLoginHistory {
+  id: number;
+  user_id: number;
+  login_at: Date;
+  ip_address?: string;
+  user_agent?: string;
+  success: boolean;
+  failure_reason?: string;
+}
+
+export interface UserNotification {
+  id: number;
+  user_id: number;
+  title: string;
+  message: string;
+  type: 'info' | 'warning' | 'success' | 'error';
+  read: boolean;
+  created_at: Date;
+  expires_at?: Date;
+}
+
 // Database initialization flag
 let isInitialized = false;
 
@@ -86,17 +133,38 @@ export async function initializeDatabase() {
   const sql = getDB();
   
   try {
-    // Create users table
+    // Create users table with enhanced moderation fields
     await sql`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         email VARCHAR(255) UNIQUE NOT NULL,
         name VARCHAR(255) NOT NULL,
         password_hash VARCHAR(255) NOT NULL,
-        role VARCHAR(50) DEFAULT 'user',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        role VARCHAR(50) DEFAULT 'user' CHECK (role IN ('admin', 'moderator', 'user')),
+        status VARCHAR(50) DEFAULT 'active' CHECK (status IN ('active', 'suspended', 'banned')),
+        last_login TIMESTAMP NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        suspension_expires TIMESTAMP NULL,
+        suspension_reason TEXT NULL
       );
     `;
+
+    // Add new columns to existing users table (for existing databases)
+    try {
+      await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'active' CHECK (status IN ('active', 'suspended', 'banned'))`;
+      await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login TIMESTAMP NULL`;
+      await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`;
+      await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS suspension_expires TIMESTAMP NULL`;
+      await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS suspension_reason TEXT NULL`;
+      
+      // Add role constraint if it doesn't exist
+      await sql`ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check`;
+      await sql`ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('admin', 'moderator', 'user'))`;
+    } catch (error) {
+      // Columns/constraints might already exist, which is fine
+      console.log('Some user table columns/constraints already exist');
+    }
 
     // Create articles table
     await sql`
@@ -191,6 +259,110 @@ export async function initializeDatabase() {
     } catch (error) {
       // Columns might already exist, which is fine
       console.log('Category columns might already exist');
+    }
+    
+    // Create comments table for articles and resources
+    await sql`
+      CREATE TABLE IF NOT EXISTS comments (
+        id SERIAL PRIMARY KEY,
+        content TEXT NOT NULL,
+        author_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        article_id INTEGER REFERENCES articles(id) ON DELETE CASCADE NULL,
+        resource_id INTEGER REFERENCES resources(id) ON DELETE CASCADE NULL,
+        parent_id INTEGER REFERENCES comments(id) ON DELETE CASCADE NULL,
+        status VARCHAR(50) DEFAULT 'approved' CHECK (status IN ('pending', 'approved', 'rejected')),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT comments_content_check CHECK (
+          (article_id IS NOT NULL AND resource_id IS NULL) OR
+          (article_id IS NULL AND resource_id IS NOT NULL)
+        )
+      );
+    `;
+    
+    // Create likes table for articles and resources
+    await sql`
+      CREATE TABLE IF NOT EXISTS likes (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        article_id INTEGER REFERENCES articles(id) ON DELETE CASCADE NULL,
+        resource_id INTEGER REFERENCES resources(id) ON DELETE CASCADE NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT likes_content_check CHECK (
+          (article_id IS NOT NULL AND resource_id IS NULL) OR
+          (article_id IS NULL AND resource_id IS NOT NULL)
+        )
+      );
+    `;
+    
+    // Add unique constraints for likes (user can only like once per item)
+    try {
+      await sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_article_like ON likes(user_id, article_id) WHERE article_id IS NOT NULL`;
+      await sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_resource_like ON likes(user_id, resource_id) WHERE resource_id IS NOT NULL`;
+    } catch (error) {
+      console.log('Unique constraints might already exist for likes');
+    }
+    
+    // Create comment_likes table for comment likes/dislikes  
+    await sql`
+      CREATE TABLE IF NOT EXISTS comment_likes (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        comment_id INTEGER REFERENCES comments(id) ON DELETE CASCADE,
+        like_type VARCHAR(10) NOT NULL CHECK (like_type IN ('like', 'dislike')),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+    
+    // Add unique constraint for comment likes (user can only like/dislike once per comment)
+    try {
+      await sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_comment_like ON comment_likes(user_id, comment_id)`;
+    } catch (error) {
+      console.log('Unique constraint might already exist for comment_likes');
+    }
+    
+    // Create user_login_history table
+    await sql`
+      CREATE TABLE IF NOT EXISTS user_login_history (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        login_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        ip_address INET,
+        user_agent TEXT,
+        success BOOLEAN DEFAULT TRUE,
+        failure_reason TEXT NULL
+      );
+    `;
+    
+    // Create user_notifications table
+    await sql`
+      CREATE TABLE IF NOT EXISTS user_notifications (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        title VARCHAR(255) NOT NULL,
+        message TEXT NOT NULL,
+        type VARCHAR(50) DEFAULT 'info' CHECK (type IN ('info', 'warning', 'success', 'error')),
+        read BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        expires_at TIMESTAMP NULL
+      );
+    `;
+    
+    // Create indexes for better performance
+    try {
+      await sql`CREATE INDEX IF NOT EXISTS idx_comments_article_id ON comments(article_id)`;
+      await sql`CREATE INDEX IF NOT EXISTS idx_comments_resource_id ON comments(resource_id)`;
+      await sql`CREATE INDEX IF NOT EXISTS idx_comments_author_id ON comments(author_id)`;
+      await sql`CREATE INDEX IF NOT EXISTS idx_likes_user_id ON likes(user_id)`;
+      await sql`CREATE INDEX IF NOT EXISTS idx_likes_article_id ON likes(article_id)`;
+      await sql`CREATE INDEX IF NOT EXISTS idx_likes_resource_id ON likes(resource_id)`;
+      await sql`CREATE INDEX IF NOT EXISTS idx_user_login_history_user_id ON user_login_history(user_id)`;
+      await sql`CREATE INDEX IF NOT EXISTS idx_user_notifications_user_id ON user_notifications(user_id)`;
+      await sql`CREATE INDEX IF NOT EXISTS idx_users_status ON users(status)`;
+      await sql`CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)`;
+    } catch (error) {
+      console.log('Some indexes might already exist');
     }
 
     // Check if admin user exists, if not create it
@@ -306,23 +478,78 @@ export async function getUserByEmail(email: string): Promise<(User & { password_
 export async function getUserById(id: number): Promise<User | null> {
   await ensureInitialized();
   const sql = getDB();
-  const result = await sql`SELECT id, email, name, role, created_at FROM users WHERE id = ${id}`;
+  const result = await sql`
+    SELECT id, email, name, role, status, last_login, created_at, updated_at, suspension_expires, suspension_reason 
+    FROM users WHERE id = ${id}
+  `;
   return result[0] || null;
 }
 
 export async function getAllUsers(): Promise<User[]> {
+  await ensureInitialized();
   const sql = getDB();
-  const result = await sql`SELECT id, email, name, role, created_at FROM users ORDER BY created_at DESC`;
+  const result = await sql`
+    SELECT id, email, name, role, status, last_login, created_at, updated_at, suspension_expires, suspension_reason 
+    FROM users ORDER BY created_at DESC
+  `;
   return result;
 }
 
 export async function updateUserRole(id: number, role: string): Promise<User | null> {
   const sql = getDB();
   const result = await sql`
-    UPDATE users SET role = ${role} WHERE id = ${id}
-    RETURNING id, email, name, role, created_at
+    UPDATE users 
+    SET role = ${role}, updated_at = CURRENT_TIMESTAMP
+    WHERE id = ${id}
+    RETURNING id, email, name, role, status, last_login, created_at, updated_at, suspension_expires, suspension_reason
   `;
   return result[0] || null;
+}
+
+export async function updateUserStatus(id: number, status: string, reason?: string, expiresAt?: Date): Promise<User | null> {
+  const sql = getDB();
+  
+  const result = await sql`
+    UPDATE users 
+    SET status = ${status}, 
+        updated_at = CURRENT_TIMESTAMP,
+        suspension_reason = ${reason || null},
+        suspension_expires = ${expiresAt || null}
+    WHERE id = ${id}
+    RETURNING id, email, name, role, status, last_login, created_at, updated_at, suspension_expires, suspension_reason
+  `;
+  return result[0] || null;
+}
+
+export async function recordUserLogin(userId: number, ipAddress?: string, userAgent?: string, success: boolean = true, failureReason?: string): Promise<void> {
+  const sql = getDB();
+  
+  // Record login history
+  await sql`
+    INSERT INTO user_login_history (user_id, ip_address, user_agent, success, failure_reason)
+    VALUES (${userId}, ${ipAddress || null}, ${userAgent || null}, ${success}, ${failureReason || null})
+  `;
+  
+  // Update last_login for successful logins
+  if (success) {
+    await sql`
+      UPDATE users 
+      SET last_login = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ${userId}
+    `;
+  }
+}
+
+export async function getUserLoginHistory(userId: number, limit: number = 10): Promise<UserLoginHistory[]> {
+  const sql = getDB();
+  
+  const result = await sql`
+    SELECT * FROM user_login_history
+    WHERE user_id = ${userId}
+    ORDER BY login_at DESC
+    LIMIT ${limit}
+  `;
+  return result;
 }
 
 // Article functions
@@ -848,6 +1075,413 @@ export async function deleteCategory(id: number): Promise<boolean> {
     return result.count > 0;
   } catch (error) {
     console.error('Error deleting category:', error);
+    return false;
+  }
+}
+
+// Comment functions
+export async function createComment(content: string, authorId: number, articleId?: number, resourceId?: number, parentId?: number): Promise<Comment> {
+  const sql = getDB();
+  
+  const result = await sql`
+    INSERT INTO comments (content, author_id, article_id, resource_id, parent_id)
+    VALUES (${content}, ${authorId}, ${articleId || null}, ${resourceId || null}, ${parentId || null})
+    RETURNING *
+  `;
+  return result[0];
+}
+
+export async function getComments(articleId?: number, resourceId?: number): Promise<Comment[]> {
+  const sql = getDB();
+  
+  try {
+    // Get comments with like/dislike counts
+    const result = await sql`
+      SELECT 
+        c.*, 
+        u.name as author_name, 
+        u.role as author_role,
+        COALESCE(likes.like_count, 0) as like_count,
+        COALESCE(dislikes.dislike_count, 0) as dislike_count
+      FROM comments c
+      JOIN users u ON c.author_id = u.id
+      LEFT JOIN (
+        SELECT comment_id, COUNT(*) as like_count
+        FROM comment_likes 
+        WHERE like_type = 'like'
+        GROUP BY comment_id
+      ) likes ON c.id = likes.comment_id
+      LEFT JOIN (
+        SELECT comment_id, COUNT(*) as dislike_count
+        FROM comment_likes 
+        WHERE like_type = 'dislike'
+        GROUP BY comment_id
+      ) dislikes ON c.id = dislikes.comment_id
+      WHERE c.status = 'approved' 
+        AND (${articleId ? sql`c.article_id = ${articleId}` : sql`1=0`} OR ${resourceId ? sql`c.resource_id = ${resourceId}` : sql`1=0`})
+      ORDER BY c.created_at ASC
+    `;
+
+    return result;
+  } catch (error) {
+    console.error('Error getting comments:', error);
+    // If there's an error with the complex query, fall back to simple version
+    try {
+      const fallbackResult = await sql`
+        SELECT 
+          c.*, 
+          u.name as author_name, 
+          u.role as author_role,
+          0 as like_count,
+          0 as dislike_count
+        FROM comments c
+        JOIN users u ON c.author_id = u.id
+        WHERE c.status = 'approved' 
+          AND (${articleId ? sql`c.article_id = ${articleId}` : sql`1=0`} OR ${resourceId ? sql`c.resource_id = ${resourceId}` : sql`1=0`})
+        ORDER BY c.created_at ASC
+      `;
+      return fallbackResult;
+    } catch (fallbackError) {
+      console.error('Error even in fallback query:', fallbackError);
+      throw fallbackError;
+    }
+  }
+}
+
+export async function updateCommentStatus(id: number, status: string): Promise<Comment | null> {
+  const sql = getDB();
+  
+  const result = await sql`
+    UPDATE comments 
+    SET status = ${status}, updated_at = CURRENT_TIMESTAMP
+    WHERE id = ${id}
+    RETURNING *
+  `;
+  return result[0] || null;
+}
+
+
+
+// Like functions
+export async function toggleLike(userId: number, articleId?: number, resourceId?: number): Promise<{ liked: boolean; count: number }> {
+  const sql = getDB();
+  
+  // Check if like exists
+  const existing = await sql`
+    SELECT id FROM likes 
+    WHERE user_id = ${userId} 
+      AND (${articleId ? sql`article_id = ${articleId}` : sql`article_id IS NULL`})
+      AND (${resourceId ? sql`resource_id = ${resourceId}` : sql`resource_id IS NULL`})
+  `;
+  
+  if (existing.length > 0) {
+    // Unlike
+    await sql`DELETE FROM likes WHERE id = ${existing[0].id}`;
+  } else {
+    // Like
+    await sql`
+      INSERT INTO likes (user_id, article_id, resource_id)
+      VALUES (${userId}, ${articleId || null}, ${resourceId || null})
+    `;
+  }
+  
+  // Get updated count
+  const countResult = await sql`
+    SELECT COUNT(*) as count FROM likes 
+    WHERE (${articleId ? sql`article_id = ${articleId}` : sql`article_id IS NULL`})
+      AND (${resourceId ? sql`resource_id = ${resourceId}` : sql`resource_id IS NULL`})
+  `;
+  
+  return {
+    liked: existing.length === 0,
+    count: parseInt(countResult[0].count)
+  };
+}
+
+export async function getLikeCount(articleId?: number, resourceId?: number): Promise<number> {
+  const sql = getDB();
+  
+  const result = await sql`
+    SELECT COUNT(*) as count FROM likes 
+    WHERE (${articleId ? sql`article_id = ${articleId}` : sql`article_id IS NULL`})
+      AND (${resourceId ? sql`resource_id = ${resourceId}` : sql`resource_id IS NULL`})
+  `;
+  
+  return parseInt(result[0].count);
+}
+
+export async function getUserLikeStatus(userId: number, articleId?: number, resourceId?: number): Promise<boolean> {
+  const sql = getDB();
+  
+  const result = await sql`
+    SELECT id FROM likes 
+    WHERE user_id = ${userId}
+      AND (${articleId ? sql`article_id = ${articleId}` : sql`article_id IS NULL`})
+      AND (${resourceId ? sql`resource_id = ${resourceId}` : sql`resource_id IS NULL`})
+  `;
+  
+  return result.length > 0;
+}
+
+// Notification functions
+export async function createUserNotification(userId: number, title: string, message: string, type: 'info' | 'warning' | 'success' | 'error' = 'info', expiresAt?: Date): Promise<UserNotification> {
+  const sql = getDB();
+  
+  const result = await sql`
+    INSERT INTO user_notifications (user_id, title, message, type, expires_at)
+    VALUES (${userId}, ${title}, ${message}, ${type}, ${expiresAt || null})
+    RETURNING *
+  `;
+  return result[0];
+}
+
+export async function getUserNotifications(userId: number, includeRead: boolean = false): Promise<UserNotification[]> {
+  const sql = getDB();
+  
+  const result = await sql`
+    SELECT * FROM user_notifications
+    WHERE user_id = ${userId}
+      ${includeRead ? sql`` : sql`AND read = FALSE`}
+      AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
+    ORDER BY created_at DESC
+  `;
+  return result;
+}
+
+export async function markNotificationAsRead(id: number): Promise<boolean> {
+  const sql = getDB();
+  
+  try {
+    const result = await sql`
+      UPDATE user_notifications 
+      SET read = TRUE 
+      WHERE id = ${id}
+    `;
+    return result.count > 0;
+  } catch (error) {
+    console.error('Error marking notification as read:', error);
+    return false;
+  }
+}
+
+export async function deleteNotification(id: number): Promise<boolean> {
+  const sql = getDB();
+  
+  try {
+    const result = await sql`DELETE FROM user_notifications WHERE id = ${id}`;
+    return result.count > 0;
+  } catch (error) {
+    console.error('Error deleting notification:', error);
+    return false;
+  }
+}
+
+// Comment Like Functions
+export async function toggleCommentLike(userId: number, commentId: number, likeType: 'like' | 'dislike'): Promise<{ liked: boolean; likeCount: number; dislikeCount: number }> {
+  const sql = getDB();
+  
+  // Check if user already has a like/dislike on this comment
+  const existing = await sql`
+    SELECT id, like_type FROM comment_likes 
+    WHERE user_id = ${userId} AND comment_id = ${commentId}
+  `;
+  
+  if (existing.length > 0) {
+    const existingType = existing[0].like_type;
+    
+    if (existingType === likeType) {
+      // Remove like/dislike if clicking same type
+      await sql`DELETE FROM comment_likes WHERE id = ${existing[0].id}`;
+    } else {
+      // Update to new type if switching between like/dislike
+      await sql`
+        UPDATE comment_likes 
+        SET like_type = ${likeType}, updated_at = CURRENT_TIMESTAMP 
+        WHERE id = ${existing[0].id}
+      `;
+    }
+  } else {
+    // Add new like/dislike
+    await sql`
+      INSERT INTO comment_likes (user_id, comment_id, like_type)
+      VALUES (${userId}, ${commentId}, ${likeType})
+    `;
+  }
+  
+  // Get updated counts
+  const likeCountResult = await sql`
+    SELECT COUNT(*) as count FROM comment_likes 
+    WHERE comment_id = ${commentId} AND like_type = 'like'
+  `;
+  
+  const dislikeCountResult = await sql`
+    SELECT COUNT(*) as count FROM comment_likes 
+    WHERE comment_id = ${commentId} AND like_type = 'dislike'
+  `;
+  
+  const likeCount = parseInt(likeCountResult[0].count);
+  const dislikeCount = parseInt(dislikeCountResult[0].count);
+  
+  // Check if user currently has this like type after the operation
+  const currentLike = await sql`
+    SELECT like_type FROM comment_likes 
+    WHERE user_id = ${userId} AND comment_id = ${commentId}
+  `;
+  
+  const liked = currentLike.length > 0 && currentLike[0].like_type === likeType;
+  
+  return { liked, likeCount, dislikeCount };
+}
+
+export async function getCommentLikeCounts(commentId: number): Promise<{ likeCount: number; dislikeCount: number }> {
+  const sql = getDB();
+  
+  const likeCountResult = await sql`
+    SELECT COUNT(*) as count FROM comment_likes 
+    WHERE comment_id = ${commentId} AND like_type = 'like'
+  `;
+  
+  const dislikeCountResult = await sql`
+    SELECT COUNT(*) as count FROM comment_likes 
+    WHERE comment_id = ${commentId} AND like_type = 'dislike'
+  `;
+  
+  return {
+    likeCount: parseInt(likeCountResult[0].count),
+    dislikeCount: parseInt(dislikeCountResult[0].count)
+  };
+}
+
+export async function getUserCommentLikeStatus(userId: number, commentId: number): Promise<{ likeType: 'like' | 'dislike' | null }> {
+  const sql = getDB();
+  
+  const result = await sql`
+    SELECT like_type FROM comment_likes 
+    WHERE user_id = ${userId} AND comment_id = ${commentId}
+  `;
+  
+  return {
+    likeType: result.length > 0 ? result[0].like_type : null
+  };
+}
+
+// Comment Management Functions
+export async function getCommentById(id: number): Promise<Comment | null> {
+  const sql = getDB();
+  
+  try {
+    const result = await sql`
+      SELECT c.*, u.name as author_name, u.role as author_role
+      FROM comments c
+      LEFT JOIN users u ON c.author_id = u.id
+      WHERE c.id = ${id}
+    `;
+    
+    return result[0] || null;
+  } catch (error) {
+    console.error('Error fetching comment:', error);
+    return null;
+  }
+}
+
+export async function updateComment(id: number, content: string): Promise<Comment | null> {
+  const sql = getDB();
+  
+  try {
+    const result = await sql`
+      UPDATE comments 
+      SET content = ${content}, updated_at = NOW()
+      WHERE id = ${id}
+      RETURNING *
+    `;
+    
+    return result[0] || null;
+  } catch (error) {
+    console.error('Error updating comment:', error);
+    return null;
+  }
+}
+
+export async function deleteComment(id: number): Promise<boolean> {
+  const sql = getDB();
+  
+  try {
+    // Delete replies first (cascading delete)
+    await sql`DELETE FROM comments WHERE parent_id = ${id}`;
+    
+    // Delete the main comment
+    const result = await sql`DELETE FROM comments WHERE id = ${id}`;
+    
+    return result.count > 0;
+  } catch (error) {
+    console.error('Error deleting comment:', error);
+    return false;
+  }
+}
+
+// User Moderation Functions
+export async function suspendUser(userId: number, days: number, reason: string): Promise<boolean> {
+  const sql = getDB();
+  
+  try {
+    const suspensionExpires = new Date();
+    suspensionExpires.setDate(suspensionExpires.getDate() + days);
+    
+    const result = await sql`
+      UPDATE users 
+      SET 
+        status = 'suspended',
+        suspension_expires = ${suspensionExpires.toISOString()},
+        suspension_reason = ${reason},
+        updated_at = NOW()
+      WHERE id = ${userId}
+    `;
+    
+    // Create notification for the user
+    await sql`
+      INSERT INTO user_notifications (user_id, title, message, type)
+      VALUES (
+        ${userId},
+        'Account Suspended',
+        ${`Your account has been suspended for ${days} day(s). Reason: ${reason}`},
+        'warning'
+      )
+    `;
+    
+    return result.count > 0;
+  } catch (error) {
+    console.error('Error suspending user:', error);
+    return false;
+  }
+}
+
+export async function banUser(userId: number, reason: string): Promise<boolean> {
+  const sql = getDB();
+  
+  try {
+    const result = await sql`
+      UPDATE users 
+      SET 
+        status = 'banned',
+        suspension_reason = ${reason},
+        updated_at = NOW()
+      WHERE id = ${userId}
+    `;
+    
+    // Create notification for the user
+    await sql`
+      INSERT INTO user_notifications (user_id, title, message, type)
+      VALUES (
+        ${userId},
+        'Account Banned',
+        ${`Your account has been permanently banned. Reason: ${reason}`},
+        'error'
+      )
+    `;
+    
+    return result.count > 0;
+  } catch (error) {
+    console.error('Error banning user:', error);
     return false;
   }
 }
