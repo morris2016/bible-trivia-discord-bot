@@ -11,6 +11,7 @@ import {
   createResource,
   updateResource,
   deleteResource,
+  getCategories,
   User 
 } from './database-neon';
 
@@ -470,6 +471,23 @@ api.delete('/resources/:id', authMiddleware, async (c) => {
     return c.json({
       success: false,
       error: 'Failed to delete resource'
+    }, 500);
+  }
+});
+
+// Categories Routes (Public endpoint for frontend filtering)
+api.get('/categories', async (c) => {
+  try {
+    const categories = await getCategories();
+    return c.json({
+      success: true,
+      categories: categories
+    });
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+    return c.json({
+      success: false,
+      error: 'Failed to fetch categories'
     }, 500);
   }
 });

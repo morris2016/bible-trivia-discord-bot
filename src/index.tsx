@@ -160,13 +160,60 @@ app.get('/articles', async (c) => {
               )}
             </div>
             
+            {/* Search and Filter Bar */}
+            <div className="search-filter-container">
+              <div className="search-bar">
+                <div className="search-input-wrapper">
+                  <i className="fas fa-search search-icon"></i>
+                  <input 
+                    type="text" 
+                    id="articles-search" 
+                    className="search-input" 
+                    placeholder="Search articles..."
+                    autocomplete="off"
+                  />
+                  <button type="button" id="clear-search" className="clear-search" style="display: none;">
+                    <i className="fas fa-times"></i>
+                  </button>
+                </div>
+              </div>
+              <div className="filter-controls">
+                <select id="category-filter" className="filter-select">
+                  <option value="">All Categories</option>
+                  {/* Categories loaded dynamically */}
+                </select>
+                <select id="sort-filter" className="filter-select">
+                  <option value="newest">Newest First</option>
+                  <option value="oldest">Oldest First</option>
+                  <option value="title">A-Z</option>
+                </select>
+                <button type="button" id="toggle-filters" className="filter-toggle">
+                  <i className="fas fa-sliders-h"></i>
+                  <span>Filters</span>
+                </button>
+              </div>
+            </div>
+            
+            {/* Search Results Info */}
+            <div id="search-results-info" className="search-results-info" style="display: none;">
+              <span id="results-count"></span>
+              <button type="button" id="clear-all-filters" className="clear-filters-btn">
+                <i className="fas fa-times"></i> Clear All
+              </button>
+            </div>
+            
             {articles.length > 0 ? (
-              <div className="articles-list">
+              <div id="articles-container" className="articles-list">
                 {articles.map((article) => (
-                  <div key={article.id} className="article-item">
+                  <div key={article.id} className="article-item" data-category={article.category_name || ''}>
                     <h3 className="article-title">
                       <a href={`/articles/${article.id}`}>{article.title}</a>
                     </h3>
+                    {article.category_name && (
+                      <div className="article-category">
+                        <span className="category-badge">{article.category_name}</span>
+                      </div>
+                    )}
                     <p className="article-excerpt">{article.excerpt}</p>
                     <div className="article-meta">
                       By {article.author_name} • {new Date(article.created_at).toLocaleDateString()}
@@ -175,7 +222,7 @@ app.get('/articles', async (c) => {
                 ))}
               </div>
             ) : (
-              <div className="empty-state">
+              <div id="articles-container" className="empty-state">
                 <div className="empty-state-icon">
                   <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -204,6 +251,18 @@ app.get('/articles', async (c) => {
             )}
           </div>
         </main>
+        
+        {/* Search and Filter JavaScript */}
+        <script src="/static/search.js"></script>
+        <script dangerouslySetInnerHTML={{
+          __html: `
+            document.addEventListener('DOMContentLoaded', function() {
+              if (typeof initializeArticlesSearch === 'function') {
+                initializeArticlesSearch();
+              }
+            });
+          `
+        }}></script>
       </div>
     )
   } catch (error) {
@@ -273,10 +332,61 @@ app.get('/resources', async (c) => {
               )}
             </div>
             
+            {/* Search and Filter Bar */}
+            <div className="search-filter-container">
+              <div className="search-bar">
+                <div className="search-input-wrapper">
+                  <i className="fas fa-search search-icon"></i>
+                  <input 
+                    type="text" 
+                    id="resources-search" 
+                    className="search-input" 
+                    placeholder="Search resources..."
+                    autocomplete="off"
+                  />
+                  <button type="button" id="clear-search-resources" className="clear-search" style="display: none;">
+                    <i className="fas fa-times"></i>
+                  </button>
+                </div>
+              </div>
+              <div className="filter-controls">
+                <select id="resource-category-filter" className="filter-select">
+                  <option value="">All Categories</option>
+                  {/* Categories loaded dynamically */}
+                </select>
+                <select id="resource-type-filter" className="filter-select">
+                  <option value="">All Types</option>
+                  <option value="link">Links</option>
+                  <option value="book">Books</option>
+                  <option value="video">Videos</option>
+                  <option value="podcast">Podcasts</option>
+                  <option value="study">Study Guides</option>
+                  <option value="other">Other</option>
+                </select>
+                <select id="resource-sort-filter" className="filter-select">
+                  <option value="newest">Newest First</option>
+                  <option value="oldest">Oldest First</option>
+                  <option value="title">A-Z</option>
+                </select>
+                <button type="button" id="toggle-resource-filters" className="filter-toggle">
+                  <i className="fas fa-sliders-h"></i>
+                  <span>Filters</span>
+                </button>
+              </div>
+            </div>
+            
+            {/* Search Results Info */}
+            <div id="resource-search-results-info" className="search-results-info" style="display: none;">
+              <span id="resource-results-count"></span>
+              <button type="button" id="clear-all-resource-filters" className="clear-filters-btn">
+                <i className="fas fa-times"></i> Clear All
+              </button>
+            </div>
+            
             {resources.length > 0 ? (
-              <div className="resources-grid">
+              <div id="resources-container" className="resources-grid">
                 {resources.map((resource) => (
-                  <div key={resource.id} className="resource-card">
+                  <div key={resource.id} className="resource-card" data-category={resource.category_name || ''} data-type={resource.resource_type}>
                     <div className="resource-header">
                       <div className="resource-type">{resource.resource_type}</div>
                       {resource.is_uploaded_file && (
@@ -288,6 +398,11 @@ app.get('/resources', async (c) => {
                     <h3 className="resource-title">
                       <a href={`/resources/${resource.id}`}>{resource.title}</a>
                     </h3>
+                    {resource.category_name && (
+                      <div className="resource-category">
+                        <span className="category-badge">{resource.category_name}</span>
+                      </div>
+                    )}
                     <p className="resource-description">{resource.description}</p>
                     <div className="resource-meta">
                       By {resource.author_name} • {new Date(resource.created_at).toLocaleDateString()}
@@ -320,7 +435,7 @@ app.get('/resources', async (c) => {
                 ))}
               </div>
             ) : (
-              <div className="empty-state">
+              <div id="resources-container" className="empty-state">
                 <h3>No resources yet</h3>
                 <p>Be the first to share helpful faith resources!</p>
                 {user && (
@@ -330,6 +445,18 @@ app.get('/resources', async (c) => {
             )}
           </div>
         </main>
+        
+        {/* Search and Filter JavaScript */}
+        <script src="/static/search.js"></script>
+        <script dangerouslySetInnerHTML={{
+          __html: `
+            document.addEventListener('DOMContentLoaded', function() {
+              if (typeof initializeResourcesSearch === 'function') {
+                initializeResourcesSearch();
+              }
+            });
+          `
+        }}></script>
       </div>
     )
   } catch (error) {
