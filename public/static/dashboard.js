@@ -1,6 +1,7 @@
 // Dashboard JavaScript
 
 let currentTab = 'overview';
+let dashboardEditor = null;
 
 function showTab(tabName) {
   // Hide all tabs
@@ -23,6 +24,8 @@ function showTab(tabName) {
   
   if (tabName === 'overview') {
     loadUserContent();
+  } else if (tabName === 'create-article' && !dashboardEditor) {
+    initializeDashboardEditor();
   }
 }
 
@@ -99,9 +102,24 @@ async function loadUserContent() {
   }
 }
 
+// Initialize Custom Editor for Dashboard
+function initializeDashboardEditor() {
+  if (typeof CustomEditor === 'undefined') {
+    console.error('CustomEditor is not loaded');
+    return;
+  }
+
+  dashboardEditor = new CustomEditor('article-content-editor');
+}
+
 // Create Article Form
 document.getElementById('create-article-form').addEventListener('submit', async (e) => {
   e.preventDefault();
+  
+  // Update hidden textarea with custom editor content before submitting
+  if (dashboardEditor) {
+    dashboardEditor.syncContent();
+  }
   
   const formData = new FormData(e.target);
   const title = formData.get('title');
@@ -126,6 +144,11 @@ document.getElementById('create-article-form').addEventListener('submit', async 
     if (data.success) {
       showMessage('Article created successfully!', 'success');
       e.target.reset();
+      
+      // Clear custom editor
+      if (dashboardEditor) {
+        dashboardEditor.clear();
+      }
       
       // Switch to overview tab to see the new article
       setTimeout(() => {

@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { Context } from 'hono';
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
-import { createUser, getUserByEmail, getUserById, User } from './database-mock';
+import { createUser, getUserByEmail, getUserById, User } from './database-neon';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key';
 const BCRYPT_ROUNDS = parseInt(process.env.BCRYPT_ROUNDS || '12');
@@ -149,9 +149,11 @@ export async function adminMiddleware(c: Context, next: () => Promise<void>) {
 
 // Set authentication cookie
 export function setAuthCookie(c: Context, token: string) {
+  const isSecure = process.env.NODE_ENV === 'production' || c.req.url.startsWith('https://');
+  
   setCookie(c, 'auth-token', token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isSecure,
     sameSite: 'Lax',
     maxAge: 7 * 24 * 60 * 60, // 7 days
     path: '/'

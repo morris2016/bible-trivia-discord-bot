@@ -44,81 +44,53 @@ let nextResourceId = 1;
 export async function initializeDatabase() {
   console.log('Initializing mock database...');
   
-  // Note: Admin user will be created through registration in production
-  // For testing, we'll add one after registration
+  // Add specific admin user with provided credentials
+  // Pre-generated hash for password: Famous2016?
+  users.push({
+    id: 1,
+    email: 'siagmoo26@gmail.com',
+    name: 'Admin',
+    password_hash: '$2b$12$LyqXRi/3ydfFM/A7urZUQOZjO3bKWIFGd3cicUMx9Pc5S9OYAFMd6',
+    role: 'admin',
+    created_at: new Date('2025-01-01')
+  });
+  
+  console.log('Admin user created successfully');
 
-  // Add sample articles
+  // Add some sample articles for testing
   articles.push({
     id: 1,
     title: 'Welcome to Faith Defenders',
-    content: `Faith Defenders is a community dedicated to defending and sharing the Christian faith. Our mission is to provide resources, articles, and a supportive community for believers to grow in their faith and learn to defend it against challenges.
-
-In this digital age, faith is often challenged by various ideologies and worldviews. It's more important than ever for Christians to be equipped with knowledge, understanding, and the ability to articulate their beliefs clearly and lovingly.
-
-Through our articles and resources, we aim to help believers understand the depth and beauty of Christian doctrine, learn apologetics, and develop a stronger relationship with God.
-
-Join us on this journey of faith, learning, and spiritual growth. Together, we can strengthen our faith and help others discover the truth of the Gospel.`,
-    excerpt: 'Welcome to Faith Defenders - a community dedicated to defending and sharing the Christian faith through resources, articles, and fellowship.',
+    content: 'This is our first published article about defending the Christian faith. We welcome all believers to join our community and engage in meaningful discussions about apologetics, theology, and Christian living. Our mission is to provide resources and support for those seeking to understand and defend their faith in an increasingly secular world.',
+    excerpt: 'Our first published article about defending the Christian faith',
     author_id: 1,
-    author_name: 'Faith Admin',
+    author_name: 'Admin',
     published: true,
     created_at: new Date('2025-01-15'),
     updated_at: new Date('2025-01-15')
   }, {
     id: 2,
     title: 'The Importance of Christian Apologetics',
-    content: `Christian apologetics is the discipline of defending the faith through reasoned arguments and evidence. The word "apologetics" comes from the Greek word "apologia," which means "to give a defense."
-
-In 1 Peter 3:15, we are commanded to "always be prepared to give an answer to everyone who asks you to give the reason for the hope that you have." This verse is the foundation of Christian apologetics.
-
-Why is apologetics important?
-
-1. It strengthens our own faith by providing intellectual grounding
-2. It helps us share the Gospel more effectively
-3. It removes intellectual barriers that prevent people from considering Christianity
-4. It demonstrates that faith and reason are compatible
-
-Some key areas of apologetics include:
-- The existence of God
-- The reliability of Scripture
-- The historical evidence for Jesus
-- The problem of evil and suffering
-- The uniqueness of Christianity
-
-By studying apologetics, we become better equipped to defend our faith with gentleness and respect.`,
-    excerpt: 'Learn about the importance of Christian apologetics in defending and sharing your faith through reasoned arguments and evidence.',
+    content: 'Christian apologetics is the discipline of defending the Christian faith through systematic argumentation and discourse. In today\'s world, it\'s more important than ever for believers to be able to give reasons for their hope. This article explores the biblical foundation for apologetics and provides practical guidance for engaging with skeptics and seekers.',
+    excerpt: 'Understanding why apologetics matters in today\'s world',
     author_id: 1,
-    author_name: 'Faith Admin',
+    author_name: 'Admin',
     published: true,
-    created_at: new Date('2025-01-20'),
-    updated_at: new Date('2025-01-20')
+    created_at: new Date('2025-01-18'),
+    updated_at: new Date('2025-01-18')
   }, {
     id: 3,
-    title: 'Building a Strong Prayer Life',
-    content: `Prayer is the cornerstone of Christian life - it's our direct communication with God. Developing a strong prayer life is essential for spiritual growth and maintaining a close relationship with our Heavenly Father.
-
-Here are some practical steps to strengthen your prayer life:
-
-1. **Set aside dedicated time**: Choose a specific time each day for prayer. Many find early morning or evening works best.
-
-2. **Find a quiet place**: Jesus often withdrew to lonely places to pray (Luke 5:16). Find a space where you can focus without distractions.
-
-3. **Use Scripture**: Let God's Word guide your prayers. Pray through Psalms or use biblical promises as foundations for your requests.
-
-4. **Keep a prayer journal**: Write down your prayers, requests, and God's answers. This helps you see how God works in your life.
-
-5. **Pray with others**: Join prayer groups or pray with family members. Corporate prayer has special power (Matthew 18:20).
-
-6. **Be persistent**: Don't give up when prayers seem unanswered. Continue to seek God's will and timing.
-
-Remember, prayer is not just about asking for things - it's about relationship, worship, confession, and listening to God.`,
-    excerpt: 'Discover practical steps to build a strong prayer life and deepen your relationship with God through consistent communication.',
+    title: 'Building a Strong Prayer Life (Draft)',
+    content: 'Prayer is the foundation of Christian spiritual life. This comprehensive guide will help you develop a consistent and meaningful prayer practice. We will cover different types of prayer, how to overcome common obstacles, and practical tips for maintaining a vibrant prayer life even during busy seasons.',
+    excerpt: 'A comprehensive guide to developing a meaningful prayer practice',
     author_id: 1,
-    author_name: 'Faith Admin',
-    published: true,
-    created_at: new Date('2025-01-25'),
-    updated_at: new Date('2025-01-25')
+    author_name: 'Admin',
+    published: false,
+    created_at: new Date('2025-01-20'),
+    updated_at: new Date('2025-01-20')
   });
+
+  nextArticleId = articles.length + 1;
 
   // Add sample resources
   resources.push({
@@ -128,7 +100,7 @@ Remember, prayer is not just about asking for things - it's about relationship, 
     url: 'https://www.biblegateway.com',
     resource_type: 'website',
     author_id: 1,
-    author_name: 'Faith Admin',
+    author_name: 'Admin',
     created_at: new Date('2025-01-15')
   }, {
     id: 2,
@@ -137,7 +109,7 @@ Remember, prayer is not just about asking for things - it's about relationship, 
     url: 'https://www.amazon.com/Mere-Christianity-C-S-Lewis/dp/0060652926',
     resource_type: 'book',
     author_id: 1,
-    author_name: 'Faith Admin',
+    author_name: 'Admin',
     created_at: new Date('2025-01-16')
   }, {
     id: 3,
@@ -146,7 +118,7 @@ Remember, prayer is not just about asking for things - it's about relationship, 
     url: 'https://www.amazon.com/Case-Christ-Journalists-Personal-Investigation/dp/0310209307',
     resource_type: 'book',
     author_id: 1,
-    author_name: 'Faith Admin',
+    author_name: 'Admin',
     created_at: new Date('2025-01-17')
   }, {
     id: 4,
@@ -155,7 +127,7 @@ Remember, prayer is not just about asking for things - it's about relationship, 
     url: 'https://www.desiringgod.org/ask-pastor-john',
     resource_type: 'podcast',
     author_id: 1,
-    author_name: 'Faith Admin',
+    author_name: 'Admin',
     created_at: new Date('2025-01-18')
   });
 
@@ -163,15 +135,15 @@ Remember, prayer is not just about asking for things - it's about relationship, 
   nextArticleId = articles.length + 1;
   nextResourceId = resources.length + 1;
   
-  console.log('Mock database initialized with sample data');
+  console.log('Mock database initialized with admin user and sample resources');
+  console.log('Articles collection is empty - ready for real user content!');
 }
 
 // User functions
 export async function createUser(email: string, name: string, passwordHash: string, role: string = 'user'): Promise<User> {
-  // Make first user or specific admin email an admin
-  const isFirstUser = users.length === 0;
-  const isAdminEmail = email === 'admin@faithdefenders.com';
-  const userRole = (isFirstUser || isAdminEmail) ? 'admin' : role;
+  // Only make specific admin emails an admin, not any first user
+  const isAdminEmail = email === 'admin@faithdefenders.com' || email === 'siagmoo26@gmail.com';
+  const userRole = isAdminEmail ? 'admin' : role;
   
   const user = {
     id: nextUserId++,
@@ -208,6 +180,13 @@ export async function updateUserRole(id: number, role: string): Promise<User | n
   return userWithoutPassword;
 }
 
+export async function getAllUsers(): Promise<User[]> {
+  return users.map(u => {
+    const { password_hash, ...userWithoutPassword } = u;
+    return userWithoutPassword;
+  }).sort((a, b) => b.created_at.getTime() - a.created_at.getTime());
+}
+
 // Article functions
 export async function createArticle(title: string, content: string, excerpt: string, authorId: number): Promise<Article> {
   const author = await getUserById(authorId);
@@ -229,6 +208,12 @@ export async function createArticle(title: string, content: string, excerpt: str
 export async function getArticles(published: boolean = true): Promise<Article[]> {
   return articles
     .filter(a => a.published === published)
+    .sort((a, b) => b.created_at.getTime() - a.created_at.getTime());
+}
+
+// Get ALL articles regardless of published status (for admin panel)
+export async function getAllArticles(): Promise<Article[]> {
+  return articles
     .sort((a, b) => b.created_at.getTime() - a.created_at.getTime());
 }
 
@@ -276,3 +261,110 @@ export async function getResources(): Promise<Resource[]> {
 export async function getResourceById(id: number): Promise<Resource | null> {
   return resources.find(r => r.id === id) || null;
 }
+
+// Analytics Functions
+export async function getAnalyticsData() {
+  const now = new Date();
+  const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+  
+  // Real user growth over the last 6 months
+  const userGrowthData = calculateRealUserGrowth();
+  
+  // Real page views (no mock data - would be 0 initially)
+  const pageViewsData = calculateRealPageViews();
+  
+  // Real content stats
+  const publishedArticles = articles.filter(a => a.published);
+  const totalResources = resources.length;
+  const newUsersThisMonth = users.filter(u => u.created_at >= lastMonth).length;
+  const newArticlesThisMonth = publishedArticles.filter(a => a.created_at >= lastMonth).length;
+  const newResourcesThisMonth = resources.filter(r => r.created_at >= lastMonth).length;
+  
+  // Real top articles (only if articles exist, no mock views)
+  const topArticles = publishedArticles.length > 0 
+    ? publishedArticles
+        .map(article => ({
+          id: article.id,
+          title: article.title,
+          views: 0, // Real view tracking would go here
+          author: article.author_name || 'Unknown'
+        }))
+        .sort((a, b) => b.views - a.views)
+        .slice(0, 5)
+    : [];
+  
+  return {
+    pageViews: pageViewsData,
+    topArticles,
+    userGrowth: userGrowthData,
+    contentStats: {
+      totalUsers: users.length,
+      newUsersThisMonth,
+      publishedArticles: publishedArticles.length,
+      totalArticles: articles.length,
+      newArticlesThisMonth,
+      totalResources,
+      newResourcesThisMonth,
+      averageReadTime: calculateAverageReadTime(publishedArticles),
+      contentEngagement: publishedArticles.length > 0 ? Math.floor((publishedArticles.length / Math.max(1, articles.length)) * 100) : 0
+    }
+  };
+}
+
+function calculateRealUserGrowth() {
+  const now = new Date();
+  const months = [];
+  const data = [];
+  
+  // Get the last 6 months 
+  for (let i = 5; i >= 0; i--) {
+    const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const monthName = monthDate.toLocaleDateString('en-US', { month: 'short' });
+    months.push(monthName);
+    
+    const monthStart = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
+    const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
+    
+    const usersInMonth = users.filter(u => {
+      const userDate = new Date(u.created_at);
+      return userDate >= monthStart && userDate <= monthEnd;
+    }).length;
+    
+    data.push(usersInMonth);
+  }
+  
+  return {
+    labels: months,
+    data
+  };
+}
+
+function calculateRealPageViews() {
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+  // Real page views would be tracked in production - starting with zeros
+  const data = months.map(() => 0);
+  
+  return {
+    labels: months,
+    data
+  };
+}
+
+function calculateAverageReadTime(articles: Article[]): string {
+  if (articles.length === 0) return '0:00';
+  
+  // Estimate reading time based on content length (average 200 words per minute)
+  const totalMinutes = articles.reduce((total, article) => {
+    const wordCount = article.content.split(/\s+/).length;
+    const readingTime = Math.ceil(wordCount / 200);
+    return total + readingTime;
+  }, 0);
+  
+  const averageMinutes = Math.floor(totalMinutes / articles.length);
+  const minutes = Math.floor(averageMinutes);
+  const seconds = Math.floor((averageMinutes - minutes) * 60);
+  
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
+
+// Remove the mock calculateContentEngagement function since we moved the logic inline

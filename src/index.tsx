@@ -1,14 +1,13 @@
 import { Hono } from 'hono'
 import { renderer } from './renderer'
-import { initializeDatabase, getArticles, getResources } from './database-mock'
+import { initializeDatabase, getArticles, getResources } from './database-neon'
 import { getLoggedInUser } from './auth'
 import api from './api'
 import adminApp from './admin-routes'
 
 const app = new Hono()
 
-// Initialize database on startup
-initializeDatabase().catch(console.error);
+// Database will be initialized on first request
 
 // Mount API routes
 app.route('/api', api)
@@ -55,7 +54,7 @@ app.get('/', async (c) => {
             <h1 className="page-title">Welcome to Faith Defenders</h1>
             <p className="page-subtitle">Defending and sharing the Christian faith through articles, resources, and community.</p>
             
-            {featuredArticles.length > 0 && (
+            {featuredArticles.length > 0 ? (
               <div className="featured-articles">
                 <h2 className="section-title">Latest Articles</h2>
                 <div className="articles-grid">
@@ -73,6 +72,19 @@ app.get('/', async (c) => {
                 </div>
                 <div className="view-all">
                   <a href="/articles" className="btn-primary">View All Articles</a>
+                </div>
+              </div>
+            ) : (
+              <div className="homepage-cta">
+                <div className="cta-content">
+                  <h2 className="cta-title">Join Our Community</h2>
+                  <p className="cta-description">
+                    Explore resources, share insights, and connect with fellow believers in defending and growing in the Christian faith.
+                  </p>
+                  <div className="cta-actions">
+                    <a href="/articles" className="btn-primary">Explore Articles</a>
+                    <a href="/resources" className="btn-secondary">Browse Resources</a>
+                  </div>
                 </div>
               </div>
             )}
@@ -164,11 +176,30 @@ app.get('/articles', async (c) => {
               </div>
             ) : (
               <div className="empty-state">
-                <h3>No articles yet</h3>
-                <p>Be the first to share your faith-based insights!</p>
-                {user && (
-                  <a href="/dashboard?tab=create-article" className="btn-primary">Write the First Article</a>
-                )}
+                <div className="empty-state-icon">
+                  <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <polyline points="14,2 14,8 20,8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+                <h3 className="empty-state-title">No Articles Yet</h3>
+                <p className="empty-state-description">
+                  This is where inspiring faith-based articles will appear. Start building our community knowledge by sharing your insights, biblical reflections, or theological discussions.
+                </p>
+                <div className="empty-state-actions">
+                  {user ? (
+                    <a href="/dashboard?tab=create-article" className="btn-primary">
+                      ✍️ Write the First Article
+                    </a>
+                  ) : (
+                    <div className="empty-state-login">
+                      <p>Ready to contribute?</p>
+                      <a href="/login" className="btn-primary">Sign In to Write</a>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -246,23 +277,45 @@ app.get('/resources', async (c) => {
               <div className="resources-grid">
                 {resources.map((resource) => (
                   <div key={resource.id} className="resource-card">
-                    <div className="resource-type">{resource.resource_type}</div>
-                    <h3 className="resource-title">
-                      {resource.url ? (
-                        <a href={resource.url} target="_blank" rel="noopener noreferrer">{resource.title}</a>
-                      ) : (
-                        resource.title
+                    <div className="resource-header">
+                      <div className="resource-type">{resource.resource_type}</div>
+                      {resource.is_uploaded_file && (
+                        <div className="resource-badge uploaded">
+                          <i className="fas fa-cloud-upload-alt"></i> Uploaded
+                        </div>
                       )}
+                    </div>
+                    <h3 className="resource-title">
+                      <a href={`/resources/${resource.id}`}>{resource.title}</a>
                     </h3>
                     <p className="resource-description">{resource.description}</p>
                     <div className="resource-meta">
                       By {resource.author_name} • {new Date(resource.created_at).toLocaleDateString()}
+                      {resource.is_uploaded_file && resource.file_name && (
+                        <>
+                          <br />
+                          <small>File: {resource.file_name}</small>
+                        </>
+                      )}
                     </div>
-                    {resource.url && (
-                      <a href={resource.url} target="_blank" rel="noopener noreferrer" className="resource-link">
-                        Visit Resource →
+                    <div className="resource-actions">
+                      <a href={`/resources/${resource.id}`} className="resource-link">
+                        {resource.is_uploaded_file ? (
+                          <>
+                            <i className="fas fa-eye"></i> View Resource →
+                          </>
+                        ) : (
+                          <>
+                            <i className="fas fa-external-link-alt"></i> Visit Resource →
+                          </>
+                        )}
                       </a>
-                    )}
+                      {resource.is_uploaded_file && resource.download_url && (
+                        <a href={resource.download_url} className="resource-download" download>
+                          <i className="fas fa-download"></i> Download
+                        </a>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -335,24 +388,152 @@ app.get('/about', (c) => {
   )
 })
 
+// Individual resource view
+app.get('/resources/:id', async (c) => {
+  try {
+    const user = await getLoggedInUser(c);
+    const id = parseInt(c.req.param('id'));
+    
+    console.log(`Loading resource with ID: ${id}`);
+    
+    if (isNaN(id)) {
+      console.log('Invalid resource ID, redirecting to resources list');
+      return c.redirect('/resources');
+    }
+
+    // Import and use the database function directly from the Neon database
+    const { getResourceById } = await import('./database-neon');
+    const resource = await getResourceById(id);
+    
+    console.log(`Resource found:`, resource ? `"${resource.title}"` : 'null');
+    
+    if (!resource) {
+      console.log('Resource not found, redirecting to resources list');
+      return c.redirect('/resources');
+    }
+    
+    // If it's an external link, redirect to it
+    if (!resource.is_uploaded_file && resource.url) {
+      return c.redirect(resource.url);
+    }
+    
+    // For uploaded files, show web view
+    return c.render(
+      <div className="min-h-screen">
+        <nav className="nav-header">
+          <div className="nav-container">
+            <div className="nav-brand">
+              <h1>Faith Defenders</h1>
+            </div>
+            <div className="nav-menu">
+              <a href="/" className="nav-link">Home</a>
+              <a href="/articles" className="nav-link">Articles</a>
+              <a href="/resources" className="nav-link">Resources</a>
+              <a href="/about" className="nav-link">About</a>
+              {user ? (
+                <>
+                  <a href="/dashboard" className="nav-link">Dashboard</a>
+                  <span className="nav-link user-info">Hello, {user.name}</span>
+                </>
+              ) : (
+                <a href="/login" className="nav-link">Login</a>
+              )}
+            </div>
+          </div>
+        </nav>
+        <main className="article-content">
+          <div className="article-container">
+            <div className="breadcrumb">
+              <a href="/resources">← Back to Resources</a>
+            </div>
+            <article className="article-detail">
+              <h1 className="article-title">{resource.title}</h1>
+              <div className="article-meta">
+                <span className="resource-type">{resource.resource_type}</span> • 
+                By {resource.author_name} • {new Date(resource.created_at).toLocaleDateString()}
+                {resource.file_name && (
+                  <>
+                    <br />
+                    <small>Original file: {resource.file_name}</small>
+                  </>
+                )}
+              </div>
+              
+              {/* Resource Actions */}
+              <div className="resource-actions" style="margin: 1rem 0; padding: 1rem; background: #f8fafc; border-radius: 8px;">
+                {resource.download_url && (
+                  <a href={resource.download_url} className="btn-primary" style="margin-right: 1rem;" download>
+                    <i className="fas fa-download"></i> Download Original
+                  </a>
+                )}
+                {resource.url && !resource.is_uploaded_file && (
+                  <a href={resource.url} target="_blank" rel="noopener noreferrer" className="btn-secondary">
+                    <i className="fas fa-external-link-alt"></i> Visit Source
+                  </a>
+                )}
+              </div>
+              
+              {/* Description */}
+              {resource.description && (
+                <div className="resource-description" style="margin: 1.5rem 0; padding: 1rem; background: #f0f9ff; border-left: 4px solid #3b82f6; border-radius: 0 8px 8px 0;">
+                  <p>{resource.description}</p>
+                </div>
+              )}
+              
+              {/* Content Display */}
+              <div className="article-body">
+                {resource.extracted_content ? (
+                  <div dangerouslySetInnerHTML={{ __html: resource.extracted_content }} />
+                ) : resource.content_preview ? (
+                  <div>
+                    <h3>Preview:</h3>
+                    <p>{resource.content_preview}</p>
+                    <p style="color: #6b7280; font-style: italic; margin-top: 1rem;">
+                      Full content extraction is being processed. Please check back later or download the original file.
+                    </p>
+                  </div>
+                ) : (
+                  <div style="text-align: center; padding: 2rem; color: #6b7280;">
+                    <i className="fas fa-file-alt" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                    <p>Content is being processed for web viewing.</p>
+                    <p>You can download the original file using the button above.</p>
+                  </div>
+                )}
+              </div>
+            </article>
+          </div>
+        </main>
+      </div>
+    )
+  } catch (error) {
+    console.error('Error loading resource:', error);
+    return c.redirect('/resources');
+  }
+})
+
 // Individual article view
 app.get('/articles/:id', async (c) => {
   try {
     const user = await getLoggedInUser(c);
     const id = parseInt(c.req.param('id'));
     
-    if (isNaN(id)) {
-      return c.redirect('/articles');
-    }
-
-    const response = await fetch(`${c.req.url.split('/articles')[0]}/api/articles/${id}`);
-    const data = await response.json();
+    console.log(`Loading article with ID: ${id}`);
     
-    if (!data.success) {
+    if (isNaN(id)) {
+      console.log('Invalid article ID, redirecting to articles list');
       return c.redirect('/articles');
     }
 
-    const article = data.article;
+    // Import and use the database function directly from the Neon database
+    const { getArticleById } = await import('./database-neon');
+    const article = await getArticleById(id);
+    
+    console.log(`Article found:`, article ? `"${article.title}"` : 'null');
+    
+    if (!article) {
+      console.log('Article not found, redirecting to articles list');
+      return c.redirect('/articles');
+    }
     
     return c.render(
       <div className="min-h-screen">
@@ -387,7 +568,7 @@ app.get('/articles/:id', async (c) => {
               <div className="article-meta">
                 By {article.author_name} • {new Date(article.created_at).toLocaleDateString()}
               </div>
-              <div className="article-body" dangerouslySetInnerHTML={{ __html: article.content.replace(/\n/g, '<br>') }} />
+              <div className="article-body" dangerouslySetInnerHTML={{ __html: article.content }} />
             </article>
           </div>
         </main>
@@ -546,8 +727,164 @@ app.get('/dashboard', async (c) => {
                   <textarea id="article-excerpt" name="excerpt" rows="3" placeholder="Brief description of your article..."></textarea>
                 </div>
                 <div className="form-group">
-                  <label for="article-content">Content</label>
-                  <textarea id="article-content" name="content" rows="10" required placeholder="Write your article content here..."></textarea>
+                  <label for="article-content-label">Content</label>
+                  <div className="custom-toolbar">
+                    {/* Text formatting group */}
+                    <div className="toolbar-group">
+                      <button type="button" className="toolbar-btn" data-action="bold" title="Bold (Ctrl+B)">
+                        <i className="fas fa-bold"></i>
+                      </button>
+                      <button type="button" className="toolbar-btn" data-action="italic" title="Italic (Ctrl+I)">
+                        <i className="fas fa-italic"></i>
+                      </button>
+                      <button type="button" className="toolbar-btn" data-action="underline" title="Underline (Ctrl+U)">
+                        <i className="fas fa-underline"></i>
+                      </button>
+                      <button type="button" className="toolbar-btn" data-action="strikethrough" title="Strikethrough">
+                        <i className="fas fa-strikethrough"></i>
+                      </button>
+                    </div>
+                    
+                    <div className="toolbar-separator"></div>
+                    
+                    {/* Font and size group */}
+                    <div className="toolbar-group">
+                      <select className="toolbar-select" data-action="fontFamily" title="Font Family">
+                        <option value="">Default</option>
+                        <option value="serif">Serif</option>
+                        <option value="sans">Sans-serif</option>
+                        <option value="mono">Monospace</option>
+                      </select>
+                      <select className="toolbar-select" data-action="fontSize" title="Font Size">
+                        <option value="">Normal</option>
+                        <option value="xs">Extra Small</option>
+                        <option value="sm">Small</option>
+                        <option value="lg">Large</option>
+                        <option value="xl">Extra Large</option>
+                        <option value="2xl">2X Large</option>
+                      </select>
+                    </div>
+                    
+                    <div className="toolbar-separator"></div>
+                    
+                    {/* Headers group */}
+                    <div className="toolbar-group">
+                      <button type="button" className="toolbar-btn" data-action="header1" title="Heading 1">
+                        <strong>H1</strong>
+                      </button>
+                      <button type="button" className="toolbar-btn" data-action="header2" title="Heading 2">
+                        <strong>H2</strong>
+                      </button>
+                      <button type="button" className="toolbar-btn" data-action="header3" title="Heading 3">
+                        <strong>H3</strong>
+                      </button>
+                      <button type="button" className="toolbar-btn" data-action="header4" title="Heading 4">
+                        <strong>H4</strong>
+                      </button>
+                    </div>
+                    
+                    <div className="toolbar-separator"></div>
+                    
+                    {/* Colors group */}
+                    <div className="toolbar-group">
+                      <input type="color" className="color-picker" data-action="textColor" title="Text Color" defaultValue="#000000" />
+                      <input type="color" className="color-picker" data-action="backgroundColor" title="Background Color" defaultValue="#ffffff" />
+                      <button type="button" className="toolbar-btn" data-action="highlight" title="Highlight">
+                        <i className="fas fa-highlighter"></i>
+                      </button>
+                    </div>
+                    
+                    <div className="toolbar-separator"></div>
+                    
+                    {/* Lists group */}
+                    <div className="toolbar-group">
+                      <button type="button" className="toolbar-btn" data-action="orderedList" title="Numbered List">
+                        <i className="fas fa-list-ol"></i>
+                      </button>
+                      <button type="button" className="toolbar-btn" data-action="bulletList" title="Bullet List">
+                        <i className="fas fa-list-ul"></i>
+                      </button>
+                      <button type="button" className="toolbar-btn" data-action="checkList" title="Checklist">
+                        <i className="fas fa-tasks"></i>
+                      </button>
+                    </div>
+                    
+                    <div className="toolbar-separator"></div>
+                    
+                    {/* Alignment group */}
+                    <div className="toolbar-group">
+                      <button type="button" className="toolbar-btn" data-action="alignLeft" title="Align Left">
+                        <i className="fas fa-align-left"></i>
+                      </button>
+                      <button type="button" className="toolbar-btn" data-action="alignCenter" title="Align Center">
+                        <i className="fas fa-align-center"></i>
+                      </button>
+                      <button type="button" className="toolbar-btn" data-action="alignRight" title="Align Right">
+                        <i className="fas fa-align-right"></i>
+                      </button>
+                      <button type="button" className="toolbar-btn" data-action="alignJustify" title="Justify">
+                        <i className="fas fa-align-justify"></i>
+                      </button>
+                    </div>
+                    
+                    <div className="toolbar-separator"></div>
+                    
+                    {/* Special formatting group */}
+                    <div className="toolbar-group">
+                      <button type="button" className="toolbar-btn" data-action="blockquote" title="Quote">
+                        <i className="fas fa-quote-left"></i>
+                      </button>
+                      <button type="button" className="toolbar-btn" data-action="code" title="Inline Code">
+                        <i className="fas fa-code"></i>
+                      </button>
+                      <button type="button" className="toolbar-btn" data-action="codeBlock" title="Code Block">
+                        <i className="fas fa-terminal"></i>
+                      </button>
+                    </div>
+                    
+                    <div className="toolbar-separator"></div>
+                    
+                    {/* Advanced formatting group */}
+                    <div className="toolbar-group">
+                      <button type="button" className="toolbar-btn" data-action="subscript" title="Subscript (H₂O)">
+                        <i className="fas fa-subscript"></i>
+                      </button>
+                      <button type="button" className="toolbar-btn" data-action="superscript" title="Superscript (E=mc²)">
+                        <i className="fas fa-superscript"></i>
+                      </button>
+                    </div>
+                    
+                    <div className="toolbar-separator"></div>
+                    
+                    {/* Media and links group */}
+                    <div className="toolbar-group">
+                      <button type="button" className="toolbar-btn" data-action="link" title="Insert Link">
+                        <i className="fas fa-link"></i>
+                      </button>
+                      <button type="button" className="toolbar-btn" data-action="image" title="Insert Image">
+                        <i className="fas fa-image"></i>
+                      </button>
+                    </div>
+                    
+                    <div className="toolbar-separator"></div>
+                    
+                    {/* Utility group */}
+                    <div className="toolbar-group">
+                      <button type="button" className="toolbar-btn" data-action="removeFormat" title="Clear Formatting">
+                        <i className="fas fa-remove-format"></i>
+                      </button>
+                      <button type="button" className="toolbar-btn" data-action="undo" title="Undo (Ctrl+Z)">
+                        <i className="fas fa-undo"></i>
+                      </button>
+                      <button type="button" className="toolbar-btn" data-action="redo" title="Redo (Ctrl+Y)">
+                        <i className="fas fa-redo"></i>
+                      </button>
+                    </div>
+                  </div>
+                  <div id="article-content-editor" contenteditable="true" className="custom-editor"
+                       style="min-height: 400px; padding: 1rem; border: 1px solid #d1d5db; border-radius: 6px; background: white; outline: none;"
+                       data-placeholder="Start writing your article content..."></div>
+                  <textarea name="content" id="article-content-editor-textarea" style="display: none;" required></textarea>
                 </div>
                 <div className="form-actions">
                   <label className="checkbox-label">
@@ -597,7 +934,9 @@ app.get('/dashboard', async (c) => {
         </div>
       </main>
       
+      {/* Simple custom editor */}
       <script src="/static/dashboard.js"></script>
+      <script src="/static/custom-editor.js"></script>
     </div>
   )
 })

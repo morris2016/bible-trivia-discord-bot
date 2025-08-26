@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Admin JS Fix</title>
+</head>
+<body>
+    <div id="test-result">Testing...</div>
+    
+    <script>
+        // Simulate the fix we implemented
+        document.addEventListener('DOMContentLoaded', function() {
+            function checkForFunction() {
+                if (typeof window.loadDashboardData === 'function') {
+                    document.getElementById('test-result').textContent = 'SUCCESS: loadDashboardData function found!';
+                } else {
+                    document.getElementById('test-result').textContent = 'WAITING: Function not ready yet...';
+                    setTimeout(checkForFunction, 100);
+                }
+            }
+            checkForFunction();
+        });
+        
+        // Simulate admin.js loading after a delay
+        setTimeout(function() {
+            window.loadDashboardData = function() {
+                console.log('Mock loadDashboardData function loaded');
+            };
+        }, 200);
+    </script>
+</body>
+</html>

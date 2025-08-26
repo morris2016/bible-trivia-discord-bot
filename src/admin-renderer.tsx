@@ -8,12 +8,18 @@ export const adminRenderer = jsxRenderer(({ children, title }) => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{title ? `${title} - Faith Defenders Admin` : 'Faith Defenders Admin'}</title>
         <link href="/static/admin.css" rel="stylesheet" />
+        <link href="/static/custom-editor.css" rel="stylesheet" />
         <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+        {/* Simple custom editor CSS */}
+        {/* PDF.js for file content extraction */}
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
       </head>
       <body class="admin-body">
         {children}
+        {/* No external rich text editors */}
         <script src="/static/admin.js"></script>
+        <script src="/static/custom-editor.js"></script>
       </body>
     </html>
   )

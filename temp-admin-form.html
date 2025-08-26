@@ -1,0 +1,75 @@
+            <div class="admin-form-group">
+              <label class="admin-form-label">Content</label>
+              
+              <!-- Custom Word-like Toolbar -->
+              <div class="custom-toolbar">
+                <div class="toolbar-group">
+                  <button type="button" class="toolbar-btn" id="bold-btn" title="Bold (Ctrl+B)">
+                    <i class="fas fa-bold"></i>
+                  </button>
+                  <button type="button" class="toolbar-btn" id="italic-btn" title="Italic (Ctrl+I)">
+                    <i class="fas fa-italic"></i>
+                  </button>
+                  <button type="button" class="toolbar-btn" id="underline-btn" title="Underline (Ctrl+U)">
+                    <i class="fas fa-underline"></i>
+                  </button>
+                </div>
+                
+                <div class="toolbar-separator"></div>
+                
+                <div class="toolbar-group">
+                  <button type="button" class="toolbar-btn" id="h1-btn" title="Header 1 - Apply to selected text only">
+                    H1
+                  </button>
+                  <button type="button" class="toolbar-btn" id="h2-btn" title="Header 2 - Apply to selected text only">
+                    H2
+                  </button>
+                  <button type="button" class="toolbar-btn" id="h3-btn" title="Header 3 - Apply to selected text only">
+                    H3
+                  </button>
+                  <button type="button" class="toolbar-btn" id="h4-btn" title="Header 4 - Apply to selected text only">
+                    H4
+                  </button>
+                </div>
+                
+                <div class="toolbar-separator"></div>
+                
+                <div class="toolbar-group">
+                  <button type="button" class="toolbar-btn" id="align-left-btn" title="Align Left">
+                    <i class="fas fa-align-left"></i>
+                  </button>
+                  <button type="button" class="toolbar-btn" id="align-center-btn" title="Align Center">
+                    <i class="fas fa-align-center"></i>
+                  </button>
+                  <button type="button" class="toolbar-btn" id="align-right-btn" title="Align Right">
+                    <i class="fas fa-align-right"></i>
+                  </button>
+                </div>
+                
+                <div class="toolbar-separator"></div>
+                
+                <div class="toolbar-group">
+                  <input type="color" id="text-color" class="color-picker" title="Text Color" value="#000000">
+                  <input type="color" id="bg-color" class="color-picker" title="Background Color" value="#ffffff">
+                </div>
+                
+                <div class="toolbar-separator"></div>
+                
+                <div class="toolbar-group">
+                  <button type="button" class="toolbar-btn" id="clear-format-btn" title="Clear Formatting">
+                    <i class="fas fa-remove-format"></i>
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Custom Rich Text Editor -->
+              <div 
+                id="admin-content-editor" 
+                class="custom-editor" 
+                contenteditable="true" 
+                data-placeholder="Start writing your article content here..."
+              ></div>
+              
+              <!-- Hidden textarea for form submission -->
+              <textarea id="admin-content-editor-textarea" name="content" style="display: none;" required></textarea>
+            </div>
