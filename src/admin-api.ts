@@ -148,7 +148,7 @@ adminApi.get('/articles/:id', async (c) => {
 adminApi.post('/articles', async (c) => {
   try {
     const user = c.get('user') as User;
-    const { title, content, excerpt, published = false } = await c.req.json();
+    const { title, content, excerpt, published = false, category_id } = await c.req.json();
     
     if (!title || !content) {
       return c.json({
@@ -157,11 +157,12 @@ adminApi.post('/articles', async (c) => {
       }, 400);
     }
 
-    const article = await createArticle(title, content, excerpt || '', user.id);
+    const categoryId = category_id ? parseInt(category_id) : undefined;
+    const article = await createArticle(title, content, excerpt || '', user.id, categoryId);
     
     // Update published status if specified
     if (published !== article.published) {
-      await updateArticle(article.id, title, content, excerpt || '', published);
+      await updateArticle(article.id, title, content, excerpt || '', published, categoryId);
     }
     
     return c.json({
@@ -181,13 +182,14 @@ adminApi.post('/articles', async (c) => {
 adminApi.put('/articles/:id', async (c) => {
   try {
     const id = parseInt(c.req.param('id'));
-    const { title, content, excerpt, published } = await c.req.json();
+    const { title, content, excerpt, published, category_id } = await c.req.json();
     
     if (isNaN(id)) {
       return c.json({ success: false, error: 'Invalid article ID' }, 400);
     }
 
-    const updatedArticle = await updateArticle(id, title, content, excerpt || '', published || false);
+    const categoryId = category_id ? parseInt(category_id) : undefined;
+    const updatedArticle = await updateArticle(id, title, content, excerpt || '', published || false, categoryId);
     
     if (!updatedArticle) {
       return c.json({ success: false, error: 'Article not found' }, 404);
@@ -279,7 +281,7 @@ adminApi.get('/resources/:id', async (c) => {
 adminApi.post('/resources', async (c) => {
   try {
     const user = c.get('user') as User;
-    const { title, description, url, resource_type } = await c.req.json();
+    const { title, description, url, resource_type, category_id } = await c.req.json();
     
     if (!title) {
       return c.json({
@@ -288,12 +290,14 @@ adminApi.post('/resources', async (c) => {
       }, 400);
     }
 
+    const categoryId = category_id ? parseInt(category_id) : undefined;
     const resource = await createResource(
       title, 
       description || '', 
       url || '', 
       resource_type || 'link', 
-      user.id
+      user.id,
+      categoryId
     );
     
     return c.json({
@@ -320,6 +324,7 @@ adminApi.post('/resources/upload', async (c) => {
     const description = body.get('description') as string;
     const resourceType = body.get('resource_type') as string || 'file';
     const published = (body.get('published') as string) === 'true';
+    const categoryId = body.get('category_id') ? parseInt(body.get('category_id') as string) : undefined;
     const extractedContentFromClient = body.get('extracted_content') as string;
     const file = body.get('file') as File;
     
@@ -660,6 +665,7 @@ adminApi.post('/resources/upload', async (c) => {
       '', // No external URL for uploaded files
       resourceType,
       user.id,
+      categoryId,
       {
         filePath,
         fileName,
@@ -696,7 +702,7 @@ adminApi.post('/resources/upload', async (c) => {
 adminApi.put('/resources/:id', async (c) => {
   try {
     const id = parseInt(c.req.param('id'));
-    const { title, description, url, resource_type, published } = await c.req.json();
+    const { title, description, url, resource_type, published, category_id } = await c.req.json();
     
     if (isNaN(id)) {
       return c.json({ success: false, error: 'Invalid resource ID' }, 400);
@@ -736,12 +742,14 @@ adminApi.put('/resources/:id', async (c) => {
       };
     }
 
+    const categoryId = category_id ? parseInt(category_id) : existingResource.category_id;
     const updatedResource = await updateResource(
       id,
       title, 
       description || '', 
       existingResource.is_uploaded_file ? (existingResource.url || '') : (url || ''), // Preserve original URL for uploaded files
       resource_type || existingResource.resource_type, // Preserve original type if not specified
+      categoryId,
       updateOptions
     );
     

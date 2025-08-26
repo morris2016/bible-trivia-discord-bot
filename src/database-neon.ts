@@ -17,6 +17,8 @@ export interface Article {
   excerpt?: string;
   author_id: number;
   author_name?: string;
+  category_id?: number;
+  category_name?: string;
   published: boolean;
   created_at: Date;
   updated_at: Date;
@@ -30,6 +32,8 @@ export interface Resource {
   resource_type: string;
   author_id: number;
   author_name?: string;
+  category_id?: number;
+  category_name?: string;
   created_at: Date;
   updated_at: Date;
   // New fields for enhanced resources
@@ -179,6 +183,16 @@ export async function initializeDatabase() {
       `;
     }
 
+    // Add category fields to existing articles and resources tables
+    try {
+      await sql`ALTER TABLE articles ADD COLUMN IF NOT EXISTS category_id INTEGER REFERENCES categories(id)`;
+      await sql`ALTER TABLE resources ADD COLUMN IF NOT EXISTS category_id INTEGER REFERENCES categories(id)`;
+      console.log('Category columns added successfully');
+    } catch (error) {
+      // Columns might already exist, which is fine
+      console.log('Category columns might already exist');
+    }
+
     // Check if admin user exists, if not create it
     const adminCheck = await sql`SELECT id FROM users WHERE email = 'siagmoo26@gmail.com'`;
     
@@ -312,31 +326,35 @@ export async function updateUserRole(id: number, role: string): Promise<User | n
 }
 
 // Article functions
-export async function createArticle(title: string, content: string, excerpt: string, authorId: number): Promise<Article> {
+export async function createArticle(title: string, content: string, excerpt: string, authorId: number, categoryId?: number): Promise<Article> {
   const sql = getDB();
   
   const result = await sql`
-    INSERT INTO articles (title, content, excerpt, author_id, published, created_at, updated_at)
-    VALUES (${title}, ${content}, ${excerpt}, ${authorId}, false, NOW(), NOW())
+    INSERT INTO articles (title, content, excerpt, author_id, category_id, published, created_at, updated_at)
+    VALUES (${title}, ${content}, ${excerpt}, ${authorId}, ${categoryId || null}, false, NOW(), NOW())
     RETURNING *
   `;
 
   const article = result[0];
   
-  // Get author name
+  // Get author name and category name
   const author = await getUserById(authorId);
+  const category = categoryId ? await getCategoryById(categoryId) : null;
+  
   return {
     ...article,
-    author_name: author?.name
+    author_name: author?.name,
+    category_name: category?.name
   };
 }
 
 export async function getArticles(published: boolean = true): Promise<Article[]> {
   const sql = getDB();
   const result = await sql`
-    SELECT a.*, u.name as author_name 
+    SELECT a.*, u.name as author_name, c.name as category_name
     FROM articles a 
     LEFT JOIN users u ON a.author_id = u.id 
+    LEFT JOIN categories c ON a.category_id = c.id
     WHERE a.published = ${published}
     ORDER BY a.created_at DESC
   `;
@@ -347,9 +365,10 @@ export async function getAllArticles(): Promise<Article[]> {
   await ensureInitialized();
   const sql = getDB();
   const result = await sql`
-    SELECT a.*, u.name as author_name 
+    SELECT a.*, u.name as author_name, c.name as category_name
     FROM articles a 
     LEFT JOIN users u ON a.author_id = u.id 
+    LEFT JOIN categories c ON a.category_id = c.id
     ORDER BY a.created_at DESC
   `;
   return result;
@@ -358,19 +377,20 @@ export async function getAllArticles(): Promise<Article[]> {
 export async function getArticleById(id: number): Promise<Article | null> {
   const sql = getDB();
   const result = await sql`
-    SELECT a.*, u.name as author_name 
+    SELECT a.*, u.name as author_name, c.name as category_name
     FROM articles a 
     LEFT JOIN users u ON a.author_id = u.id 
+    LEFT JOIN categories c ON a.category_id = c.id
     WHERE a.id = ${id}
   `;
   return result[0] || null;
 }
 
-export async function updateArticle(id: number, title: string, content: string, excerpt: string, published: boolean): Promise<Article | null> {
+export async function updateArticle(id: number, title: string, content: string, excerpt: string, published: boolean, categoryId?: number): Promise<Article | null> {
   const sql = getDB();
   const result = await sql`
     UPDATE articles 
-    SET title = ${title}, content = ${content}, excerpt = ${excerpt}, published = ${published}, updated_at = NOW()
+    SET title = ${title}, content = ${content}, excerpt = ${excerpt}, published = ${published}, category_id = ${categoryId || null}, updated_at = NOW()
     WHERE id = ${id}
     RETURNING *
   `;
@@ -378,11 +398,14 @@ export async function updateArticle(id: number, title: string, content: string, 
   if (result.length === 0) return null;
 
   const article = result[0];
-  // Get author name
+  // Get author name and category name
   const author = await getUserById(article.author_id);
+  const category = article.category_id ? await getCategoryById(article.category_id) : null;
+  
   return {
     ...article,
-    author_name: author?.name
+    author_name: author?.name,
+    category_name: category?.name
   };
 }
 
@@ -393,6 +416,7 @@ export async function createResource(
   url: string, 
   resourceType: string, 
   authorId: number,
+  categoryId?: number,
   options?: {
     filePath?: string;
     fileName?: string;
@@ -410,13 +434,13 @@ export async function createResource(
   
   const result = await sql`
     INSERT INTO resources (
-      title, description, url, resource_type, author_id, 
+      title, description, url, resource_type, author_id, category_id,
       created_at, updated_at, file_path, file_name, file_size,
       extracted_content, content_preview, download_url, view_url,
       metadata, is_uploaded_file, published
     )
     VALUES (
-      ${title}, ${description}, ${url}, ${resourceType}, ${authorId}, 
+      ${title}, ${description}, ${url}, ${resourceType}, ${authorId}, ${categoryId || null},
       NOW(), NOW(), ${options?.filePath || null}, ${options?.fileName || null}, ${options?.fileSize || null},
       ${options?.extractedContent || null}, ${options?.contentPreview || null}, 
       ${options?.downloadUrl || null}, ${options?.viewUrl || null},
@@ -427,35 +451,41 @@ export async function createResource(
 
   const resource = result[0];
   
-  // Get author name
+  // Get author name and category name
   const author = await getUserById(authorId);
+  const category = categoryId ? await getCategoryById(categoryId) : null;
+  
   return {
     ...resource,
-    author_name: author?.name
+    author_name: author?.name,
+    category_name: category?.name
   };
 }
 
 export async function getResources(published?: boolean): Promise<Resource[]> {
   const sql = getDB();
   let query = sql`
-    SELECT r.*, u.name as author_name 
+    SELECT r.*, u.name as author_name, c.name as category_name
     FROM resources r 
     LEFT JOIN users u ON r.author_id = u.id 
+    LEFT JOIN categories c ON r.category_id = c.id
   `;
   
   if (published !== undefined) {
     query = sql`
-      SELECT r.*, u.name as author_name 
+      SELECT r.*, u.name as author_name, c.name as category_name
       FROM resources r 
       LEFT JOIN users u ON r.author_id = u.id 
+      LEFT JOIN categories c ON r.category_id = c.id
       WHERE r.published = ${published}
       ORDER BY r.created_at DESC
     `;
   } else {
     query = sql`
-      SELECT r.*, u.name as author_name 
+      SELECT r.*, u.name as author_name, c.name as category_name
       FROM resources r 
       LEFT JOIN users u ON r.author_id = u.id 
+      LEFT JOIN categories c ON r.category_id = c.id
       ORDER BY r.created_at DESC
     `;
   }
@@ -467,9 +497,10 @@ export async function getResourceById(id: number): Promise<Resource | null> {
   await ensureInitialized();
   const sql = getDB();
   const result = await sql`
-    SELECT r.*, u.name as author_name 
+    SELECT r.*, u.name as author_name, c.name as category_name
     FROM resources r 
     LEFT JOIN users u ON r.author_id = u.id 
+    LEFT JOIN categories c ON r.category_id = c.id
     WHERE r.id = ${id}
   `;
   return result[0] || null;
@@ -481,6 +512,7 @@ export async function updateResource(
   description: string, 
   url: string, 
   resourceType: string,
+  categoryId?: number,
   options?: {
     filePath?: string;
     fileName?: string;
@@ -498,7 +530,7 @@ export async function updateResource(
   const result = await sql`
     UPDATE resources 
     SET title = ${title}, description = ${description}, url = ${url}, 
-        resource_type = ${resourceType}, updated_at = NOW(),
+        resource_type = ${resourceType}, category_id = ${categoryId || null}, updated_at = NOW(),
         file_path = ${options?.filePath || null}, 
         file_name = ${options?.fileName || null}, 
         file_size = ${options?.fileSize || null},
@@ -516,11 +548,14 @@ export async function updateResource(
   if (result.length === 0) return null;
 
   const resource = result[0];
-  // Get author name
+  // Get author name and category name
   const author = await getUserById(resource.author_id);
+  const category = resource.category_id ? await getCategoryById(resource.category_id) : null;
+  
   return {
     ...resource,
-    author_name: author?.name
+    author_name: author?.name,
+    category_name: category?.name
   };
 }
 
