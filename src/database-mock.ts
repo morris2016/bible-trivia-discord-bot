@@ -44,15 +44,8 @@ let nextResourceId = 1;
 export async function initializeDatabase() {
   console.log('Initializing mock database...');
   
-  // Add sample user
-  users.push({
-    id: 1,
-    email: 'admin@faithdefenders.com',
-    name: 'Faith Admin',
-    password_hash: '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/lewmBH.FzxJi6OOP6', // password: admin123
-    role: 'admin',
-    created_at: new Date()
-  });
+  // Note: Admin user will be created through registration in production
+  // For testing, we'll add one after registration
 
   // Add sample articles
   articles.push({
@@ -175,12 +168,17 @@ Remember, prayer is not just about asking for things - it's about relationship, 
 
 // User functions
 export async function createUser(email: string, name: string, passwordHash: string, role: string = 'user'): Promise<User> {
+  // Make first user or specific admin email an admin
+  const isFirstUser = users.length === 0;
+  const isAdminEmail = email === 'admin@faithdefenders.com';
+  const userRole = (isFirstUser || isAdminEmail) ? 'admin' : role;
+  
   const user = {
     id: nextUserId++,
     email,
     name,
     password_hash: passwordHash,
-    role,
+    role: userRole,
     created_at: new Date()
   };
   users.push(user);
@@ -198,6 +196,15 @@ export async function getUserById(id: number): Promise<User | null> {
   if (!user) return null;
   
   const { password_hash, ...userWithoutPassword } = user;
+  return userWithoutPassword;
+}
+
+export async function updateUserRole(id: number, role: string): Promise<User | null> {
+  const userIndex = users.findIndex(u => u.id === id);
+  if (userIndex === -1) return null;
+  
+  users[userIndex].role = role;
+  const { password_hash, ...userWithoutPassword } = users[userIndex];
   return userWithoutPassword;
 }
 

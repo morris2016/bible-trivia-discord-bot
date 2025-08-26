@@ -3,6 +3,7 @@ import { renderer } from './renderer'
 import { initializeDatabase, getArticles, getResources } from './database-mock'
 import { getLoggedInUser } from './auth'
 import api from './api'
+import adminApp from './admin-routes'
 
 const app = new Hono()
 
@@ -11,6 +12,9 @@ initializeDatabase().catch(console.error);
 
 // Mount API routes
 app.route('/api', api)
+
+// Mount admin routes
+app.route('/admin', adminApp)
 
 app.use(renderer)
 
@@ -505,6 +509,12 @@ app.get('/dashboard', async (c) => {
             <button className="tab-btn active" onclick="showTab('overview')">Overview</button>
             <button className="tab-btn" onclick="showTab('create-article')">Create Article</button>
             <button className="tab-btn" onclick="showTab('create-resource')">Add Resource</button>
+            {user.role === 'admin' && (
+              <a href="/admin" className="tab-btn" style="background: #1e40af; color: white; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
+                <i className="fas fa-shield-alt"></i>
+                Admin Panel
+              </a>
+            )}
           </div>
           
           {/* Overview Tab */}
