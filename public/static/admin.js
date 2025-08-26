@@ -252,6 +252,10 @@ window.loadArticles = async function() {
           '<span class="admin-badge admin-badge-success">Published</span>' :
           '<span class="admin-badge admin-badge-warning">Draft</span>';
           
+        const categoryBadge = article.category_name ? 
+          `<span class="admin-badge admin-badge-info">${article.category_name}</span>` :
+          '<span style="color: #9ca3af;">No Category</span>';
+        
         html += `
           <tr>
             <td>
@@ -259,6 +263,7 @@ window.loadArticles = async function() {
               <div style="font-size: 0.8rem; color: #64748b;">${article.excerpt || 'No excerpt'}</div>
             </td>
             <td>${article.author_name}</td>
+            <td>${categoryBadge}</td>
             <td>${statusBadge}</td>
             <td>${formatDate(article.created_at)}</td>
             <td>
@@ -278,7 +283,7 @@ window.loadArticles = async function() {
     } else if (data.success && data.articles && data.articles.length === 0) {
       tableBody.innerHTML = `
         <tr>
-          <td colspan="5" style="text-align: center; padding: 2rem; color: #64748b;">
+          <td colspan="6" style="text-align: center; padding: 2rem; color: #64748b;">
             <div style="display: flex; flex-direction: column; align-items: center; gap: 1rem;">
               <div style="font-size: 1.1rem; font-weight: 500;">No articles found</div>
               <div style="color: #9ca3af;">Get started by creating your first article</div>
@@ -292,7 +297,7 @@ window.loadArticles = async function() {
     } else {
       tableBody.innerHTML = `
         <tr>
-          <td colspan="5" style="text-align: center; padding: 2rem; color: #dc2626;">
+          <td colspan="6" style="text-align: center; padding: 2rem; color: #dc2626;">
             Failed to load articles. Please refresh the page.
           </td>
         </tr>
@@ -628,12 +633,14 @@ window.createArticle = async function(e) {
   }
   
   const formData = new FormData(form);
+  const categoryId = formData.get('category_id');
   
   const articleData = {
     title: formData.get('title'),
     excerpt: formData.get('excerpt'),
     content: formData.get('content'),
-    published: formData.get('published') === 'true'
+    published: formData.get('published') === 'true',
+    category_id: categoryId && categoryId !== '' ? parseInt(categoryId) : null
   };
   
   try {
@@ -700,6 +707,12 @@ window.loadArticleForEdit = async function(articleId) {
       if (contentElement) contentElement.value = article.content;
       if (publishedElement) publishedElement.value = article.published.toString();
       
+      // Set category selection
+      const categoryElement = document.getElementById('edit-article-category-select');
+      if (categoryElement && article.category_id) {
+        categoryElement.value = article.category_id.toString();
+      }
+      
       // Load content into custom editor with delay to ensure it's initialized
       setTimeout(() => {
         if (window.customEditors && window.customEditors.edit) {
@@ -757,12 +770,14 @@ window.updateArticle = async function(e) {
   }
   
   const formData = new FormData(form);
+  const categoryId = formData.get('category_id');
   
   const articleData = {
     title: formData.get('title'),
     excerpt: formData.get('excerpt'),
     content: formData.get('content'),
-    published: formData.get('published') === 'true'
+    published: formData.get('published') === 'true',
+    category_id: categoryId && categoryId !== '' ? parseInt(categoryId) : null
   };
   
   try {
@@ -847,6 +862,10 @@ window.loadResources = async function() {
           `<span class="admin-badge admin-badge-primary">Uploaded ${resource.resource_type}</span>` :
           `<span class="admin-badge admin-badge-info">${resource.resource_type}</span>`;
           
+        const categoryBadge = resource.category_name ? 
+          `<span class="admin-badge admin-badge-info">${resource.category_name}</span>` :
+          '<span style="color: #9ca3af;">No Category</span>';
+          
         html += `
           <tr>
             <td>
@@ -861,6 +880,7 @@ window.loadResources = async function() {
               <br>
               ${statusBadge}
             </td>
+            <td>${categoryBadge}</td>
             <td>${resource.author_name}</td>
             <td>${formatDate(resource.created_at)}</td>
             <td>
@@ -929,13 +949,15 @@ window.createLinkResource = async function(e) {
   
   const form = e.target;
   const formData = new FormData(form);
+  const categoryId = formData.get('category_id');
   
   const resourceData = {
     title: formData.get('title'),
     description: formData.get('description'),
     url: formData.get('url'),
     resource_type: formData.get('resource_type'),
-    published: formData.get('published') === 'on'
+    published: formData.get('published') === 'on',
+    category_id: categoryId && categoryId !== '' ? parseInt(categoryId) : null
   };
   
   try {
@@ -1217,6 +1239,12 @@ window.loadResourceForEdit = async function(resourceId) {
       if (descriptionElement) descriptionElement.value = resource.description || '';
       if (publishedElement) publishedElement.checked = resource.published;
       
+      // Set category selection
+      const categoryElement = document.getElementById('edit-resource-category-select');
+      if (categoryElement && resource.category_id) {
+        categoryElement.value = resource.category_id.toString();
+      }
+      
       // Show/hide URL vs file info based on resource type
       const urlGroup = document.getElementById('edit-url-group');
       const fileInfo = document.getElementById('edit-file-info');
@@ -1263,13 +1291,15 @@ window.updateResource = async function(e) {
   const form = e.target;
   const resourceId = form.dataset.resourceId;
   const formData = new FormData(form);
+  const categoryId = formData.get('category_id');
   
   const resourceData = {
     title: formData.get('title'),
     description: formData.get('description'),
     url: formData.get('url'),
     resource_type: formData.get('resource_type'),
-    published: formData.get('published') === 'on'
+    published: formData.get('published') === 'on',
+    category_id: categoryId && categoryId !== '' ? parseInt(categoryId) : null
   };
   
   try {
@@ -1850,5 +1880,39 @@ window.deleteCategory = async function(categoryId, categoryName) {
   } catch (error) {
     console.error('Error deleting category:', error);
     showAdminMessage('Network error. Please try again.', 'error');
+  }
+};
+
+// Load Categories for Dropdown
+window.loadCategoriesDropdown = async function(selectElementId) {
+  try {
+    const response = await fetch('/admin/api/categories', {
+      credentials: 'include'
+    });
+    
+    const data = await response.json();
+    const selectElement = document.getElementById(selectElementId);
+    
+    if (!selectElement) {
+      console.error(`Select element with ID '${selectElementId}' not found`);
+      return;
+    }
+    
+    if (data.success && data.categories) {
+      // Clear existing options except the first default one
+      selectElement.innerHTML = '<option value="">Select Category (Optional)</option>';
+      
+      // Add category options
+      data.categories.forEach(category => {
+        const option = document.createElement('option');
+        option.value = category.id;
+        option.textContent = category.name;
+        selectElement.appendChild(option);
+      });
+    } else {
+      console.error('Failed to load categories:', data.error);
+    }
+  } catch (error) {
+    console.error('Error loading categories for dropdown:', error);
   }
 };

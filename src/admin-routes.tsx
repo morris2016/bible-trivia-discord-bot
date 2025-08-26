@@ -185,6 +185,7 @@ adminApp.get('/articles', async (c) => {
                 <tr>
                   <th>Title</th>
                   <th>Author</th>
+                  <th>Category</th>
                   <th>Status</th>
                   <th>Created</th>
                   <th>Actions</th>
@@ -192,7 +193,7 @@ adminApp.get('/articles', async (c) => {
               </thead>
               <tbody id="articles-table">
                 <tr>
-                  <td colspan="5" style="text-align: center; padding: 2rem;">
+                  <td colspan="6" style="text-align: center; padding: 2rem;">
                     <div class="admin-loading">
                       <div class="admin-spinner"></div>
                       Loading articles...
@@ -242,6 +243,13 @@ adminApp.get('/articles/new', async (c) => {
               <div class="admin-form-group">
                 <label class="admin-form-label">Title</label>
                 <input type="text" name="title" class="admin-form-input" required />
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">Category</label>
+                <select name="category_id" class="admin-form-select" id="article-category-select">
+                  <option value="">Select Category (Optional)</option>
+                  {/* Categories will be loaded dynamically */}
+                </select>
               </div>
               <div class="admin-form-group">
                 <label class="admin-form-label">Status</label>
@@ -437,6 +445,9 @@ adminApp.get('/articles/new', async (c) => {
           const form = document.getElementById('article-form');
           form.addEventListener('submit', createArticle);
           
+          // Load categories for dropdown
+          loadCategoriesDropdown('article-category-select');
+          
           // Initialize custom editor
           setTimeout(() => {
             if (typeof CustomEditor === 'function') {
@@ -475,6 +486,13 @@ adminApp.get('/articles/:id/edit', async (c) => {
               <div class="admin-form-group">
                 <label class="admin-form-label">Title</label>
                 <input type="text" name="title" class="admin-form-input" id="edit-title" required />
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">Category</label>
+                <select name="category_id" class="admin-form-select" id="edit-article-category-select">
+                  <option value="">Select Category (Optional)</option>
+                  {/* Categories will be loaded dynamically */}
+                </select>
               </div>
               <div class="admin-form-group">
                 <label class="admin-form-label">Status</label>
@@ -670,6 +688,9 @@ adminApp.get('/articles/:id/edit', async (c) => {
           const form = document.getElementById('edit-article-form');
           form.addEventListener('submit', updateArticle);
           
+          // Load categories for dropdown
+          loadCategoriesDropdown('edit-article-category-select');
+          
           // Initialize custom editor for editing
           setTimeout(() => {
             if (typeof CustomEditor === 'function') {
@@ -720,6 +741,7 @@ adminApp.get('/resources', async (c) => {
                 <tr>
                   <th>Title</th>
                   <th>Type</th>
+                  <th>Category</th>
                   <th>Author</th>
                   <th>Created</th>
                   <th>Actions</th>
@@ -727,7 +749,7 @@ adminApp.get('/resources', async (c) => {
               </thead>
               <tbody id="resources-table">
                 <tr>
-                  <td colspan="5" style="text-align: center; padding: 2rem;">
+                  <td colspan="6" style="text-align: center; padding: 2rem;">
                     <div class="admin-loading">
                       <div class="admin-spinner"></div>
                       Loading resources...
@@ -790,6 +812,13 @@ adminApp.get('/resources/new', async (c) => {
                 <input type="text" name="title" class="admin-form-input" required />
               </div>
               <div class="admin-form-group">
+                <label class="admin-form-label">Category</label>
+                <select name="category_id" class="admin-form-select" id="link-resource-category-select">
+                  <option value="">Select Category (Optional)</option>
+                  {/* Categories will be loaded dynamically */}
+                </select>
+              </div>
+              <div class="admin-form-group">
                 <label class="admin-form-label">Type</label>
                 <select name="resource_type" class="admin-form-select">
                   <option value="link">Website/Link</option>
@@ -837,6 +866,13 @@ adminApp.get('/resources/new', async (c) => {
               <div class="admin-form-group">
                 <label class="admin-form-label">Title</label>
                 <input type="text" name="title" class="admin-form-input" required />
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">Category</label>
+                <select name="category_id" class="admin-form-select" id="upload-resource-category-select">
+                  <option value="">Select Category (Optional)</option>
+                  {/* Categories will be loaded dynamically */}
+                </select>
               </div>
               <div class="admin-form-group">
                 <label class="admin-form-label">Type</label>
@@ -1030,6 +1066,10 @@ adminApp.get('/resources/new', async (c) => {
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
           }
           
+          // Load categories for both forms
+          loadCategoriesDropdown('link-resource-category-select');
+          loadCategoriesDropdown('upload-resource-category-select');
+          
           // Form submissions
           const linkForm = document.getElementById('resource-link-form');
           const uploadForm = document.getElementById('resource-upload-form');
@@ -1068,6 +1108,13 @@ adminApp.get('/resources/:id/edit', async (c) => {
               <div class="admin-form-group">
                 <label class="admin-form-label">Title</label>
                 <input type="text" name="title" class="admin-form-input" id="edit-resource-title" required />
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">Category</label>
+                <select name="category_id" class="admin-form-select" id="edit-resource-category-select">
+                  <option value="">Select Category (Optional)</option>
+                  {/* Categories will be loaded dynamically */}
+                </select>
               </div>
               <div class="admin-form-group">
                 <label class="admin-form-label">Type</label>
@@ -1141,6 +1188,9 @@ adminApp.get('/resources/:id/edit', async (c) => {
         document.addEventListener('DOMContentLoaded', function() {
           const form = document.getElementById('edit-resource-form');
           form.addEventListener('submit', updateResource);
+          
+          // Load categories for dropdown
+          loadCategoriesDropdown('edit-resource-category-select');
           
           // Load resource data
           loadResourceForEdit(${id});
