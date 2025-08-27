@@ -342,7 +342,7 @@ Unlike traditional rich text editors (Quill.js, TinyMCE) that apply formatting t
 ### **Admin Credentials** 🔒 **SECURED**
 - **Configuration**: Admin credentials are securely configured via environment variables
 - **Location**: See `.dev.vars` file (gitignored) for current configuration
-- **Current Admin**: `siagmoo26@gmail.com` / `Famous2016?` (configurable via environment)
+- **Current Admin**: Configured via environment variables (see .env.example)
 - **Role**: admin (pre-configured with admin privileges)
 - **Security**: No hardcoded credentials in source code - all configurable via environment
 
@@ -377,7 +377,7 @@ Unlike traditional rich text editors (Quill.js, TinyMCE) that apply formatting t
    - Result: Only "HEADING" becomes large and blue, surrounding text stays normal ✨
 
 ### **Admin Editor Test** 
-1. Login with admin credentials (siagmoo26@gmail.com / Famous2016?)
+1. Login with admin credentials (configured in .env.example)
 2. Go to Admin Panel → Articles → "New Article" 
 3. Test comprehensive formatting:
    - **Text Formatting**: Bold, italic, underline, strikethrough
@@ -552,7 +552,7 @@ curl -X POST http://localhost:3000/api/auth/reset-password \
 ```bash
 curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email": "siagmoo26@gmail.com", "password": "Famous2016?"}'
+  -d '{"email": "admin@faithdefenders.com", "password": "your_admin_password"}'
 ```
 
 ### **Test Content APIs**
@@ -569,7 +569,7 @@ curl http://localhost:3000/api/resources
 # Login with environment-configured admin user
 curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email": "siagmoo26@gmail.com", "password": "Famous2016?"}' \
+  -d '{"email": "admin@faithdefenders.com", "password": "your_admin_password"}' \
   -c cookies.txt
 
 # Test admin analytics (requires authentication) ✅ FIXED
