@@ -56,7 +56,14 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
         window.location.href = '/dashboard';
       }, 1000);
     } else {
-      showMessage(data.error || 'Login failed', 'error');
+      if (data.requiresVerification && data.userId) {
+        showMessage(`${data.error} Redirecting to verification...`, 'error');
+        setTimeout(() => {
+          window.location.href = `/verify-email?userId=${data.userId}`;
+        }, 2000);
+      } else {
+        showMessage(data.error || 'Login failed', 'error');
+      }
     }
   } catch (error) {
     console.error('Login error:', error);
@@ -93,10 +100,17 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
     const data = await response.json();
     
     if (data.success) {
-      showMessage('Registration successful! Redirecting...', 'success');
-      setTimeout(() => {
-        window.location.href = '/dashboard';
-      }, 1000);
+      if (data.requiresVerification && data.userId) {
+        showMessage('Account created! Redirecting to email verification...', 'success');
+        setTimeout(() => {
+          window.location.href = `/verify-email?userId=${data.userId}`;
+        }, 1500);
+      } else {
+        showMessage('Registration successful! Redirecting...', 'success');
+        setTimeout(() => {
+          window.location.href = '/dashboard';
+        }, 1000);
+      }
     } else {
       showMessage(data.error || 'Registration failed', 'error');
     }
@@ -122,3 +136,55 @@ window.logout = async function() {
     window.location.href = '/';
   }
 };
+
+// Handle URL parameters for OAuth errors and messages
+document.addEventListener('DOMContentLoaded', function() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const error = urlParams.get('error');
+  const message = urlParams.get('message');
+  const verified = urlParams.get('verified');
+  
+  if (verified === 'true') {
+    showMessage('Email verified successfully! You can now sign in to your account.', 'success');
+    // Clean up URL without reloading page
+    const cleanUrl = window.location.pathname;
+    window.history.replaceState({}, document.title, cleanUrl);
+    return;
+  }
+  
+  if (error) {
+    let errorMessage = 'Authentication failed';
+    
+    switch (error) {
+      case 'oauth_error':
+        errorMessage = 'Google authentication was cancelled or failed';
+        break;
+      case 'missing_code':
+        errorMessage = 'Authentication code missing from Google';
+        break;
+      case 'token_error':
+        errorMessage = 'Failed to exchange authentication code';
+        break;
+      case 'user_info_error':
+        errorMessage = 'Failed to get user information from Google';
+        break;
+      case 'user_creation_failed':
+        errorMessage = 'Failed to create user account';
+        break;
+      case 'user_already_exists':
+        errorMessage = message || 'Account already exists, please sign in instead';
+        break;
+      case 'oauth_callback_error':
+        errorMessage = 'OAuth callback error occurred';
+        break;
+      default:
+        errorMessage = message || 'Authentication failed';
+    }
+    
+    showMessage(errorMessage, 'error');
+    
+    // Clean up URL without reloading page
+    const cleanUrl = window.location.pathname;
+    window.history.replaceState({}, document.title, cleanUrl);
+  }
+});

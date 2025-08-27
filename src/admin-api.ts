@@ -361,7 +361,7 @@ adminApi.post('/resources/upload', async (c) => {
       'image/gif'
     ];
     
-    if (!allowedTypes.includes(file.type)) {
+    if (!file.type || !allowedTypes.includes(file.type)) {
       return c.json({
         success: false,
         error: `File type ${file.type} not supported. Supported types: PDF, Audio (MP3, WAV, OGG, AAC), Documents (DOC, DOCX, TXT), Images (JPG, PNG, GIF)`
@@ -1031,7 +1031,7 @@ adminApi.put('/users/:id', async (c) => {
       return c.json({ success: false, error: 'Invalid user ID' }, 400);
     }
     
-    if (!role || !['user', 'moderator', 'admin'].includes(role)) {
+    if (!role || typeof role !== 'string' || !['user', 'moderator', 'admin'].includes(role)) {
       return c.json({ success: false, error: 'Invalid role. Must be "user", "moderator", or "admin"' }, 400);
     }
     

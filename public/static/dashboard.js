@@ -241,3 +241,110 @@ window.logout = async function() {
     window.location.href = '/';
   }
 };
+
+// Change Password Functionality
+document.addEventListener('DOMContentLoaded', function() {
+  const changePasswordForm = document.getElementById('change-password-form');
+  const confirmPasswordInput = document.getElementById('confirm-new-password');
+  const newPasswordInput = document.getElementById('new-password');
+  
+  // Password confirmation validation
+  if (confirmPasswordInput && newPasswordInput) {
+    confirmPasswordInput.addEventListener('input', function() {
+      const newPassword = newPasswordInput.value;
+      const confirmPassword = confirmPasswordInput.value;
+      
+      if (confirmPassword && newPassword !== confirmPassword) {
+        confirmPasswordInput.setCustomValidity('Passwords do not match');
+      } else {
+        confirmPasswordInput.setCustomValidity('');
+      }
+    });
+  }
+  
+  // Handle change password form
+  if (changePasswordForm) {
+    changePasswordForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const messageDiv = document.getElementById('change-password-message');
+      const submitButton = e.target.querySelector('button[type="submit"]');
+      const formData = new FormData(e.target);
+      
+      const currentPassword = formData.get('currentPassword');
+      const newPassword = formData.get('newPassword');
+      const confirmNewPassword = formData.get('confirmNewPassword');
+      
+      // Validation
+      if (!currentPassword) {
+        showPasswordMessage(messageDiv, 'Please enter your current password.', 'error');
+        return;
+      }
+      
+      if (!newPassword || newPassword.length < 6) {
+        showPasswordMessage(messageDiv, 'New password must be at least 6 characters long.', 'error');
+        return;
+      }
+      
+      if (newPassword !== confirmNewPassword) {
+        showPasswordMessage(messageDiv, 'New passwords do not match.', 'error');
+        return;
+      }
+      
+      // Disable submit button
+      submitButton.disabled = true;
+      submitButton.textContent = 'Changing Password...';
+      
+      try {
+        const response = await fetch('/api/auth/change-password', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            currentPassword,
+            newPassword
+          }),
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          showPasswordMessage(messageDiv, result.message, 'success');
+          
+          // Clear form
+          changePasswordForm.reset();
+        } else {
+          showPasswordMessage(messageDiv, result.error || 'Failed to change password', 'error');
+        }
+        
+      } catch (error) {
+        console.error('Change password error:', error);
+        showPasswordMessage(messageDiv, 'Network error. Please try again.', 'error');
+      } finally {
+        // Re-enable submit button
+        submitButton.disabled = false;
+        submitButton.textContent = 'Change Password';
+      }
+    });
+  }
+});
+
+// Utility function to show password change messages
+function showPasswordMessage(messageDiv, message, type) {
+  if (!messageDiv) return;
+  
+  messageDiv.innerHTML = `
+    <div class="message ${type === 'success' ? 'message-success' : 'message-error'}">
+      ${message}
+    </div>
+  `;
+  
+  // Clear message after 5 seconds for success messages
+  if (type === 'success') {
+    setTimeout(() => {
+      messageDiv.innerHTML = '';
+    }, 5000);
+  }
+}

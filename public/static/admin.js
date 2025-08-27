@@ -67,7 +67,7 @@ function formatDateTime(dateString) {
 window.loadDashboardData = async function() {
   try {
     console.log('loadDashboardData: Starting...');
-    const response = await fetch('/admin/api/stats', {
+    const response = await fetch('/admin/api/analytics', {
       credentials: 'include'
     });
     
@@ -82,23 +82,24 @@ window.loadDashboardData = async function() {
     const data = await response.json();
     
     if (data.success) {
-      const stats = data.stats;
+      const analytics = data.analytics;
+      const stats = analytics.contentStats;
       
       // Update statistics cards
-      document.getElementById('total-users').textContent = stats.users.total;
-      document.getElementById('users-change').textContent = `+${stats.users.newThisMonth} this month`;
+      document.getElementById('total-users').textContent = stats.totalUsers;
+      document.getElementById('users-change').textContent = `+${stats.newUsersThisMonth} this month`;
       
-      document.getElementById('published-articles').textContent = stats.articles.published;
-      document.getElementById('articles-change').textContent = `${stats.articles.publishedThisMonth} published this month`;
+      document.getElementById('published-articles').textContent = stats.publishedArticles;
+      document.getElementById('articles-change').textContent = `${stats.newArticlesThisMonth} published this month`;
       
-      document.getElementById('total-resources').textContent = stats.resources.total;
-      document.getElementById('resources-change').textContent = `+${stats.resources.newThisMonth} this month`;
+      document.getElementById('total-resources').textContent = stats.totalResources;
+      document.getElementById('resources-change').textContent = `+${stats.newResourcesThisMonth} this month`;
       
-      document.getElementById('total-views').textContent = stats.engagement.totalViews.toLocaleString();
-      document.getElementById('views-change').textContent = `${stats.engagement.viewsThisMonth} this month`;
+      document.getElementById('total-views').textContent = (stats.totalViews || 0).toLocaleString();
+      document.getElementById('views-change').textContent = `${stats.viewsThisMonth || 0} this month`;
       
-      // Load recent activity
-      loadRecentActivity();
+      // Load recent activity with real data
+      loadRecentActivity(analytics.recentActivity);
       
       // Load recent content
       loadRecentContent();
@@ -109,23 +110,25 @@ window.loadDashboardData = async function() {
   }
 };
 
-async function loadRecentActivity() {
+async function loadRecentActivity(recentActivityData) {
   const activityEl = document.getElementById('recent-activity');
   if (!activityEl) return;
   
-  // Mock recent activity data
-  const activities = [
-    { type: 'user', message: 'New user registered: John Believer', time: '2 hours ago' },
-    { type: 'article', message: 'Article published: "Building Faith"', time: '4 hours ago' },
-    { type: 'resource', message: 'Resource added: "Christian Podcast"', time: '1 day ago' },
-    { type: 'comment', message: 'New comment on "Prayer Life"', time: '2 days ago' }
-  ];
+  if (!recentActivityData || recentActivityData.length === 0) {
+    activityEl.innerHTML = '<div style="text-align: center; color: #64748b; padding: 1rem;">No recent activity</div>';
+    return;
+  }
   
   let html = '';
-  activities.forEach(activity => {
-    const icon = activity.type === 'user' ? 'fa-user-plus' : 
-                 activity.type === 'article' ? 'fa-newspaper' :
-                 activity.type === 'resource' ? 'fa-book' : 'fa-comment';
+  recentActivityData.forEach(activity => {
+    const icon = activity.activityType.includes('user') ? 'fa-user-plus' : 
+                 activity.activityType.includes('article') ? 'fa-newspaper' :
+                 activity.activityType.includes('resource') ? 'fa-book' : 
+                 activity.activityType.includes('comment') ? 'fa-comment' :
+                 activity.activityType.includes('login') ? 'fa-sign-in-alt' : 'fa-bell';
+    
+    // Calculate time ago
+    const timeAgo = formatTimeAgo(activity.createdAt);
                  
     html += `
       <div style="display: flex; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid #e2e8f0;">
@@ -133,14 +136,30 @@ async function loadRecentActivity() {
           <i class="fas ${icon}" style="color: #64748b; font-size: 0.8rem;"></i>
         </div>
         <div style="flex: 1;">
-          <div style="font-size: 0.9rem; color: #334155;">${activity.message}</div>
-          <div style="font-size: 0.8rem; color: #64748b;">${activity.time}</div>
+          <div style="font-size: 0.9rem; color: #334155;">${activity.description}</div>
+          <div style="font-size: 0.8rem; color: #64748b;">${timeAgo}</div>
         </div>
       </div>
     `;
   });
   
   activityEl.innerHTML = html;
+}
+
+function formatTimeAgo(dateString) {
+  const now = new Date();
+  const date = new Date(dateString);
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  
+  if (diffMins < 1) return 'now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 30) return `${diffDays}d ago`;
+  
+  return date.toLocaleDateString();
 }
 
 async function loadRecentContent() {

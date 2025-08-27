@@ -1,7 +1,7 @@
 // Neon PostgreSQL database implementation for Cloudflare Workers
 import { neon } from '@neondatabase/serverless';
 
-// Enhanced User interface with status and moderation fields
+// Enhanced User interface with status and moderation fields and OAuth support
 export interface User {
   id: number;
   email: string;
@@ -13,6 +13,11 @@ export interface User {
   updated_at?: Date;
   suspension_expires?: Date;
   suspension_reason?: string;
+  google_id?: string;
+  avatar_url?: string;
+  email_verified?: boolean;
+  auth_provider?: string; // 'email', 'google'
+  password_hash?: string;
 }
 
 export interface Article {
@@ -65,17 +70,20 @@ export interface Category {
   updated_at: Date;
 }
 
-export interface Comment {
+export interface EmailVerification {
   id: number;
-  content: string;
-  author_id: number;
-  author_name?: string;
-  article_id?: number;
-  resource_id?: number;
-  parent_id?: number;
-  status: 'pending' | 'approved' | 'rejected';
+  user_id: number;
+  email: string;
+  otp_code: string;
+  purpose: 'registration' | 'email_change' | 'password_reset';
+  attempts: number;
+  max_attempts: number;
+  expires_at: Date;
+  verified_at?: Date;
   created_at: Date;
   updated_at: Date;
+  ip_address?: string;
+  user_agent?: string;
 }
 
 export interface Like {
@@ -107,6 +115,19 @@ export interface UserNotification {
   expires_at?: Date;
 }
 
+export interface Comment {
+  id: number;
+  content: string;
+  user_id: number;
+  user_name?: string;
+  article_id?: number;
+  resource_id?: number;
+  parent_id?: number;  // For reply hierarchy
+  reply_to_user?: string;  // Name of user being replied to
+  created_at: Date;
+  updated_at?: Date;
+}
+
 // Database initialization flag
 let isInitialized = false;
 
@@ -133,20 +154,24 @@ export async function initializeDatabase() {
   const sql = getDB();
   
   try {
-    // Create users table with enhanced moderation fields
+    // Create users table with enhanced moderation fields and OAuth support
     await sql`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         email VARCHAR(255) UNIQUE NOT NULL,
         name VARCHAR(255) NOT NULL,
-        password_hash VARCHAR(255) NOT NULL,
+        password_hash VARCHAR(255) NULL,
         role VARCHAR(50) DEFAULT 'user' CHECK (role IN ('admin', 'moderator', 'user')),
         status VARCHAR(50) DEFAULT 'active' CHECK (status IN ('active', 'suspended', 'banned')),
         last_login TIMESTAMP NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         suspension_expires TIMESTAMP NULL,
-        suspension_reason TEXT NULL
+        suspension_reason TEXT NULL,
+        google_id VARCHAR(255) NULL,
+        avatar_url TEXT NULL,
+        email_verified BOOLEAN DEFAULT false,
+        auth_provider VARCHAR(50) DEFAULT 'email' CHECK (auth_provider IN ('email', 'google'))
       );
     `;
 
@@ -157,6 +182,13 @@ export async function initializeDatabase() {
       await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`;
       await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS suspension_expires TIMESTAMP NULL`;
       await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS suspension_reason TEXT NULL`;
+      await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id VARCHAR(255) NULL`;
+      await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT NULL`;
+      await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT false`;
+      await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_provider VARCHAR(50) DEFAULT 'email' CHECK (auth_provider IN ('email', 'google'))`;
+      
+      // Make password_hash nullable for OAuth users
+      await sql`ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL`;
       
       // Add role constraint if it doesn't exist
       await sql`ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check`;
@@ -345,6 +377,36 @@ export async function initializeDatabase() {
       console.log('Unique constraint might already exist for comment_likes');
     }
     
+    // Create page_views table for tracking article and resource views
+    await sql`
+      CREATE TABLE IF NOT EXISTS page_views (
+        id SERIAL PRIMARY KEY,
+        article_id INTEGER REFERENCES articles(id) ON DELETE CASCADE NULL,
+        resource_id INTEGER REFERENCES resources(id) ON DELETE CASCADE NULL,
+        user_id INTEGER REFERENCES users(id) ON DELETE SET NULL NULL,
+        ip_address VARCHAR(45),
+        user_agent TEXT,
+        viewed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT page_views_content_check CHECK (
+          (article_id IS NOT NULL AND resource_id IS NULL) OR
+          (article_id IS NULL AND resource_id IS NOT NULL)
+        )
+      );
+    `;
+    
+    // Create activity_log table for recent activity tracking
+    await sql`
+      CREATE TABLE IF NOT EXISTS activity_log (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NULL,
+        activity_type VARCHAR(50) NOT NULL,
+        description TEXT NOT NULL,
+        entity_type VARCHAR(50),
+        entity_id INTEGER,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+    
     // Create user_login_history table
     await sql`
       CREATE TABLE IF NOT EXISTS user_login_history (
@@ -391,30 +453,40 @@ export async function initializeDatabase() {
       console.log('Some indexes might already exist');
     }
 
-    // Check if admin user exists, if not create it
-    const adminCheck = await sql`SELECT id FROM users WHERE email = 'siagmoo26@gmail.com'`;
+    // Check if admin user exists, if not create it from environment variables
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@faithdefenders.com';
+    const adminCheck = await sql`SELECT id FROM users WHERE email = ${adminEmail}`;
     
     if (adminCheck.length === 0) {
-      // Insert admin user with pre-generated hash for Famous2016?
+      const adminName = process.env.ADMIN_NAME || 'Admin';
+      const adminPassword = process.env.ADMIN_PASSWORD || 'ChangeMe123!';
+      
+      // Hash the admin password
+      const { hashPassword } = await import('./auth');
+      const hashedPassword = await hashPassword(adminPassword);
+      
       await sql`
-        INSERT INTO users (email, name, password_hash, role, created_at) 
+        INSERT INTO users (email, name, password_hash, role, created_at, email_verified, auth_provider) 
         VALUES (
-          'siagmoo26@gmail.com',
-          'Admin',
-          '$2b$12$LyqXRi/3ydfFM/A7urZUQOZjO3bKWIFGd3cicUMx9Pc5S9OYAFMd6',
+          ${adminEmail},
+          ${adminName},
+          ${hashedPassword},
           'admin',
-          '2025-01-01'
+          CURRENT_TIMESTAMP,
+          true,
+          'email'
         )
       `;
-      console.log('Admin user created in Neon PostgreSQL');
+      console.log(`Admin user created with email: ${adminEmail}`);
     } else {
-      console.log('Admin user already exists in Neon PostgreSQL');
+      console.log('Admin user already exists');
     }
 
     // Insert sample resources if they don't exist
     const resourcesCheck = await sql`SELECT COUNT(*) FROM resources`;
     if (parseInt(resourcesCheck[0].count) === 0) {
-      const adminUser = await sql`SELECT id FROM users WHERE email = 'siagmoo26@gmail.com'`;
+      const adminEmail = process.env.ADMIN_EMAIL || 'admin@faithdefenders.com';
+      const adminUser = await sql`SELECT id FROM users WHERE email = ${adminEmail}`;
       const adminId = adminUser[0].id;
 
       // Insert sample resources with new fields
@@ -432,7 +504,8 @@ export async function initializeDatabase() {
     // Insert sample articles if they don't exist
     const articlesCheck = await sql`SELECT COUNT(*) FROM articles`;
     if (parseInt(articlesCheck[0].count) === 0) {
-      const adminUser = await sql`SELECT id FROM users WHERE email = 'siagmoo26@gmail.com'`;
+      const adminEmail = process.env.ADMIN_EMAIL || 'admin@faithdefenders.com';
+      const adminUser = await sql`SELECT id FROM users WHERE email = ${adminEmail}`;
       const adminId = adminUser[0].id;
 
       await sql`
@@ -469,6 +542,35 @@ export async function initializeDatabase() {
       console.log('Sample articles created in Neon PostgreSQL');
     }
 
+    // Create email verification table
+    await sql`
+      CREATE TABLE IF NOT EXISTS email_verifications (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        email VARCHAR(255) NOT NULL,
+        otp_code VARCHAR(6) NOT NULL,
+        purpose VARCHAR(50) NOT NULL CHECK (purpose IN ('registration', 'email_change', 'password_reset')),
+        attempts INTEGER DEFAULT 0,
+        max_attempts INTEGER DEFAULT 3,
+        expires_at TIMESTAMP NOT NULL,
+        verified_at TIMESTAMP NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        ip_address INET NULL,
+        user_agent TEXT NULL
+      );
+    `;
+
+    // Create index for faster lookups
+    try {
+      await sql`CREATE INDEX IF NOT EXISTS idx_email_verifications_user_id ON email_verifications(user_id)`;
+      await sql`CREATE INDEX IF NOT EXISTS idx_email_verifications_email ON email_verifications(email)`;
+      await sql`CREATE INDEX IF NOT EXISTS idx_email_verifications_otp ON email_verifications(otp_code)`;
+      await sql`CREATE INDEX IF NOT EXISTS idx_email_verifications_expires ON email_verifications(expires_at)`;
+    } catch (error) {
+      console.log('Email verification indexes might already exist');
+    }
+
     console.log('Neon PostgreSQL database initialized successfully');
   } catch (error) {
     console.error('Error initializing database:', error);
@@ -477,18 +579,46 @@ export async function initializeDatabase() {
 }
 
 // User functions
-export async function createUser(email: string, name: string, passwordHash: string, role: string = 'user'): Promise<User> {
+export async function createUser(
+  email: string, 
+  name: string, 
+  passwordHash: string | null = null, 
+  role: string = 'user',
+  oauthData?: {
+    google_id?: string;
+    avatar_url?: string;
+    auth_provider?: string;
+    email_verified?: boolean;
+  }
+): Promise<User> {
   await ensureInitialized();
   const sql = getDB();
   
   // Only make specific admin emails an admin, not any first user
-  const isAdminEmail = email === 'admin@faithdefenders.com' || email === 'siagmoo26@gmail.com';
+  const adminEmail = process.env.ADMIN_EMAIL || 'admin@faithdefenders.com';
+  const isAdminEmail = email === 'admin@faithdefenders.com' || email === adminEmail;
   const userRole = isAdminEmail ? 'admin' : role;
   
+  // Set defaults for OAuth data
+  const {
+    google_id = null,
+    avatar_url = null,
+    auth_provider = 'email',
+    email_verified = false
+  } = oauthData || {};
+  
   const result = await sql`
-    INSERT INTO users (email, name, password_hash, role, created_at)
-    VALUES (${email}, ${name}, ${passwordHash}, ${userRole}, NOW())
-    RETURNING id, email, name, role, created_at
+    INSERT INTO users (
+      email, name, password_hash, role, 
+      google_id, avatar_url, auth_provider, email_verified, 
+      created_at
+    )
+    VALUES (
+      ${email}, ${name}, ${passwordHash}, ${userRole},
+      ${google_id}, ${avatar_url}, ${auth_provider}, ${email_verified},
+      NOW()
+    )
+    RETURNING id, email, name, role, google_id, avatar_url, auth_provider, email_verified, created_at
   `;
 
   return result[0];
@@ -505,17 +635,30 @@ export async function getUserById(id: number): Promise<User | null> {
   await ensureInitialized();
   const sql = getDB();
   const result = await sql`
-    SELECT id, email, name, role, status, last_login, created_at, updated_at, suspension_expires, suspension_reason 
+    SELECT id, email, name, role, status, last_login, created_at, updated_at, 
+           suspension_expires, suspension_reason, email_verified, auth_provider 
     FROM users WHERE id = ${id}
   `;
   return result[0] || null;
+}
+
+export async function updateUserPassword(userId: number, hashedPassword: string): Promise<void> {
+  await ensureInitialized();
+  const sql = getDB();
+  
+  await sql`
+    UPDATE users 
+    SET password_hash = ${hashedPassword}, updated_at = CURRENT_TIMESTAMP
+    WHERE id = ${userId}
+  `;
 }
 
 export async function getAllUsers(): Promise<User[]> {
   await ensureInitialized();
   const sql = getDB();
   const result = await sql`
-    SELECT id, email, name, role, status, last_login, created_at, updated_at, suspension_expires, suspension_reason 
+    SELECT id, email, name, role, status, last_login, created_at, updated_at, 
+           suspension_expires, suspension_reason, email_verified, auth_provider 
     FROM users ORDER BY created_at DESC
   `;
   return result;
@@ -543,6 +686,36 @@ export async function updateUserStatus(id: number, status: string, reason?: stri
         suspension_expires = ${expiresAt || null}
     WHERE id = ${id}
     RETURNING id, email, name, role, status, last_login, created_at, updated_at, suspension_expires, suspension_reason
+  `;
+  return result[0] || null;
+}
+
+export async function linkUserOAuthAccount(userId: number, oauthData: {
+  google_id?: string;
+  avatar_url?: string;
+  auth_provider?: string;
+  email_verified?: boolean;
+}): Promise<User | null> {
+  await ensureInitialized();
+  const sql = getDB();
+  
+  const {
+    google_id = null,
+    avatar_url = null,
+    auth_provider = 'google',
+    email_verified = true
+  } = oauthData;
+  
+  const result = await sql`
+    UPDATE users 
+    SET 
+      google_id = ${google_id},
+      avatar_url = ${avatar_url},
+      auth_provider = ${auth_provider},
+      email_verified = ${email_verified},
+      updated_at = CURRENT_TIMESTAMP
+    WHERE id = ${userId}
+    RETURNING id, email, name, role, status, last_login, created_at, updated_at, suspension_expires, suspension_reason, google_id, avatar_url, auth_provider, email_verified
   `;
   return result[0] || null;
 }
@@ -904,8 +1077,10 @@ export async function getAnalyticsData() {
   // Real user growth over the last 6 months
   const userGrowthData = await calculateRealUserGrowth(sql);
   
-  // Real page views (no mock data - would be 0 initially)
-  const pageViewsData = calculateRealPageViews();
+  // Real page views from database
+  const totalViews = await getTotalPageViews();
+  const viewsThisMonth = await getPageViewsThisMonth();
+  const pageViewsData = await calculateRealPageViews(sql);
   
   // Real content stats
   const publishedArticlesResult = await sql`SELECT COUNT(*) FROM articles WHERE published = true`;
@@ -953,9 +1128,12 @@ export async function getAnalyticsData() {
       newArticlesThisMonth,
       totalResources,
       newResourcesThisMonth,
+      totalViews,
+      viewsThisMonth,
       averageReadTime: await calculateAverageReadTime(sql, publishedArticles),
       contentEngagement: publishedArticles > 0 ? Math.floor((publishedArticles / Math.max(1, totalArticles)) * 100) : 0
-    }
+    },
+    recentActivity: await getRecentActivity(5)
   };
 }
 
@@ -987,10 +1165,27 @@ async function calculateRealUserGrowth(sql: any) {
   };
 }
 
-function calculateRealPageViews() {
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-  // Real page views would be tracked in production - starting with zeros
-  const data = months.map(() => 0);
+async function calculateRealPageViews(sql: any) {
+  const now = new Date();
+  const months = [];
+  const data = [];
+  
+  // Get the last 6 months 
+  for (let i = 5; i >= 0; i--) {
+    const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const monthName = monthDate.toLocaleDateString('en-US', { month: 'short' });
+    months.push(monthName);
+    
+    const monthStart = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
+    const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
+    
+    const result = await sql`
+      SELECT COUNT(*) FROM page_views 
+      WHERE viewed_at >= ${monthStart} AND viewed_at <= ${monthEnd}
+    `;
+    
+    data.push(parseInt(result[0].count));
+  }
   
   return {
     labels: months,
@@ -1105,86 +1300,7 @@ export async function deleteCategory(id: number): Promise<boolean> {
   }
 }
 
-// Comment functions
-export async function createComment(content: string, authorId: number, articleId?: number, resourceId?: number, parentId?: number): Promise<Comment> {
-  const sql = getDB();
-  
-  const result = await sql`
-    INSERT INTO comments (content, author_id, article_id, resource_id, parent_id)
-    VALUES (${content}, ${authorId}, ${articleId || null}, ${resourceId || null}, ${parentId || null})
-    RETURNING *
-  `;
-  return result[0];
-}
 
-export async function getComments(articleId?: number, resourceId?: number): Promise<Comment[]> {
-  const sql = getDB();
-  
-  try {
-    // Get comments with like/dislike counts
-    const result = await sql`
-      SELECT 
-        c.*, 
-        u.name as author_name, 
-        u.role as author_role,
-        COALESCE(likes.like_count, 0) as like_count,
-        COALESCE(dislikes.dislike_count, 0) as dislike_count
-      FROM comments c
-      JOIN users u ON c.author_id = u.id
-      LEFT JOIN (
-        SELECT comment_id, COUNT(*) as like_count
-        FROM comment_likes 
-        WHERE like_type = 'like'
-        GROUP BY comment_id
-      ) likes ON c.id = likes.comment_id
-      LEFT JOIN (
-        SELECT comment_id, COUNT(*) as dislike_count
-        FROM comment_likes 
-        WHERE like_type = 'dislike'
-        GROUP BY comment_id
-      ) dislikes ON c.id = dislikes.comment_id
-      WHERE c.status = 'approved' 
-        AND (${articleId ? sql`c.article_id = ${articleId}` : sql`1=0`} OR ${resourceId ? sql`c.resource_id = ${resourceId}` : sql`1=0`})
-      ORDER BY c.created_at ASC
-    `;
-
-    return result;
-  } catch (error) {
-    console.error('Error getting comments:', error);
-    // If there's an error with the complex query, fall back to simple version
-    try {
-      const fallbackResult = await sql`
-        SELECT 
-          c.*, 
-          u.name as author_name, 
-          u.role as author_role,
-          0 as like_count,
-          0 as dislike_count
-        FROM comments c
-        JOIN users u ON c.author_id = u.id
-        WHERE c.status = 'approved' 
-          AND (${articleId ? sql`c.article_id = ${articleId}` : sql`1=0`} OR ${resourceId ? sql`c.resource_id = ${resourceId}` : sql`1=0`})
-        ORDER BY c.created_at ASC
-      `;
-      return fallbackResult;
-    } catch (fallbackError) {
-      console.error('Error even in fallback query:', fallbackError);
-      throw fallbackError;
-    }
-  }
-}
-
-export async function updateCommentStatus(id: number, status: string): Promise<Comment | null> {
-  const sql = getDB();
-  
-  const result = await sql`
-    UPDATE comments 
-    SET status = ${status}, updated_at = CURRENT_TIMESTAMP
-    WHERE id = ${id}
-    RETURNING *
-  `;
-  return result[0] || null;
-}
 
 
 
@@ -1302,148 +1418,7 @@ export async function deleteNotification(id: number): Promise<boolean> {
   }
 }
 
-// Comment Like Functions
-export async function toggleCommentLike(userId: number, commentId: number, likeType: 'like' | 'dislike'): Promise<{ liked: boolean; likeCount: number; dislikeCount: number }> {
-  const sql = getDB();
-  
-  // Check if user already has a like/dislike on this comment
-  const existing = await sql`
-    SELECT id, like_type FROM comment_likes 
-    WHERE user_id = ${userId} AND comment_id = ${commentId}
-  `;
-  
-  if (existing.length > 0) {
-    const existingType = existing[0].like_type;
-    
-    if (existingType === likeType) {
-      // Remove like/dislike if clicking same type
-      await sql`DELETE FROM comment_likes WHERE id = ${existing[0].id}`;
-    } else {
-      // Update to new type if switching between like/dislike
-      await sql`
-        UPDATE comment_likes 
-        SET like_type = ${likeType}, updated_at = CURRENT_TIMESTAMP 
-        WHERE id = ${existing[0].id}
-      `;
-    }
-  } else {
-    // Add new like/dislike
-    await sql`
-      INSERT INTO comment_likes (user_id, comment_id, like_type)
-      VALUES (${userId}, ${commentId}, ${likeType})
-    `;
-  }
-  
-  // Get updated counts
-  const likeCountResult = await sql`
-    SELECT COUNT(*) as count FROM comment_likes 
-    WHERE comment_id = ${commentId} AND like_type = 'like'
-  `;
-  
-  const dislikeCountResult = await sql`
-    SELECT COUNT(*) as count FROM comment_likes 
-    WHERE comment_id = ${commentId} AND like_type = 'dislike'
-  `;
-  
-  const likeCount = parseInt(likeCountResult[0].count);
-  const dislikeCount = parseInt(dislikeCountResult[0].count);
-  
-  // Check if user currently has this like type after the operation
-  const currentLike = await sql`
-    SELECT like_type FROM comment_likes 
-    WHERE user_id = ${userId} AND comment_id = ${commentId}
-  `;
-  
-  const liked = currentLike.length > 0 && currentLike[0].like_type === likeType;
-  
-  return { liked, likeCount, dislikeCount };
-}
 
-export async function getCommentLikeCounts(commentId: number): Promise<{ likeCount: number; dislikeCount: number }> {
-  const sql = getDB();
-  
-  const likeCountResult = await sql`
-    SELECT COUNT(*) as count FROM comment_likes 
-    WHERE comment_id = ${commentId} AND like_type = 'like'
-  `;
-  
-  const dislikeCountResult = await sql`
-    SELECT COUNT(*) as count FROM comment_likes 
-    WHERE comment_id = ${commentId} AND like_type = 'dislike'
-  `;
-  
-  return {
-    likeCount: parseInt(likeCountResult[0].count),
-    dislikeCount: parseInt(dislikeCountResult[0].count)
-  };
-}
-
-export async function getUserCommentLikeStatus(userId: number, commentId: number): Promise<{ likeType: 'like' | 'dislike' | null }> {
-  const sql = getDB();
-  
-  const result = await sql`
-    SELECT like_type FROM comment_likes 
-    WHERE user_id = ${userId} AND comment_id = ${commentId}
-  `;
-  
-  return {
-    likeType: result.length > 0 ? result[0].like_type : null
-  };
-}
-
-// Comment Management Functions
-export async function getCommentById(id: number): Promise<Comment | null> {
-  const sql = getDB();
-  
-  try {
-    const result = await sql`
-      SELECT c.*, u.name as author_name, u.role as author_role
-      FROM comments c
-      LEFT JOIN users u ON c.author_id = u.id
-      WHERE c.id = ${id}
-    `;
-    
-    return result[0] || null;
-  } catch (error) {
-    console.error('Error fetching comment:', error);
-    return null;
-  }
-}
-
-export async function updateComment(id: number, content: string): Promise<Comment | null> {
-  const sql = getDB();
-  
-  try {
-    const result = await sql`
-      UPDATE comments 
-      SET content = ${content}, updated_at = NOW()
-      WHERE id = ${id}
-      RETURNING *
-    `;
-    
-    return result[0] || null;
-  } catch (error) {
-    console.error('Error updating comment:', error);
-    return null;
-  }
-}
-
-export async function deleteComment(id: number): Promise<boolean> {
-  const sql = getDB();
-  
-  try {
-    // Delete replies first (cascading delete)
-    await sql`DELETE FROM comments WHERE parent_id = ${id}`;
-    
-    // Delete the main comment
-    const result = await sql`DELETE FROM comments WHERE id = ${id}`;
-    
-    return result.count > 0;
-  } catch (error) {
-    console.error('Error deleting comment:', error);
-    return false;
-  }
-}
 
 // User Moderation Functions
 export async function suspendUser(userId: number, days: number, reason: string): Promise<boolean> {
@@ -1510,4 +1485,372 @@ export async function banUser(userId: number, reason: string): Promise<boolean> 
     console.error('Error banning user:', error);
     return false;
   }
+}
+
+// Essential Comment System Functions
+export async function createComment(
+  content: string, 
+  userId: number, 
+  articleId?: number, 
+  resourceId?: number, 
+  parentId?: number
+): Promise<Comment> {
+  await ensureInitialized();
+  const sql = getDB();
+  
+  // Limit content to 500 characters
+  const trimmedContent = content.trim().substring(0, 500);
+  
+  // Get parent comment info for reply context
+  let replyToUser = null;
+  if (parentId) {
+    const parentResult = await sql`
+      SELECT u.name 
+      FROM comments c 
+      JOIN users u ON c.author_id = u.id 
+      WHERE c.id = ${parentId}
+    `;
+    replyToUser = parentResult[0]?.name || null;
+  }
+  
+  const result = await sql`
+    INSERT INTO comments (content, author_id, article_id, resource_id, parent_id)
+    VALUES (${trimmedContent}, ${userId}, ${articleId || null}, ${resourceId || null}, ${parentId || null})
+    RETURNING *
+  `;
+  
+  // Get comment with user info
+  const commentWithUser = await sql`
+    SELECT c.*, u.name as user_name
+    FROM comments c
+    JOIN users u ON c.author_id = u.id
+    WHERE c.id = ${result[0].id}
+  `;
+  
+  return {
+    ...commentWithUser[0],
+    user_id: commentWithUser[0].author_id,
+    reply_to_user: replyToUser
+  };
+}
+
+export async function getComments(articleId?: number, resourceId?: number): Promise<Comment[]> {
+  await ensureInitialized();
+  const sql = getDB();
+  
+  const result = await sql`
+    WITH RECURSIVE comment_tree AS (
+      -- Base case: top-level comments
+      SELECT 
+        c.id, c.content, c.author_id as user_id, u.name as user_name,
+        c.article_id, c.resource_id, c.parent_id, c.created_at, c.updated_at,
+        0 as depth,
+        ARRAY[c.created_at] as path
+      FROM comments c
+      JOIN users u ON c.author_id = u.id
+      WHERE c.parent_id IS NULL
+        AND (${articleId ? sql`c.article_id = ${articleId}` : sql`c.article_id IS NULL`})
+        AND (${resourceId ? sql`c.resource_id = ${resourceId}` : sql`c.resource_id IS NULL`})
+      
+      UNION ALL
+      
+      -- Recursive case: replies
+      SELECT 
+        c.id, c.content, c.author_id as user_id, u.name as user_name,
+        c.article_id, c.resource_id, c.parent_id, c.created_at, c.updated_at,
+        ct.depth + 1,
+        ct.path || c.created_at
+      FROM comments c
+      JOIN users u ON c.author_id = u.id
+      JOIN comment_tree ct ON c.parent_id = ct.id
+      WHERE ct.depth < 10  -- Limit nesting depth
+    )
+    SELECT 
+      ct.*,
+      pu.name as reply_to_user
+    FROM comment_tree ct
+    LEFT JOIN comments pc ON ct.parent_id = pc.id
+    LEFT JOIN users pu ON pc.author_id = pu.id
+    ORDER BY ct.path
+  `;
+  
+  return result;
+}
+
+export async function deleteComment(commentId: number, userId: number): Promise<boolean> {
+  await ensureInitialized();
+  const sql = getDB();
+  
+  try {
+    const result = await sql`
+      DELETE FROM comments 
+      WHERE id = ${commentId} AND author_id = ${userId}
+    `;
+    return result.count > 0;
+  } catch (error) {
+    console.error('Error deleting comment:', error);
+    return false;
+  }
+}
+
+// View Tracking Functions
+export async function trackPageView(
+  articleId?: number, 
+  resourceId?: number, 
+  userId?: number, 
+  ipAddress?: string, 
+  userAgent?: string
+): Promise<void> {
+  await ensureInitialized();
+  const sql = getDB();
+  
+  try {
+    await sql`
+      INSERT INTO page_views (article_id, resource_id, user_id, ip_address, user_agent)
+      VALUES (${articleId || null}, ${resourceId || null}, ${userId || null}, ${ipAddress || null}, ${userAgent || null})
+    `;
+  } catch (error) {
+    console.error('Error tracking page view:', error);
+  }
+}
+
+export async function getTotalPageViews(): Promise<number> {
+  await ensureInitialized();
+  const sql = getDB();
+  
+  try {
+    const result = await sql`SELECT COUNT(*) as count FROM page_views`;
+    return parseInt(result[0].count);
+  } catch (error) {
+    console.error('Error getting total page views:', error);
+    return 0;
+  }
+}
+
+export async function getPageViewsThisMonth(): Promise<number> {
+  await ensureInitialized();
+  const sql = getDB();
+  
+  try {
+    const firstDayOfMonth = new Date();
+    firstDayOfMonth.setDate(1);
+    firstDayOfMonth.setHours(0, 0, 0, 0);
+    
+    const result = await sql`
+      SELECT COUNT(*) as count FROM page_views 
+      WHERE viewed_at >= ${firstDayOfMonth.toISOString()}
+    `;
+    return parseInt(result[0].count);
+  } catch (error) {
+    console.error('Error getting page views this month:', error);
+    return 0;
+  }
+}
+
+// Activity Logging Functions
+export async function logActivity(
+  userId: number | null,
+  activityType: string,
+  description: string,
+  entityType?: string,
+  entityId?: number
+): Promise<void> {
+  await ensureInitialized();
+  const sql = getDB();
+  
+  try {
+    await sql`
+      INSERT INTO activity_log (user_id, activity_type, description, entity_type, entity_id)
+      VALUES (${userId}, ${activityType}, ${description}, ${entityType || null}, ${entityId || null})
+    `;
+  } catch (error) {
+    console.error('Error logging activity:', error);
+  }
+}
+
+export async function getRecentActivity(limit: number = 10): Promise<any[]> {
+  await ensureInitialized();
+  const sql = getDB();
+  
+  try {
+    const result = await sql`
+      SELECT 
+        al.*,
+        u.name as user_name,
+        a.title as article_title,
+        r.title as resource_title
+      FROM activity_log al
+      LEFT JOIN users u ON al.user_id = u.id
+      LEFT JOIN articles a ON al.entity_type = 'article' AND al.entity_id = a.id
+      LEFT JOIN resources r ON al.entity_type = 'resource' AND al.entity_id = r.id
+      ORDER BY al.created_at DESC
+      LIMIT ${limit}
+    `;
+    
+    return result.map(activity => ({
+      id: activity.id,
+      userName: activity.user_name || 'Anonymous',
+      activityType: activity.activity_type,
+      description: activity.description,
+      entityType: activity.entity_type,
+      entityId: activity.entity_id,
+      articleTitle: activity.article_title,
+      resourceTitle: activity.resource_title,
+      createdAt: activity.created_at
+    }));
+  } catch (error) {
+    console.error('Error getting recent activity:', error);
+    return [];
+  }
+}
+
+// Email Verification Functions
+
+export async function createEmailVerification(
+  userId: number,
+  email: string,
+  purpose: 'registration' | 'email_change' | 'password_reset' = 'registration',
+  ipAddress?: string,
+  userAgent?: string
+): Promise<EmailVerification> {
+  await ensureInitialized();
+  const sql = getDB();
+  
+  // Generate 6-digit OTP
+  const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+  
+  // Set expiration time (15 minutes from now)
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+  
+  // Delete any existing verification for this user and purpose
+  await sql`
+    DELETE FROM email_verifications 
+    WHERE user_id = ${userId} AND purpose = ${purpose}
+  `;
+  
+  const result = await sql`
+    INSERT INTO email_verifications (
+      user_id, email, otp_code, purpose, expires_at, ip_address, user_agent
+    ) VALUES (
+      ${userId}, ${email}, ${otpCode}, ${purpose}, ${expiresAt}, 
+      ${ipAddress || null}, ${userAgent || null}
+    )
+    RETURNING *
+  `;
+  
+  return result[0];
+}
+
+export async function verifyEmailOTP(
+  userId: number,
+  otpCode: string,
+  purpose: 'registration' | 'email_change' | 'password_reset' = 'registration'
+): Promise<{ success: boolean; message: string; verification?: EmailVerification }> {
+  await ensureInitialized();
+  const sql = getDB();
+  
+  // Get the verification record
+  const verifications = await sql`
+    SELECT * FROM email_verifications 
+    WHERE user_id = ${userId} AND purpose = ${purpose} AND verified_at IS NULL
+    ORDER BY created_at DESC LIMIT 1
+  `;
+  
+  if (verifications.length === 0) {
+    return { success: false, message: 'No verification found. Please request a new code.' };
+  }
+  
+  const verification = verifications[0];
+  
+  // Check if expired
+  if (new Date() > new Date(verification.expires_at)) {
+    return { success: false, message: 'Verification code has expired. Please request a new code.' };
+  }
+  
+  // Check attempt limit
+  if (verification.attempts >= verification.max_attempts) {
+    return { success: false, message: 'Too many failed attempts. Please request a new code.' };
+  }
+  
+  // Check OTP code
+  if (verification.otp_code !== otpCode) {
+    // Increment attempts
+    await sql`
+      UPDATE email_verifications 
+      SET attempts = attempts + 1, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ${verification.id}
+    `;
+    
+    const remainingAttempts = verification.max_attempts - (verification.attempts + 1);
+    return { 
+      success: false, 
+      message: `Invalid code. ${remainingAttempts} attempt${remainingAttempts !== 1 ? 's' : ''} remaining.` 
+    };
+  }
+  
+  // Success - mark as verified
+  const updatedResult = await sql`
+    UPDATE email_verifications 
+    SET verified_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+    WHERE id = ${verification.id}
+    RETURNING *
+  `;
+  
+  // Update user email verification status if this was registration
+  if (purpose === 'registration') {
+    await sql`
+      UPDATE users 
+      SET email_verified = true, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ${userId}
+    `;
+  }
+  
+  return { 
+    success: true, 
+    message: 'Email verified successfully!', 
+    verification: updatedResult[0] 
+  };
+}
+
+export async function getEmailVerification(
+  userId: number,
+  purpose: 'registration' | 'email_change' | 'password_reset' = 'registration'
+): Promise<EmailVerification | null> {
+  await ensureInitialized();
+  const sql = getDB();
+  
+  const result = await sql`
+    SELECT * FROM email_verifications 
+    WHERE user_id = ${userId} AND purpose = ${purpose} AND verified_at IS NULL
+    ORDER BY created_at DESC LIMIT 1
+  `;
+  
+  return result[0] || null;
+}
+
+export async function deleteEmailVerification(
+  userId: number,
+  purpose: 'registration' | 'email_change' | 'password_reset' = 'registration'
+): Promise<boolean> {
+  await ensureInitialized();
+  const sql = getDB();
+  
+  const result = await sql`
+    DELETE FROM email_verifications 
+    WHERE user_id = ${userId} AND purpose = ${purpose}
+  `;
+  
+  return result.length > 0;
+}
+
+export async function cleanupExpiredVerifications(): Promise<number> {
+  await ensureInitialized();
+  const sql = getDB();
+  
+  const result = await sql`
+    DELETE FROM email_verifications 
+    WHERE expires_at < CURRENT_TIMESTAMP
+  `;
+  
+  return result.length;
 }

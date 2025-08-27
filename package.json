@@ -10,12 +10,15 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.19.0",
+    "@hono/oauth-providers": "^0.8.5",
     "@neondatabase/serverless": "^1.0.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.10",
+    "@types/nodemailer": "^7.0.1",
     "bcryptjs": "^3.0.2",
     "hono": "^4.9.4",
     "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^7.0.5",
     "vercel": "^46.0.4"
   },
   "devDependencies": {

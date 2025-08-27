@@ -42,7 +42,7 @@ export function verifyToken(token: string): AuthPayload | null {
 }
 
 // Register new user
-export async function registerUser(email: string, name: string, password: string): Promise<AuthUser> {
+export async function registerUser(email: string, name: string, password: string, autoLogin: boolean = true): Promise<AuthUser> {
   // Check if user already exists
   const existingUser = await getUserByEmail(email);
   if (existingUser) {
@@ -66,12 +66,15 @@ export async function registerUser(email: string, name: string, password: string
   const passwordHash = await hashPassword(password);
   const user = await createUser(email, name, passwordHash);
 
-  // Generate token
-  const token = generateToken({
-    userId: user.id,
-    email: user.email,
-    role: user.role
-  });
+  // Generate token only if auto-login is enabled
+  let token = '';
+  if (autoLogin) {
+    token = generateToken({
+      userId: user.id,
+      email: user.email,
+      role: user.role
+    });
+  }
 
   return { ...user, token };
 }
@@ -93,6 +96,14 @@ export async function loginUser(email: string, password: string): Promise<AuthUs
   const isValidPassword = await verifyPassword(password, user.password_hash);
   if (!isValidPassword) {
     throw new Error('Invalid email or password');
+  }
+  
+  // Check if email is verified (skip for OAuth users and admin users)
+  if (!user.email_verified && user.auth_provider !== 'google' && user.role !== 'admin') {
+    const error = new Error('Please verify your email address before signing in.');
+    (error as any).code = 'EMAIL_NOT_VERIFIED';
+    (error as any).userId = user.id;
+    throw error;
   }
 
   // Generate token

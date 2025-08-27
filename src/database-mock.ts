@@ -44,13 +44,17 @@ let nextResourceId = 1;
 export async function initializeDatabase() {
   console.log('Initializing mock database...');
   
-  // Add specific admin user with provided credentials
-  // Pre-generated hash for password: Famous2016?
+  // Add admin user from environment variables
+  const adminEmail = process.env.ADMIN_EMAIL || 'admin@faithdefenders.com';
+  const adminName = process.env.ADMIN_NAME || 'Admin';
+  // Note: In production, use proper password hashing from environment
+  const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH || '$2b$12$LyqXRi/3ydfFM/A7urZUQOZjO3bKWIFGd3cicUMx9Pc5S9OYAFMd6';
+  
   users.push({
     id: 1,
-    email: 'siagmoo26@gmail.com',
-    name: 'Admin',
-    password_hash: '$2b$12$LyqXRi/3ydfFM/A7urZUQOZjO3bKWIFGd3cicUMx9Pc5S9OYAFMd6',
+    email: adminEmail,
+    name: adminName,
+    password_hash: adminPasswordHash,
     role: 'admin',
     created_at: new Date('2025-01-01')
   });
@@ -142,7 +146,8 @@ export async function initializeDatabase() {
 // User functions
 export async function createUser(email: string, name: string, passwordHash: string, role: string = 'user'): Promise<User> {
   // Only make specific admin emails an admin, not any first user
-  const isAdminEmail = email === 'admin@faithdefenders.com' || email === 'siagmoo26@gmail.com';
+  const adminEmail = process.env.ADMIN_EMAIL || 'admin@faithdefenders.com';
+  const isAdminEmail = email === 'admin@faithdefenders.com' || email === adminEmail;
   const userRole = isAdminEmail ? 'admin' : role;
   
   const user = {

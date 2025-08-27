@@ -2,7 +2,8 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { registerUser, loginUser, authMiddleware, setAuthCookie, clearAuthCookie, getLoggedInUser } from './auth';
 import { authenticate, requirePermission, requireContentCreator, hasPermission } from './auth-middleware';
-import advancedCommentsAPI from './advanced-comments-api';
+import commentsApi from './comments-api';
+
 import { 
   getArticles, 
   getArticleById, 
@@ -14,19 +15,14 @@ import {
   updateResource,
   deleteResource,
   getCategories,
-  createComment,
-  getComments,
+
   toggleLike,
   getLikeCount,
   getUserLikeStatus,
-  getCommentById,
-  updateComment,
-  deleteComment,
-  toggleCommentLike,
-  getCommentLikeCounts,
-  getUserCommentLikeStatus,
+
   suspendUser,
   banUser,
+  logActivity,
   User 
 } from './database-neon';
 
@@ -40,8 +36,10 @@ api.use('*', cors({
   credentials: true,
 }));
 
-// Mount advanced comments API
-api.route('/advanced-comments', advancedCommentsAPI);
+// Mount comments API
+api.route('/', commentsApi);
+
+
 
 // Health check
 api.get('/health', (c) => {
@@ -52,19 +50,62 @@ api.get('/health', (c) => {
 api.post('/auth/register', async (c) => {
   try {
     const { email, name, password } = await c.req.json();
-    const user = await registerUser(email, name, password);
     
-    // Set HTTP-only cookie
-    if (user.token) {
-      setAuthCookie(c, user.token);
+    // Import email verification functions
+    const { createEmailVerification } = await import('./database-neon');
+    const { sendVerificationEmail } = await import('./email-service');
+    
+    // Get client info for security logging
+    const ipAddress = c.req.header('cf-connecting-ip') || 
+                      c.req.header('x-forwarded-for') || 
+                      c.req.header('x-real-ip') || 'unknown';
+    const userAgent = c.req.header('user-agent') || 'unknown';
+    
+    // Create user but don't log them in yet (email_verified will be false)
+    const user = await registerUser(email, name, password, false); // Don't auto-login
+    
+    // Create email verification record
+    const verification = await createEmailVerification(
+      user.id,
+      email,
+      'registration',
+      ipAddress,
+      userAgent
+    );
+    
+    // Send verification email
+    const emailResult = await sendVerificationEmail(email, name, verification.otp_code, c.env);
+    
+    if (!emailResult.success) {
+      console.error('Failed to send verification email:', emailResult.error);
+      // Still return success but with a warning
+      return c.json({
+        success: true,
+        message: 'Account created successfully, but verification email failed to send. Please contact support.',
+        requiresVerification: true,
+        userId: user.id
+      });
+    }
+    
+    // Log preview URL for testing
+    if (emailResult.previewUrl) {
+      console.log('📧 Verification email preview:', emailResult.previewUrl);
     }
 
-    // Don't send token in response body for security
-    const { token, ...userResponse } = user;
+    // Log registration activity
+    await logActivity(
+      user.id,
+      'user_registration',
+      `New user registered: ${user.name} (email verification required)`,
+      'user',
+      user.id
+    );
+
     return c.json({
       success: true,
-      message: 'User registered successfully',
-      user: userResponse
+      message: 'Account created successfully! Please check your email for a verification code.',
+      requiresVerification: true,
+      userId: user.id
     });
   } catch (error) {
     console.error('Registration error:', error);
@@ -72,6 +113,133 @@ api.post('/auth/register', async (c) => {
       success: false,
       error: error instanceof Error ? error.message : 'Registration failed'
     }, 400);
+  }
+});
+
+// Verify email with OTP
+api.post('/auth/verify-email', async (c) => {
+  try {
+    const { userId, otpCode } = await c.req.json();
+    
+    if (!userId || !otpCode) {
+      return c.json({
+        success: false,
+        error: 'User ID and OTP code are required'
+      }, 400);
+    }
+    
+    const { verifyEmailOTP, getUserById } = await import('./database-neon');
+    const { sendWelcomeEmail } = await import('./email-service');
+    
+    // Verify the OTP
+    const result = await verifyEmailOTP(userId, otpCode, 'registration');
+    
+    if (!result.success) {
+      return c.json({
+        success: false,
+        error: result.message
+      }, 400);
+    }
+    
+    // Get user details for welcome email
+    const user = await getUserById(userId);
+    if (user) {
+      // Send welcome email (don't wait for it)
+      sendWelcomeEmail(user.email, user.name).catch(error => {
+        console.error('Failed to send welcome email:', error);
+      });
+      
+      // Log successful verification
+      await logActivity(
+        userId,
+        'email_verification',
+        `Email verified for user: ${user.name}`,
+        'user',
+        userId
+      );
+    }
+    
+    return c.json({
+      success: true,
+      message: 'Email verified successfully! You can now sign in to your account.'
+    });
+    
+  } catch (error) {
+    console.error('Email verification error:', error);
+    return c.json({
+      success: false,
+      error: 'Verification failed. Please try again.'
+    }, 500);
+  }
+});
+
+// Resend verification code
+api.post('/auth/resend-verification', async (c) => {
+  try {
+    const { userId } = await c.req.json();
+    
+    if (!userId) {
+      return c.json({
+        success: false,
+        error: 'User ID is required'
+      }, 400);
+    }
+    
+    const { getUserById, createEmailVerification } = await import('./database-neon');
+    const { sendVerificationEmail } = await import('./email-service');
+    
+    // Get user details
+    const user = await getUserById(userId);
+    if (!user) {
+      return c.json({
+        success: false,
+        error: 'User not found'
+      }, 404);
+    }
+    
+    if (user.email_verified) {
+      return c.json({
+        success: false,
+        error: 'Email is already verified'
+      }, 400);
+    }
+    
+    // Get client info
+    const ipAddress = c.req.header('cf-connecting-ip') || 
+                      c.req.header('x-forwarded-for') || 
+                      c.req.header('x-real-ip') || 'unknown';
+    const userAgent = c.req.header('user-agent') || 'unknown';
+    
+    // Create new verification code
+    const verification = await createEmailVerification(
+      userId,
+      user.email,
+      'registration',
+      ipAddress,
+      userAgent
+    );
+    
+    // Send new verification email
+    const emailResult = await sendVerificationEmail(user.email, user.name, verification.otp_code, c.env);
+    
+    if (!emailResult.success) {
+      return c.json({
+        success: false,
+        error: 'Failed to send verification email. Please try again later.'
+      }, 500);
+    }
+    
+    return c.json({
+      success: true,
+      message: 'New verification code sent! Please check your email.'
+    });
+    
+  } catch (error) {
+    console.error('Resend verification error:', error);
+    return c.json({
+      success: false,
+      error: 'Failed to resend verification code. Please try again.'
+    }, 500);
   }
 });
 
@@ -85,6 +253,15 @@ api.post('/auth/login', async (c) => {
       setAuthCookie(c, user.token);
     }
 
+    // Log login activity
+    await logActivity(
+      user.id,
+      'user_login',
+      `User logged in: ${user.name}`,
+      'user',
+      user.id
+    );
+
     // Don't send token in response body for security
     const { token, ...userResponse } = user;
     return c.json({
@@ -94,6 +271,17 @@ api.post('/auth/login', async (c) => {
     });
   } catch (error) {
     console.error('Login error:', error);
+    
+    // Handle email not verified error
+    if (error instanceof Error && (error as any).code === 'EMAIL_NOT_VERIFIED') {
+      return c.json({
+        success: false,
+        error: error.message,
+        requiresVerification: true,
+        userId: (error as any).userId
+      }, 403);
+    }
+    
     return c.json({
       success: false,
       error: error instanceof Error ? error.message : 'Login failed'
@@ -109,6 +297,45 @@ api.post('/auth/logout', async (c) => {
   });
 });
 
+// Test email configuration endpoint
+api.post('/auth/test-email', async (c) => {
+  try {
+    const { testEmailConfig, sendVerificationEmail } = await import('./email-service');
+    
+    // Test email configuration
+    const configTest = await testEmailConfig(c.env);
+    
+    if (!configTest.success) {
+      return c.json({
+        success: false,
+        error: configTest.error
+      }, 500);
+    }
+    
+    // Send test email
+    const testEmail = await sendVerificationEmail(
+      'hakunamatataministry@gmail.com', 
+      'Test User', 
+      '123456', 
+      c.env
+    );
+    
+    return c.json({
+      success: testEmail.success,
+      message: testEmail.success ? 'Test email sent successfully!' : 'Failed to send test email',
+      error: testEmail.error,
+      messageId: testEmail.messageId
+    });
+    
+  } catch (error) {
+    console.error('Email test error:', error);
+    return c.json({
+      success: false,
+      error: 'Email test failed'
+    }, 500);
+  }
+});
+
 api.get('/auth/me', async (c) => {
   const user = await getLoggedInUser(c);
   
@@ -120,6 +347,210 @@ api.get('/auth/me', async (c) => {
     success: true,
     user: user
   });
+});
+
+// Password Reset Routes
+api.post('/auth/request-password-reset', async (c) => {
+  try {
+    const { email } = await c.req.json();
+    
+    if (!email) {
+      return c.json({ success: false, error: 'Email is required' }, 400);
+    }
+    
+    // Import functions
+    const { getUserByEmail, createEmailVerification } = await import('./database-neon');
+    const { sendPasswordResetEmail } = await import('./email-service');
+    
+    // Check if user exists
+    const user = await getUserByEmail(email);
+    if (!user) {
+      // Don't reveal if email exists or not for security
+      return c.json({
+        success: true,
+        message: 'If an account with this email exists, a password reset link has been sent.'
+      });
+    }
+    
+    // Skip if user is OAuth user (Google)
+    if (user.auth_provider === 'google') {
+      return c.json({
+        success: true,
+        message: 'If an account with this email exists, a password reset link has been sent.'
+      });
+    }
+    
+    // Create verification record (OTP generated inside the function)
+    const verification = await createEmailVerification(
+      user.id,
+      user.email,
+      'password_reset',
+      c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For'),
+      c.req.header('User-Agent')
+    );
+    
+    // Get the generated OTP code from the verification record
+    const otpCode = verification.otp_code;
+    
+    // Send password reset email
+    const emailResult = await sendPasswordResetEmail(user.email, user.name, otpCode, c.env);
+    
+    if (!emailResult.success) {
+      console.error('Failed to send password reset email:', emailResult.error);
+      return c.json({
+        success: false,
+        error: 'Failed to send password reset email'
+      }, 500);
+    }
+    
+    return c.json({
+      success: true,
+      message: 'Password reset code has been sent to your email address.',
+      userId: user.id // Include user ID for the reset form
+    });
+    
+  } catch (error) {
+    console.error('Password reset request error:', error);
+    return c.json({
+      success: false,
+      error: 'Password reset request failed'
+    }, 500);
+  }
+});
+
+api.post('/auth/reset-password', async (c) => {
+  try {
+    const { userId, otpCode, newPassword } = await c.req.json();
+    
+    if (!userId || !otpCode || !newPassword) {
+      return c.json({ 
+        success: false, 
+        error: 'User ID, OTP code, and new password are required' 
+      }, 400);
+    }
+    
+    if (newPassword.length < 6) {
+      return c.json({
+        success: false,
+        error: 'Password must be at least 6 characters long'
+      }, 400);
+    }
+    
+    // Import functions
+    const { verifyEmailOTP, getUserById, updateUserPassword } = await import('./database-neon');
+    const { hashPassword } = await import('./auth');
+    
+    // Verify the OTP code
+    const result = await verifyEmailOTP(userId, otpCode, 'password_reset');
+    
+    if (!result.success) {
+      return c.json({
+        success: false,
+        error: result.message
+      }, 400);
+    }
+    
+    // Hash the new password
+    const hashedPassword = await hashPassword(newPassword);
+    
+    // Update the user's password
+    const user = await getUserById(userId);
+    if (!user) {
+      return c.json({
+        success: false,
+        error: 'User not found'
+      }, 404);
+    }
+    
+    await updateUserPassword(userId, hashedPassword);
+    
+    return c.json({
+      success: true,
+      message: 'Password has been reset successfully. You can now sign in with your new password.'
+    });
+    
+  } catch (error) {
+    console.error('Password reset error:', error);
+    return c.json({
+      success: false,
+      error: 'Password reset failed'
+    }, 500);
+  }
+});
+
+// Change Password (for logged-in users)
+api.post('/auth/change-password', async (c) => {
+  try {
+    const { currentPassword, newPassword } = await c.req.json();
+    
+    if (!currentPassword || !newPassword) {
+      return c.json({ 
+        success: false, 
+        error: 'Current password and new password are required' 
+      }, 400);
+    }
+    
+    if (newPassword.length < 6) {
+      return c.json({
+        success: false,
+        error: 'New password must be at least 6 characters long'
+      }, 400);
+    }
+    
+    // Get logged in user
+    const user = await getLoggedInUser(c);
+    if (!user) {
+      return c.json({ error: 'Not authenticated' }, 401);
+    }
+    
+    // Check if user is OAuth user (can't change password)
+    if (user.auth_provider === 'google') {
+      return c.json({
+        success: false,
+        error: 'Cannot change password for Google OAuth accounts. Manage your password through Google.'
+      }, 400);
+    }
+    
+    // Import functions
+    const { getUserByEmail, updateUserPassword } = await import('./database-neon');
+    const { verifyPassword, hashPassword } = await import('./auth');
+    
+    // Get user with password hash
+    const userWithHash = await getUserByEmail(user.email);
+    if (!userWithHash) {
+      return c.json({
+        success: false,
+        error: 'User not found'
+      }, 404);
+    }
+    
+    // Verify current password
+    const isValidPassword = await verifyPassword(currentPassword, userWithHash.password_hash);
+    if (!isValidPassword) {
+      return c.json({
+        success: false,
+        error: 'Current password is incorrect'
+      }, 400);
+    }
+    
+    // Hash the new password
+    const hashedPassword = await hashPassword(newPassword);
+    
+    // Update the password
+    await updateUserPassword(user.id, hashedPassword);
+    
+    return c.json({
+      success: true,
+      message: 'Password changed successfully.'
+    });
+    
+  } catch (error) {
+    console.error('Change password error:', error);
+    return c.json({
+      success: false,
+      error: 'Failed to change password'
+    }, 500);
+  }
 });
 
 // Articles Routes
@@ -186,6 +617,15 @@ api.post('/articles', authMiddleware, requirePermission('CREATE_ARTICLE'), async
     }
 
     const article = await createArticle(title, content, excerpt || '', user.id);
+    
+    // Log article creation activity
+    await logActivity(
+      user.id,
+      'article_created',
+      `Article published: "${article.title}"`,
+      'article',
+      article.id
+    );
     
     return c.json({
       success: true,
@@ -311,6 +751,15 @@ api.post('/resources', authMiddleware, requirePermission('CREATE_RESOURCE'), asy
         published: published !== undefined ? published : true,
         isUploadedFile: false
       }
+    );
+    
+    // Log resource creation activity
+    await logActivity(
+      user.id,
+      'resource_created',
+      `Resource added: "${resource.title}"`,
+      'resource',
+      resource.id
     );
     
     return c.json({
@@ -539,270 +988,26 @@ api.get('/categories', async (c) => {
   }
 });
 
-// Comments Routes - Available to all authenticated users
-api.get('/articles/:id/comments', async (c) => {
+// Analytics API (Admin only)
+api.get('/analytics', authMiddleware, requirePermission('ADMIN_ACCESS'), async (c) => {
   try {
-    const id = parseInt(c.req.param('id'));
-    if (isNaN(id)) {
-      return c.json({ success: false, error: 'Invalid article ID' }, 400);
-    }
-
-    const comments = await getComments(id, undefined);
+    const { getAnalyticsData } = await import('./database-neon');
+    const analyticsData = await getAnalyticsData();
+    
     return c.json({
       success: true,
-      comments: comments
+      ...analyticsData
     });
   } catch (error) {
-    console.error('Error fetching comments:', error);
+    console.error('Error fetching analytics data:', error);
     return c.json({
       success: false,
-      error: 'Failed to fetch comments'
+      error: 'Failed to fetch analytics data'
     }, 500);
   }
 });
 
-api.get('/resources/:id/comments', async (c) => {
-  try {
-    const id = parseInt(c.req.param('id'));
-    if (isNaN(id)) {
-      return c.json({ success: false, error: 'Invalid resource ID' }, 400);
-    }
 
-    const comments = await getComments(undefined, id);
-    return c.json({
-      success: true,
-      comments: comments
-    });
-  } catch (error) {
-    console.error('Error fetching comments:', error);
-    return c.json({
-      success: false,
-      error: 'Failed to fetch comments'
-    }, 500);
-  }
-});
-
-api.post('/articles/:id/comments', authMiddleware, requirePermission('CREATE_COMMENT'), async (c) => {
-  try {
-    const user = c.get('user') as User;
-    const id = parseInt(c.req.param('id'));
-    const { content, parentId } = await c.req.json();
-    
-    if (isNaN(id)) {
-      return c.json({ success: false, error: 'Invalid article ID' }, 400);
-    }
-    
-    if (!content || content.trim().length === 0) {
-      return c.json({
-        success: false,
-        error: 'Comment content is required'
-      }, 400);
-    }
-    
-    // Verify article exists
-    const article = await getArticleById(id);
-    if (!article) {
-      return c.json({ success: false, error: 'Article not found' }, 404);
-    }
-
-    const comment = await createComment(
-      content.trim(), 
-      user.id, 
-      id, 
-      undefined, 
-      parentId || undefined
-    );
-    
-    return c.json({
-      success: true,
-      message: 'Comment created successfully',
-      comment: comment
-    });
-  } catch (error) {
-    console.error('Error creating comment:', error);
-    return c.json({
-      success: false,
-      error: 'Failed to create comment'
-    }, 500);
-  }
-});
-
-api.post('/resources/:id/comments', authMiddleware, requirePermission('CREATE_COMMENT'), async (c) => {
-  try {
-    const user = c.get('user') as User;
-    const id = parseInt(c.req.param('id'));
-    const { content, parentId } = await c.req.json();
-    
-    if (isNaN(id)) {
-      return c.json({ success: false, error: 'Invalid resource ID' }, 400);
-    }
-    
-    if (!content || content.trim().length === 0) {
-      return c.json({
-        success: false,
-        error: 'Comment content is required'
-      }, 400);
-    }
-    
-    // Verify resource exists
-    const resource = await getResourceById(id);
-    if (!resource) {
-      return c.json({ success: false, error: 'Resource not found' }, 404);
-    }
-
-    const comment = await createComment(
-      content.trim(), 
-      user.id, 
-      undefined, 
-      id, 
-      parentId || undefined
-    );
-    
-    return c.json({
-      success: true,
-      message: 'Comment created successfully',
-      comment: comment
-    });
-  } catch (error) {
-    console.error('Error creating comment:', error);
-    return c.json({
-      success: false,
-      error: 'Failed to create comment'
-    }, 500);
-  }
-});
-
-// Comment Management Routes
-api.put('/comments/:id', authMiddleware, async (c) => {
-  try {
-    const user = c.get('user') as User;
-    const commentId = parseInt(c.req.param('id'));
-    const { content } = await c.req.json();
-    
-    if (isNaN(commentId)) {
-      return c.json({ success: false, error: 'Invalid comment ID' }, 400);
-    }
-    
-    if (!content || content.trim().length === 0) {
-      return c.json({ success: false, error: 'Comment content is required' }, 400);
-    }
-    
-    const comment = await getCommentById(commentId);
-    if (!comment) {
-      return c.json({ success: false, error: 'Comment not found' }, 404);
-    }
-    
-    // Check permission: user can edit their own comment or admin/moderator can edit any
-    if (comment.author_id !== user.id && !['admin', 'moderator'].includes(user.role)) {
-      return c.json({ success: false, error: 'Permission denied' }, 403);
-    }
-    
-    const updatedComment = await updateComment(commentId, content.trim());
-    
-    return c.json({
-      success: true,
-      message: 'Comment updated successfully',
-      comment: updatedComment
-    });
-  } catch (error) {
-    console.error('Error updating comment:', error);
-    return c.json({
-      success: false,
-      error: 'Failed to update comment'
-    }, 500);
-  }
-});
-
-api.delete('/comments/:id', authMiddleware, async (c) => {
-  try {
-    const user = c.get('user') as User;
-    const commentId = parseInt(c.req.param('id'));
-    
-    if (isNaN(commentId)) {
-      return c.json({ success: false, error: 'Invalid comment ID' }, 400);
-    }
-    
-    const comment = await getCommentById(commentId);
-    if (!comment) {
-      return c.json({ success: false, error: 'Comment not found' }, 404);
-    }
-    
-    // Check permission: user can delete their own comment or admin/moderator can delete any
-    if (comment.author_id !== user.id && !['admin', 'moderator'].includes(user.role)) {
-      return c.json({ success: false, error: 'Permission denied' }, 403);
-    }
-    
-    await deleteComment(commentId);
-    
-    return c.json({
-      success: true,
-      message: 'Comment deleted successfully'
-    });
-  } catch (error) {
-    console.error('Error deleting comment:', error);
-    return c.json({
-      success: false,
-      error: 'Failed to delete comment'
-    }, 500);
-  }
-});
-
-api.post('/comments/:id/moderate', authMiddleware, async (c) => {
-  try {
-    const user = c.get('user') as User;
-    const commentId = parseInt(c.req.param('id'));
-    const { action, days, reason } = await c.req.json();
-    
-    if (isNaN(commentId)) {
-      return c.json({ success: false, error: 'Invalid comment ID' }, 400);
-    }
-    
-    // Only admins and moderators can moderate
-    if (!['admin', 'moderator'].includes(user.role)) {
-      return c.json({ success: false, error: 'Permission denied' }, 403);
-    }
-    
-    const comment = await getCommentById(commentId);
-    if (!comment) {
-      return c.json({ success: false, error: 'Comment not found' }, 404);
-    }
-    
-    // Moderate the user who made the comment
-    let commentDeleted = false;
-    
-    switch (action) {
-      case 'warn':
-        // For now, just send warning (could implement notifications later)
-        break;
-      case 'suspend':
-        await suspendUser(comment.author_id, days || 1, reason || 'Violating community guidelines');
-        break;
-      case 'ban':
-        await banUser(comment.author_id, reason || 'Violating community guidelines');
-        break;
-      default:
-        return c.json({ success: false, error: 'Invalid moderation action' }, 400);
-    }
-    
-    // Optionally delete the offensive comment
-    if (action === 'ban' || action === 'suspend') {
-      await deleteComment(commentId);
-      commentDeleted = true;
-    }
-    
-    return c.json({
-      success: true,
-      message: `User ${action}ed successfully`,
-      commentDeleted
-    });
-  } catch (error) {
-    console.error('Error moderating comment:', error);
-    return c.json({
-      success: false,
-      error: 'Failed to moderate comment'
-    }, 500);
-  }
-});
 
 // Like Routes - Available to all authenticated users
 api.post('/articles/:id/like', authMiddleware, requirePermission('LIKE_CONTENT'), async (c) => {
@@ -938,107 +1143,6 @@ api.get('/resources/:id/likes', async (c) => {
   }
 });
 
-// Comment Like Routes - Available to all authenticated users
-api.post('/comments/:id/like', authMiddleware, requirePermission('LIKE_CONTENT'), async (c) => {
-  try {
-    const user = c.get('user') as User;
-    const commentId = parseInt(c.req.param('id'));
-    
-    if (isNaN(commentId)) {
-      return c.json({ success: false, error: 'Invalid comment ID' }, 400);
-    }
-    
-    // Verify comment exists
-    const comment = await getCommentById(commentId);
-    if (!comment) {
-      return c.json({ success: false, error: 'Comment not found' }, 404);
-    }
 
-    const result = await toggleCommentLike(user.id, commentId, 'like');
-    
-    return c.json({
-      success: true,
-      liked: result.liked,
-      likeCount: result.likeCount,
-      dislikeCount: result.dislikeCount,
-      message: result.liked ? 'Comment liked' : 'Comment like removed'
-    });
-  } catch (error) {
-    console.error('Error toggling comment like:', error);
-    return c.json({
-      success: false,
-      error: 'Failed to update comment like status'
-    }, 500);
-  }
-});
-
-api.post('/comments/:id/dislike', authMiddleware, requirePermission('LIKE_CONTENT'), async (c) => {
-  try {
-    const user = c.get('user') as User;
-    const commentId = parseInt(c.req.param('id'));
-    
-    if (isNaN(commentId)) {
-      return c.json({ success: false, error: 'Invalid comment ID' }, 400);
-    }
-    
-    // Verify comment exists
-    const comment = await getCommentById(commentId);
-    if (!comment) {
-      return c.json({ success: false, error: 'Comment not found' }, 404);
-    }
-
-    const result = await toggleCommentLike(user.id, commentId, 'dislike');
-    
-    return c.json({
-      success: true,
-      disliked: result.liked, // Note: 'liked' in response represents whether the dislike was applied
-      likeCount: result.likeCount,
-      dislikeCount: result.dislikeCount,
-      message: result.liked ? 'Comment disliked' : 'Comment dislike removed'
-    });
-  } catch (error) {
-    console.error('Error toggling comment dislike:', error);
-    return c.json({
-      success: false,
-      error: 'Failed to update comment dislike status'
-    }, 500);
-  }
-});
-
-// Get comment like counts and user status
-api.get('/comments/:id/likes', async (c) => {
-  try {
-    const commentId = parseInt(c.req.param('id'));
-    if (isNaN(commentId)) {
-      return c.json({ success: false, error: 'Invalid comment ID' }, 400);
-    }
-
-    const counts = await getCommentLikeCounts(commentId);
-    
-    // If user is authenticated, also get their like status
-    let userLikeStatus = { likeType: null };
-    try {
-      const user = await getLoggedInUser(c);
-      if (user) {
-        userLikeStatus = await getUserCommentLikeStatus(user.id, commentId);
-      }
-    } catch (error) {
-      // User not authenticated, that's okay
-    }
-    
-    return c.json({
-      success: true,
-      likeCount: counts.likeCount,
-      dislikeCount: counts.dislikeCount,
-      userLikeType: userLikeStatus.likeType
-    });
-  } catch (error) {
-    console.error('Error fetching comment like data:', error);
-    return c.json({
-      success: false,
-      error: 'Failed to fetch comment like data'
-    }, 500);
-  }
-});
 
 export default api;
