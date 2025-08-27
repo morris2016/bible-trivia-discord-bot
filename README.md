@@ -13,7 +13,7 @@
 - **Admin Roles**: https://3000-inazuof9eohwqpew3aev9.e2b.dev/admin/roles
 - **Password Reset**: https://3000-inazuof9eohwqpew3aev9.e2b.dev/forgot-password 🔐 **NEW**
 - **Dashboard Settings**: https://3000-inazuof9eohwqpew3aev9.e2b.dev/dashboard (Settings tab) 🔐 **NEW**
-- **GitHub**: (Will be added when pushed to repository)
+- **GitHub**: https://github.com/morris2016/Faith-defenders
 
 ## Currently Completed Features
 
