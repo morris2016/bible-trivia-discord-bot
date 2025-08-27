@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { registerUser, loginUser, authMiddleware, setAuthCookie, clearAuthCookie, getLoggedInUser } from './auth';
 import { authenticate, requirePermission, requireContentCreator, hasPermission } from './auth-middleware';
+import advancedCommentsAPI from './advanced-comments-api';
 import { 
   getArticles, 
   getArticleById, 
@@ -38,6 +39,9 @@ api.use('*', cors({
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true,
 }));
+
+// Mount advanced comments API
+api.route('/advanced-comments', advancedCommentsAPI);
 
 // Health check
 api.get('/health', (c) => {

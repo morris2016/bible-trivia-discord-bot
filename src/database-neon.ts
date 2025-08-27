@@ -111,7 +111,7 @@ export interface UserNotification {
 let isInitialized = false;
 
 // Get database connection
-function getDB() {
+export function getDB() {
   const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || 
     'postgres://neondb_owner:npg_bCSE8mA2YjgT@ep-weathered-mode-adqdxv9w-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require';
   
@@ -271,6 +271,9 @@ export async function initializeDatabase() {
         resource_id INTEGER REFERENCES resources(id) ON DELETE CASCADE NULL,
         parent_id INTEGER REFERENCES comments(id) ON DELETE CASCADE NULL,
         status VARCHAR(50) DEFAULT 'approved' CHECK (status IN ('pending', 'approved', 'rejected')),
+        like_count INTEGER DEFAULT 0,
+        pinned BOOLEAN DEFAULT false,
+        edited BOOLEAN DEFAULT false,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         CONSTRAINT comments_content_check CHECK (
@@ -279,7 +282,27 @@ export async function initializeDatabase() {
         )
       );
     `;
+
+    // Add new columns to existing comments table if they don't exist
+    try {
+      await sql`ALTER TABLE comments ADD COLUMN IF NOT EXISTS like_count INTEGER DEFAULT 0`;
+      await sql`ALTER TABLE comments ADD COLUMN IF NOT EXISTS pinned BOOLEAN DEFAULT false`;
+      await sql`ALTER TABLE comments ADD COLUMN IF NOT EXISTS edited BOOLEAN DEFAULT false`;
+    } catch (error) {
+      console.log('Comment columns might already exist');
+    }
     
+    // Create comment_likes table for comment likes
+    await sql`
+      CREATE TABLE IF NOT EXISTS comment_likes (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        comment_id INTEGER REFERENCES comments(id) ON DELETE CASCADE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, comment_id)
+      )
+    `;
+
     // Create likes table for articles and resources
     await sql`
       CREATE TABLE IF NOT EXISTS likes (
@@ -354,6 +377,9 @@ export async function initializeDatabase() {
       await sql`CREATE INDEX IF NOT EXISTS idx_comments_article_id ON comments(article_id)`;
       await sql`CREATE INDEX IF NOT EXISTS idx_comments_resource_id ON comments(resource_id)`;
       await sql`CREATE INDEX IF NOT EXISTS idx_comments_author_id ON comments(author_id)`;
+      await sql`CREATE INDEX IF NOT EXISTS idx_comments_pinned ON comments(pinned)`;
+      await sql`CREATE INDEX IF NOT EXISTS idx_comment_likes_user_id ON comment_likes(user_id)`;
+      await sql`CREATE INDEX IF NOT EXISTS idx_comment_likes_comment_id ON comment_likes(comment_id)`;
       await sql`CREATE INDEX IF NOT EXISTS idx_likes_user_id ON likes(user_id)`;
       await sql`CREATE INDEX IF NOT EXISTS idx_likes_article_id ON likes(article_id)`;
       await sql`CREATE INDEX IF NOT EXISTS idx_likes_resource_id ON likes(resource_id)`;

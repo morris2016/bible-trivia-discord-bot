@@ -653,22 +653,28 @@ app.get('/resources/:id', async (c) => {
           </div>
           
           <div className="comments-sidebar">
-            <div id="comments-section" className="comments-section">
-              {/* Comments will be loaded here */}
+            <div id="advanced-comments-container">
+              {/* Advanced comments will be loaded here */}
             </div>
           </div>
         </div>
       </div>
     </main>
         
-        {/* Load axios first, then comments and likes */}
-        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
-        <script src="/static/comments-likes.js"></script>
+        {/* Load advanced comment system */}
+        <script src="/static/advanced-comments.js"></script>
         <script dangerouslySetInnerHTML={{
           __html: `
             document.addEventListener('DOMContentLoaded', function() {
-              if (typeof initializeCommentsAndLikes === 'function') {
-                initializeCommentsAndLikes('resource', ${id});
+              if (typeof AdvancedCommentSystem === 'function') {
+                new AdvancedCommentSystem('advanced-comments-container', {
+                  resourceId: '${id}',
+                  currentUser: ${user ? JSON.stringify({
+                    id: user.id,
+                    name: user.name,
+                    role: user.role
+                  }) : 'null'}
+                });
               }
             });
           `
@@ -753,22 +759,28 @@ app.get('/articles/:id', async (c) => {
               </div>
               
               <div className="comments-sidebar">
-                <div id="comments-section" className="comments-section">
-                  {/* Comments will be loaded here */}
+                <div id="advanced-comments-container">
+                  {/* Advanced comments will be loaded here */}
                 </div>
               </div>
             </div>
           </div>
         </main>
         
-        {/* Load axios first, then comments and likes */}
-        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
-        <script src="/static/comments-likes.js"></script>
+        {/* Load advanced comment system */}
+        <script src="/static/advanced-comments.js"></script>
         <script dangerouslySetInnerHTML={{
           __html: `
             document.addEventListener('DOMContentLoaded', function() {
-              if (typeof initializeCommentsAndLikes === 'function') {
-                initializeCommentsAndLikes('article', ${id});
+              if (typeof AdvancedCommentSystem === 'function') {
+                new AdvancedCommentSystem('advanced-comments-container', {
+                  articleId: '${id}',
+                  currentUser: ${user ? JSON.stringify({
+                    id: user.id,
+                    name: user.name,
+                    role: user.role
+                  }) : 'null'}
+                });
               }
             });
           `
