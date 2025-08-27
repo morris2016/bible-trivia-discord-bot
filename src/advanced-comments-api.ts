@@ -16,39 +16,33 @@ app.get('/comments', async (c) => {
     let params: any[] = []
     
     if (articleId) {
+      // Simplified query to avoid issues with non-existent comment_likes table
       query = `
         SELECT 
           c.*,
           u.name as author_name,
           u.role as author_role,
-          CASE 
-            WHEN cl.id IS NOT NULL THEN true 
-            ELSE false 
-          END as user_liked,
-          COALESCE(c.like_count, 0) as like_count
+          COALESCE(c.like_count, 0) as like_count,
+          false as user_liked
         FROM comments c
         JOIN users u ON c.author_id = u.id
-        LEFT JOIN comment_likes cl ON c.id = cl.comment_id AND cl.user_id = $1
-        WHERE c.article_id = $2 AND c.status = 'approved'
+        WHERE c.article_id = $1 AND c.status = 'approved'
       `
-      params = [currentUser?.id || null, parseInt(articleId)]
+      params = [parseInt(articleId)]
     } else if (resourceId) {
+      // Simplified query to avoid issues with non-existent comment_likes table
       query = `
         SELECT 
           c.*,
           u.name as author_name,
           u.role as author_role,
-          CASE 
-            WHEN cl.id IS NOT NULL THEN true 
-            ELSE false 
-          END as user_liked,
-          COALESCE(c.like_count, 0) as like_count
+          COALESCE(c.like_count, 0) as like_count,
+          false as user_liked
         FROM comments c
         JOIN users u ON c.author_id = u.id
-        LEFT JOIN comment_likes cl ON c.id = cl.comment_id AND cl.user_id = $1
-        WHERE c.resource_id = $2 AND c.status = 'approved'
+        WHERE c.resource_id = $1 AND c.status = 'approved'
       `
-      params = [currentUser?.id || null, parseInt(resourceId)]
+      params = [parseInt(resourceId)]
     } else {
       return c.json({ error: 'Article ID or Resource ID required' }, 400)
     }
@@ -63,7 +57,8 @@ app.get('/comments', async (c) => {
     if (filter === 'pinned') {
       query += ` AND c.pinned = true`
     } else if (filter === 'liked' && currentUser) {
-      query += ` AND cl.id IS NOT NULL`
+      // For now, skip liked filter until comment_likes table is properly set up
+      // query += ` AND cl.id IS NOT NULL`
     }
 
     // Add sorting
@@ -85,7 +80,10 @@ app.get('/comments', async (c) => {
     const commentMap = new Map()
     const rootComments = []
 
-    for (const row of result) {
+    // Ensure result is an array
+    const rows = Array.isArray(result) ? result : []
+
+    for (const row of rows) {
       const comment = {
         id: row.id,
         content: row.content,
@@ -122,7 +120,8 @@ app.get('/comments', async (c) => {
 
   } catch (error) {
     console.error('Error fetching comments:', error)
-    return c.json({ error: 'Failed to fetch comments' }, 500)
+    console.error('Error details:', error.message)
+    return c.json({ error: 'Failed to fetch comments', details: error.message }, 500)
   }
 })
 
