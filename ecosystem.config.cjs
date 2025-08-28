@@ -3,10 +3,9 @@ module.exports = {
     {
       name: 'faith-defenders',
       script: 'npx',
-      args: 'wrangler pages dev dist --ip 0.0.0.0 --port 3000',
+      args: 'wrangler pages dev dist --port 3000 --local',
       env: {
-        NODE_ENV: 'development',
-        PORT: 3000
+        NODE_ENV: 'development'
       },
       watch: false,
       instances: 1,
