@@ -131,9 +131,17 @@ export interface Comment {
 // Database initialization flag
 let isInitialized = false;
 
+// Global environment for Cloudflare Workers
+let globalEnv: any = null;
+
+export function setGlobalEnv(env: any) {
+  globalEnv = env;
+}
+
 // Get database connection
 export function getDB() {
-  const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || 
+  // In Cloudflare Workers, use global env context, fallback to process.env for local development
+  const databaseUrl = globalEnv?.DATABASE_URL || process.env.DATABASE_URL || process.env.POSTGRES_URL || 
     'postgres://neondb_owner:npg_bCSE8mA2YjgT@ep-weathered-mode-adqdxv9w-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require';
   
   return neon(databaseUrl);

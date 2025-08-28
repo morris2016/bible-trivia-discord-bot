@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { renderer } from './renderer'
-import { initializeDatabase, getArticles, getResources } from './database-neon'
+import { initializeDatabase, getArticles, getResources, setGlobalEnv } from './database-neon'
 import { getLoggedInUser } from './auth'
 import api from './api'
 import adminApp from './admin-routes'
@@ -11,9 +11,12 @@ const app = new Hono()
 
 // Database will be initialized on first request
 
-// User context middleware - MUST be before route mounting
+// Environment and user context middleware - MUST be before route mounting
 app.use('*', async (c, next) => {
   try {
+    // Set global environment for database access in Cloudflare Workers
+    setGlobalEnv(c.env);
+    
     const user = await getLoggedInUser(c);
     c.set('user', user);
     c.set('userId', user?.id);

@@ -1,14 +1,14 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "webapp",
+  "name": "gospelways-faith",
   "compatibility_date": "2025-08-26",
   "pages_build_output_dir": "./dist",
   "compatibility_flags": [
     "nodejs_compat"
   ]
-  // "vars": {
-  //   "MY_VAR": "my-variable"
-  // },
+  // Environment variables are configured via Cloudflare Dashboard
+  // or wrangler secrets for production deployment
+  // Custom domain configuration will be handled via Cloudflare dashboard
   // "kv_namespaces": [
   //   {
   //     "binding": "MY_KV_NAMESPACE",
