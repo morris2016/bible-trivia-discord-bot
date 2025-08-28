@@ -15,6 +15,7 @@ import {
   updateResource,
   deleteResource,
   getCategories,
+  setGlobalEnv,
 
   toggleLike,
   getLikeCount,
@@ -46,14 +47,132 @@ api.get('/health', (c) => {
   return c.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Debug environment variables (for production debugging)
+api.get('/debug/env', (c) => {
+  return c.json({
+    hasEnv: !!c.env,
+    envKeys: c.env ? Object.keys(c.env).filter(key => !key.includes('SECRET') && !key.includes('PASSWORD')) : [],
+    hasDatabaseUrl: !!c.env?.DATABASE_URL,
+    hasGoogleClientId: !!c.env?.GOOGLE_CLIENT_ID,
+    hasGoogleClientSecret: !!c.env?.GOOGLE_CLIENT_SECRET,
+    hasEnvironment: !!c.env?.ENVIRONMENT,
+    processEnvHas: {
+      databaseUrl: !!process.env.DATABASE_URL,
+      googleClientId: !!process.env.GOOGLE_CLIENT_ID
+    },
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Test database connection directly
+api.get('/debug/db', async (c) => {
+  try {
+    const { setGlobalEnv, getDB } = await import('./database-neon');
+    
+    // Set environment first
+    setGlobalEnv(c.env);
+    
+    // Try to get database connection
+    const sql = getDB();
+    
+    // Simple query test
+    const result = await sql`SELECT 1 as test`;
+    
+    // Test if categories table exists and has data
+    let categoriesTest = null;
+    try {
+      categoriesTest = await sql`SELECT COUNT(*) as count FROM categories`;
+    } catch (tableError) {
+      categoriesTest = { error: tableError.message };
+    }
+    
+    return c.json({
+      success: true,
+      testQuery: result,
+      categoriesTable: categoriesTest,
+      message: 'Database connection successful',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    return c.json({
+      success: false,
+      error: error.message,
+      stack: error.stack?.split('\n').slice(0, 5), // First 5 lines of stack
+      timestamp: new Date().toISOString()
+    }, 500);
+  }
+});
+
+// Test getCategories function directly
+api.get('/debug/categories', async (c) => {
+  try {
+    // Set environment first
+    setGlobalEnv(c.env);
+    
+    // Try the actual getCategories function
+    const categories = await getCategories();
+    
+    return c.json({
+      success: true,
+      categories: categories,
+      count: categories.length,
+      message: 'getCategories function successful',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    return c.json({
+      success: false,
+      error: error.message,
+      stack: error.stack?.split('\n').slice(0, 10),
+      timestamp: new Date().toISOString()
+    }, 500);
+  }
+});
+
+// Simple categories endpoint that bypasses initialization
+api.get('/categories-simple', async (c) => {
+  try {
+    // Set environment first
+    setGlobalEnv(c.env);
+    
+    // Get database connection directly without initialization
+    const { getDB } = await import('./database-neon');
+    const sql = getDB();
+    
+    // Direct query without any initialization
+    const categories = await sql`
+      SELECT * FROM categories 
+      ORDER BY name ASC
+    `;
+    
+    return c.json({
+      success: true,
+      categories: categories,
+      count: categories.length,
+      message: 'Direct query successful - bypassed initialization',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    return c.json({
+      success: false,
+      error: error.message,
+      stack: error.stack?.split('\n').slice(0, 5),
+      timestamp: new Date().toISOString()
+    }, 500);
+  }
+});
+
 // Authentication Routes
 api.post('/auth/register', async (c) => {
   try {
+    // Set global environment for database access
+    setGlobalEnv(c.env);
+    
     const { email, name, password } = await c.req.json();
     
     // Import email verification functions
     const { createEmailVerification } = await import('./database-neon');
-    const { sendVerificationEmail } = await import('./email-service');
+    const { sendVerificationEmail } = await import('./email-service-resend');
     
     // Get client info for security logging
     const ipAddress = c.req.header('cf-connecting-ip') || 
@@ -73,8 +192,12 @@ api.post('/auth/register', async (c) => {
       userAgent
     );
     
+    console.log('About to send verification email:', { email, name, otpCode: verification.otp_code });
+    
     // Send verification email
     const emailResult = await sendVerificationEmail(email, name, verification.otp_code, c.env);
+    
+    console.log('Registration email result:', emailResult);
     
     if (!emailResult.success) {
       console.error('Failed to send verification email:', emailResult.error);
@@ -119,6 +242,9 @@ api.post('/auth/register', async (c) => {
 // Verify email with OTP
 api.post('/auth/verify-email', async (c) => {
   try {
+    // Set global environment for database access
+    setGlobalEnv(c.env);
+    
     const { userId, otpCode } = await c.req.json();
     
     if (!userId || !otpCode) {
@@ -128,16 +254,23 @@ api.post('/auth/verify-email', async (c) => {
       }, 400);
     }
     
-    const { verifyEmailOTP, getUserById } = await import('./database-neon');
-    const { sendWelcomeEmail } = await import('./email-service');
+    console.log('Email verification request:', { userId, otpCodeLength: otpCode?.length });
+    
+    const { verifyEmailOTP, getUserById, logActivity } = await import('./database-neon');
+    const { sendWelcomeEmail } = await import('./email-service-resend');
+    
+    console.log('Attempting to verify OTP...');
     
     // Verify the OTP
     const result = await verifyEmailOTP(userId, otpCode, 'registration');
     
+    console.log('OTP verification result:', result);
+    
     if (!result.success) {
+      console.log('OTP verification failed:', result.message);
       return c.json({
         success: false,
-        error: result.message
+        error: result.message || 'Invalid or expired verification code'
       }, 400);
     }
     
@@ -166,9 +299,14 @@ api.post('/auth/verify-email', async (c) => {
     
   } catch (error) {
     console.error('Email verification error:', error);
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : 'No stack trace'
+    });
     return c.json({
       success: false,
-      error: 'Verification failed. Please try again.'
+      error: 'Verification failed. Please try again.',
+      details: error instanceof Error ? error.message : 'Unknown error'
     }, 500);
   }
 });
@@ -176,6 +314,9 @@ api.post('/auth/verify-email', async (c) => {
 // Resend verification code
 api.post('/auth/resend-verification', async (c) => {
   try {
+    // Set global environment for database access
+    setGlobalEnv(c.env);
+    
     const { userId } = await c.req.json();
     
     if (!userId) {
@@ -185,11 +326,16 @@ api.post('/auth/resend-verification', async (c) => {
       }, 400);
     }
     
+    console.log('Resend verification request for userId:', userId);
+    
     const { getUserById, createEmailVerification } = await import('./database-neon');
-    const { sendVerificationEmail } = await import('./email-service');
+    const { sendVerificationEmail } = await import('./email-service-resend');
+    
+    console.log('Modules imported successfully');
     
     // Get user details
     const user = await getUserById(userId);
+    console.log('User lookup result:', { found: !!user, email: user?.email, verified: user?.email_verified });
     if (!user) {
       return c.json({
         success: false,
@@ -210,6 +356,8 @@ api.post('/auth/resend-verification', async (c) => {
                       c.req.header('x-real-ip') || 'unknown';
     const userAgent = c.req.header('user-agent') || 'unknown';
     
+    console.log('Creating new verification code for user:', user.email);
+    
     // Create new verification code
     const verification = await createEmailVerification(
       userId,
@@ -219,8 +367,20 @@ api.post('/auth/resend-verification', async (c) => {
       userAgent
     );
     
+    console.log('Verification created:', { id: verification.id, otp_code: verification.otp_code });
+    
     // Send new verification email
+    console.log('Attempting to send verification email...');
+    console.log('Email details:', { 
+      email: user.email, 
+      name: user.name, 
+      otpCode: verification.otp_code,
+      hasEnv: !!c.env,
+      envKeys: c.env ? Object.keys(c.env) : []
+    });
+    
     const emailResult = await sendVerificationEmail(user.email, user.name, verification.otp_code, c.env);
+    console.log('Email send result:', emailResult);
     
     if (!emailResult.success) {
       return c.json({
@@ -236,15 +396,24 @@ api.post('/auth/resend-verification', async (c) => {
     
   } catch (error) {
     console.error('Resend verification error:', error);
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : 'No stack trace',
+      userId: c.req.json?.userId || 'No userId in request'
+    });
     return c.json({
       success: false,
-      error: 'Failed to resend verification code. Please try again.'
+      error: 'Failed to resend verification code. Please try again.',
+      details: error instanceof Error ? error.message : 'Unknown error'
     }, 500);
   }
 });
 
 api.post('/auth/login', async (c) => {
   try {
+    // Set global environment for database access
+    setGlobalEnv(c.env);
+    
     const { email, password } = await c.req.json();
     const user = await loginUser(email, password);
     
@@ -300,7 +469,10 @@ api.post('/auth/logout', async (c) => {
 // Test email configuration endpoint
 api.post('/auth/test-email', async (c) => {
   try {
-    const { testEmailConfig, sendVerificationEmail } = await import('./email-service');
+    // Set global environment for database access
+    setGlobalEnv(c.env);
+    
+    const { testEmailConfig, sendVerificationEmail } = await import('./email-service-resend');
     
     // Test email configuration
     const configTest = await testEmailConfig(c.env);
@@ -352,6 +524,9 @@ api.get('/auth/me', async (c) => {
 // Password Reset Routes
 api.post('/auth/request-password-reset', async (c) => {
   try {
+    // Set global environment for database access
+    setGlobalEnv(c.env);
+    
     const { email } = await c.req.json();
     
     if (!email) {
@@ -360,7 +535,7 @@ api.post('/auth/request-password-reset', async (c) => {
     
     // Import functions
     const { getUserByEmail, createEmailVerification } = await import('./database-neon');
-    const { sendPasswordResetEmail } = await import('./email-service');
+    const { sendPasswordResetEmail } = await import('./email-service-resend');
     
     // Check if user exists
     const user = await getUserByEmail(email);
@@ -420,6 +595,9 @@ api.post('/auth/request-password-reset', async (c) => {
 
 api.post('/auth/reset-password', async (c) => {
   try {
+    // Set global environment for database access
+    setGlobalEnv(c.env);
+    
     const { userId, otpCode, newPassword } = await c.req.json();
     
     if (!userId || !otpCode || !newPassword) {
@@ -556,6 +734,9 @@ api.post('/auth/change-password', async (c) => {
 // Articles Routes
 api.get('/articles', async (c) => {
   try {
+    // Ensure environment is set for database access
+    setGlobalEnv(c.env);
+    
     const articles = await getArticles(true); // Only published articles
     return c.json({
       success: true,
@@ -680,6 +861,9 @@ api.put('/articles/:id', authMiddleware, async (c) => {
 // Resources Routes
 api.get('/resources', async (c) => {
   try {
+    // Ensure environment is set for database access
+    setGlobalEnv(c.env);
+    
     const resources = await getResources();
     return c.json({
       success: true,
@@ -974,6 +1158,9 @@ api.delete('/resources/:id', authMiddleware, async (c) => {
 // Categories Routes (Public endpoint for frontend filtering)
 api.get('/categories', async (c) => {
   try {
+    // Ensure environment is set for database access
+    setGlobalEnv(c.env);
+    
     const categories = await getCategories();
     return c.json({
       success: true,

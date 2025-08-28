@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { googleAuth } from '@hono/oauth-providers/google'
-import { createUser, getUserByEmail, logActivity, linkUserOAuthAccount } from './database-neon'
+import { createUser, getUserByEmail, logActivity, linkUserOAuthAccount, setGlobalEnv } from './database-neon'
 import { generateToken, setAuthCookie } from './auth'
 
 const googleAuthApp = new Hono()
@@ -43,6 +43,9 @@ const getGoogleAuthConfig = (c: any) => {
 
 // Initiate Google OAuth login
 googleAuthApp.get('/google/login', async (c) => {
+  // Set global environment for database functions
+  setGlobalEnv(c.env);
+  
   const config = getGoogleAuthConfig(c)
   const isSignup = c.req.query('signup') === 'true'
   
@@ -65,6 +68,9 @@ googleAuthApp.get('/google/login', async (c) => {
 // Google OAuth callback
 googleAuthApp.get('/google/callback', async (c) => {
   try {
+    // Set global environment for database functions
+    setGlobalEnv(c.env);
+    
     const code = c.req.query('code')
     const error = c.req.query('error')
     

@@ -129,20 +129,56 @@ export interface Comment {
 }
 
 // Database initialization flag
-let isInitialized = false;
+// Skip initialization in Cloudflare Workers to avoid "Too many subrequests" error
+// Database tables are already created in production
+let isInitialized = typeof process !== 'undefined' && process.env?.NODE_ENV === 'production' ? true : false;
 
 // Global environment for Cloudflare Workers
 let globalEnv: any = null;
 
 export function setGlobalEnv(env: any) {
   globalEnv = env;
+  
+  // Skip database initialization in production (Cloudflare Workers)
+  // The database is already set up and initialization causes "Too many subrequests" error
+  if (env?.ENVIRONMENT === 'production' || env?.CF_PAGES) {
+    isInitialized = true;
+    console.log('Production environment detected - skipping database initialization');
+  }
+  
+  // Debug logging for environment setup
+  console.log('Global environment set:', {
+    hasEnv: !!env,
+    envKeys: env ? Object.keys(env) : [],
+    hasDatabaseUrl: !!env?.DATABASE_URL,
+    hasGoogleClientId: !!env?.GOOGLE_CLIENT_ID,
+    hasGoogleClientSecret: !!env?.GOOGLE_CLIENT_SECRET,
+    hasEnvironment: !!env?.ENVIRONMENT,
+    isInitialized: isInitialized,
+    skipInit: !!env?.ENVIRONMENT || !!env?.CF_PAGES
+  });
 }
 
 // Get database connection
 export function getDB() {
-  // In Cloudflare Workers, use global env context, fallback to process.env for local development
-  const databaseUrl = globalEnv?.DATABASE_URL || process.env.DATABASE_URL || process.env.POSTGRES_URL || 
+  // Priority order for database URL:
+  // 1. Cloudflare Workers environment (c.env from request context)
+  // 2. Process environment variables (local development)
+  // 3. Hardcoded fallback (development/testing)
+  let databaseUrl = globalEnv?.DATABASE_URL || 
+    process.env.DATABASE_URL || 
+    process.env.POSTGRES_URL || 
     'postgres://neondb_owner:npg_bCSE8mA2YjgT@ep-weathered-mode-adqdxv9w-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require';
+  
+  // Debug logging for environment resolution
+  console.log('Database connection debug:', {
+    hasGlobalEnv: !!globalEnv,
+    globalEnvKeys: globalEnv ? Object.keys(globalEnv) : [],
+    hasDatabaseUrlInGlobalEnv: !!globalEnv?.DATABASE_URL,
+    hasDatabaseUrlInProcessEnv: !!process.env.DATABASE_URL,
+    usingFallback: !globalEnv?.DATABASE_URL && !process.env.DATABASE_URL,
+    urlLength: databaseUrl?.length || 0
+  });
   
   return neon(databaseUrl);
 }
@@ -150,6 +186,17 @@ export function getDB() {
 // Lazy initialization - call this before any database operation
 async function ensureInitialized() {
   if (!isInitialized) {
+    // Skip initialization in Cloudflare Workers (production) to avoid "Too many subrequests"
+    // Check for Cloudflare environment indicators
+    const isCloudflare = globalEnv?.CF_PAGES || globalEnv?.ENVIRONMENT === 'production' || 
+                        (typeof process !== 'undefined' && process.env?.NODE_ENV === 'production');
+    
+    if (isCloudflare) {
+      console.log('Cloudflare Workers environment detected - skipping database initialization');
+      isInitialized = true;
+      return;
+    }
+    
     await initializeDatabase();
     isInitialized = true;
   }
