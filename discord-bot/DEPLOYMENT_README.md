@@ -19,7 +19,10 @@ Ensure your Discord bot code is pushed to your GitHub repository.
 1. Go to https://app.koyeb.com and sign in
 2. Click "Create Service" → "Import from GitHub"
 3. Connect your GitHub repository: `morris2016/bible-trivia-discord-bot`
-4. Koyeb will automatically detect the `koyeb.yaml` configuration
+4. **Important**: Select the service from the `discord-bot/` subdirectory
+   - Click the dropdown next to "Services found"
+   - Choose the service named "gospelways-discord-bot" from the discord-bot directory
+5. The `koyeb.yaml` configuration will be used
 
 ### 3. Set Secrets
 Before deployment, create these secrets in Koyeb (use uppercase with underscores):
