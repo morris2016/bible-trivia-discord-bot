@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { Logger } from '../utils/Logger.js';
-import { BIBLE_QUESTIONS } from '../src/bible-questions-data.ts';
+import { BIBLE_QUESTIONS } from '../src/bible-questions-data.js';
 
 export class APIService {
     constructor(options = {}) {

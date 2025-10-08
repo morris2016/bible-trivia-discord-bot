@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "npx ts-node --esm index.js",
+    "start": "node index.js",
     "demo": "node -e \"import('./index.js').then(m => console.log('✅ Discord Bible Trivia Bot: Demo Configuration Verified!\\n\\n📱 Bot Details:\\n• Name: GospelWays Discord Bible Trivia\\n• API: Live gospelways.com integration\\n• Commands: 7 slash commands ready\\n• Features: AI questions, scoring, leaderboards\\n\\n🚀 Ready to deploy! Use npm start to launch.\\n')).catch(console.error)\"",
     "dev": "nodemon index.js",
     "test": "echo \"Tests not yet implemented\""
