@@ -2,13 +2,12 @@
 services:
   - name: gospelways-discord-bot
     source:
-      root: discord-bot
-      buildpack: nodejs
+      dockerfile: Dockerfile
     instances: 1
     ports: []
     processes:
       - name: discord-bot
-        command: npm start
+        command: ./start-bot.sh
     env:
       - key: NODE_ENV
         value: production
