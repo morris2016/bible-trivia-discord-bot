@@ -1,12 +1,8 @@
 import { Client, GatewayIntentBits, REST, Routes, EmbedBuilder } from 'discord.js';
-import { config } from 'dotenv';
 import { TriviaGameManager } from './services/TriviaGameManager.js';
 import { APIService } from './services/API.js';
 import { CommandHandler } from './commands/CommandHandler.js';
 import { Logger } from './utils/Logger.js';
-
-// Load environment variables
-config({ path: './discord-bot/.env' });
 
 // Initialize logger
 const logger = new Logger();
