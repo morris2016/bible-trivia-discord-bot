@@ -2,8 +2,8 @@ module.exports = {
   apps: [
     {
       name: 'faith-defenders',
-      script: 'cmd.exe',
-      args: '/c npx wrangler pages dev dist --port 3000 --local',
+      script: 'npx',
+      args: 'wrangler pages dev dist --port 3000 --local',
       env: {
         NODE_ENV: 'development'
       },

@@ -35,7 +35,7 @@ ADMIN_EMAIL = "siagmoo26@gmail.com"
 ADMIN_NAME = "Admin"
 ADMIN_PASSWORD = "Famous2016?"
 
-# Google OAuth (configure in Cloudflare dashboard - NOT FOR DISCORD BOT)
+# Google OAuth (configure in Cloudflare dashboard)
 # GOOGLE_CLIENT_ID = ""
 # GOOGLE_CLIENT_SECRET = ""
 
@@ -63,10 +63,3 @@ class_name = "QuestionGenerationTracker"
 [[durable_objects.bindings]]
 name = "AI_GENERATOR"
 class_name = "AIGenerationDO"
-
-# Discord Bot Worker
-[[workers]]
-name = "discord-bot-worker"
-main = "discord-bot-worker.js"
-compatibility_date = "2024-01-01"
-compatibility_flags = ["nodejs_compat"]
