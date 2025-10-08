@@ -1,47 +1,63 @@
-# Discord Bot Deployment to Render
+# Discord Bot Deployment to Koyeb
 
 ## Prerequisites
-1. Create a Render account at https://render.com
+1. Create a Koyeb account at https://www.koyeb.com
 2. Have your Discord bot token and application ID ready
 3. Have your GospelWays API running and accessible
 
+## Free Tier Benefits
+- FREE tier with 0.5GB RAM and shared CPU
+- Perfect for Discord bots that run continuously
+- No costs for background services
+
 ## Deployment Steps
 
-### 1. Create a GitHub Repository
-Ensure your Discord bot code is pushed to a GitHub repository.
+### 1. GitHub Repository Setup
+Ensure your Discord bot code is pushed to your GitHub repository.
 
-### 2. Deploy to Render
-1. Go to https://dashboard.render.com
-2. Click "New +" and select "Blueprint"
-3. Connect your GitHub repository
-4. Render will automatically detect the `render.yaml` file and configure the service
+### 2. Deploy to Koyeb
+1. Go to https://app.koyeb.com and sign in
+2. Click "Create Service" → "Import from GitHub"
+3. Connect your GitHub repository: `morris2016/bible-trivia-discord-bot`
+4. Koyeb will automatically detect the `koyeb.yaml` configuration
 
-### 3. Set Environment Variables
-After deployment, set the following environment variables in Render:
-- `DISCORD_TOKEN`: Your Discord bot token (keep secret)
-- `DISCORD_CLIENT_ID`: Your Discord application ID (keep secret)
+### 3. Set Secrets
+Before deployment, create these secrets in Koyeb (use uppercase with underscores):
+- **Name**: `DISCORD_TOKEN` → **Value**: Your Discord bot token
+- **Name**: `DISCORD_CLIENT_ID` → **Value**: `1425156714386165980`
 
-The other environment variables are pre-configured in `render.yaml`.
+### 4. Deploy
+- Click "Deploy" - Koyeb handles everything automatically!
+- The bot will be deployed as a background worker
 
-### 4. Monitor the Deployment
-- View logs in the Render dashboard
-- The bot will automatically start and register slash commands
-- Monitor for any connection issues
+### 5. Monitor
+- View real-time logs in the Koyeb dashboard
+- Monitor resource usage
+- Bot will run 24/7 automatically
 
 ## Configuration
-The bot is configured to:
-- Run as a background worker (never sleeps)
-- Connect to your GospelWays API at https://gospelways.com
-- Use production logging levels
-- Handle graceful shutdowns
+The bot deployment includes:
+- ✅ Node.js buildpack for automatic dependency installation
+- ✅ Background service (no public access needed)
+- ✅ Production environment optimized
+- ✅ GospelWays API integration
+- ✅ Automatic restarts on errors
 
 ## Troubleshooting
-- Check logs for token-related errors
-- Verify API endpoints are accessible
-- Ensure Discord bot permissions are set correctly
-- Check Render service status
+- Check deployment logs for errors
+- Verify secrets are properly set
+- Confirm Discord permissions
+- Ensure GospelWays API is accessible
 
 ## Cost
-This service runs on Render's free tier with:
-- 750 hours/month free
-- No additional costs for worker services that stay active
+**Completely FREE** for your Discord bot with Koyeb's free tier!
+- 0.5GB RAM included
+- Shared CPU capacity
+- No charges for background workers
+
+## What's Deployed
+- Bot runs from the `discord-bot/` directory
+- Uses `discord-bot/package.json` for dependencies
+- Connects to https://gospelways.com API
+- Registers slash commands automatically
+- Runs continuous background worker

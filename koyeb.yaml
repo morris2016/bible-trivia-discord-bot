@@ -10,9 +10,9 @@ services:
       - key: NODE_ENV
         value: production
       - key: DISCORD_TOKEN
-        secret: discord-token
+        secret: DISCORD_TOKEN
       - key: DISCORD_CLIENT_ID
-        secret: discord-client-id
+        secret: DISCORD_CLIENT_ID
       - key: API_BASE_URL
         value: https://gospelways.com
       - key: API_GAME_URL
