@@ -348,7 +348,8 @@ export class TriviaGameManager {
             // Use local question generation for speed (like bible-trivia1)
             const localQuestions = this.apiService.generateQuestionsLocally(
                 gameState.difficulty,
-                gameState.totalQuestions
+                gameState.totalQuestions,
+                gameState.guildId
             );
 
             this.logger.game(`Generated ${localQuestions.length} local questions for game ${gameState.id}`);

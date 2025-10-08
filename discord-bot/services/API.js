@@ -1,4 +1,6 @@
 import axios from 'axios';
+import fs from 'fs';
+import path from 'path';
 import { Logger } from '../utils/Logger.js';
 import { BIBLE_QUESTIONS } from '../src/bible-questions-data.js';
 
@@ -6,6 +8,17 @@ export class APIService {
     constructor(options = {}) {
         this.baseURL = options.baseURL || 'https://gospelways.com/api/bible-games';
         this.logger = new Logger();
+        this.questionTrackingDir = path.join(process.cwd(), 'discord-bot', 'data', 'question-tracking');
+
+        // Ensure question tracking directory exists
+        try {
+            if (!fs.existsSync(this.questionTrackingDir)) {
+                fs.mkdirSync(this.questionTrackingDir, { recursive: true });
+                this.logger.info('Created question tracking directory:', this.questionTrackingDir);
+            }
+        } catch (error) {
+            this.logger.warn('Failed to create question tracking directory:', error.message);
+        }
 
         // Create axios instance
         this.client = axios.create({
@@ -248,24 +261,45 @@ export class APIService {
 
     /**
      * Generate questions locally from database (fast method like bible-trivia1)
+     * Now includes per-guild question tracking to prevent repeats for 5 days
      */
-    generateQuestionsLocally(difficulty, count) {
+    generateQuestionsLocally(difficulty, count, guildId = null) {
         try {
-            this.logger.debug(`Generating ${count} ${difficulty} questions locally from database`);
+            this.logger.debug(`Generating ${count} ${difficulty} questions locally from database${guildId ? ` for guild ${guildId}` : ''}`);
 
             // Filter questions by difficulty
-            const difficultyQuestions = BIBLE_QUESTIONS.filter(q => q.difficulty === difficulty);
+            let availableQuestions = BIBLE_QUESTIONS.filter(q => q.difficulty === difficulty);
 
-            if (difficultyQuestions.length === 0) {
+            if (availableQuestions.length === 0) {
                 this.logger.warn(`No questions found for difficulty: ${difficulty}`);
                 return [];
             }
 
+            // If guild ID provided, filter out recently asked questions
+            if (guildId) {
+                const recentlyAskedIds = this.getRecentlyAskedQuestionIds(guildId);
+                const originalCount = availableQuestions.length;
+
+                availableQuestions = availableQuestions.filter(q => !recentlyAskedIds.has(q.id));
+
+                this.logger.debug(`Guild ${guildId}: Filtered ${originalCount} -> ${availableQuestions.length} questions (excluded ${recentlyAskedIds.size} recently asked)`);
+
+                // If we don't have enough questions after filtering, warn but continue
+                if (availableQuestions.length < count) {
+                    this.logger.warn(`Guild ${guildId}: Only ${availableQuestions.length} fresh questions available for ${difficulty} difficulty`);
+                }
+            }
+
             // Shuffle and select questions using Fisher-Yates algorithm
-            const shuffled = this.shuffleArray([...difficultyQuestions]);
+            const shuffled = this.shuffleArray([...availableQuestions]);
             const selected = shuffled.slice(0, Math.min(count, shuffled.length));
 
             this.logger.debug(`Generated ${selected.length} questions for difficulty ${difficulty}`);
+
+            // Record these questions as asked for this guild (if guildId provided)
+            if (guildId && selected.length > 0) {
+                this.recordAskedQuestions(guildId, selected.map(q => q.id));
+            }
 
             // Convert to the format expected by the game manager
             return selected.map((q, index) => {
@@ -294,6 +328,81 @@ export class APIService {
         } catch (error) {
             this.logger.error('Error generating questions locally:', error);
             return [];
+        }
+    }
+
+    /**
+     * Get set of question IDs that were asked in this guild within the last 5 days
+     */
+    getRecentlyAskedQuestionIds(guildId) {
+        try {
+            const trackingFile = path.join(this.questionTrackingDir, `guild-${guildId}.json`);
+            const recentlyAsked = new Set();
+
+            // Check if tracking file exists
+            if (!fs.existsSync(trackingFile)) {
+                this.logger.debug(`No tracking file found for guild ${guildId}, creating new one`);
+                return recentlyAsked;
+            }
+
+            // Load existing tracking data
+            const trackingData = JSON.parse(fs.readFileSync(trackingFile, 'utf8'));
+            const now = Date.now();
+            const fiveDaysAgo = now - (5 * 24 * 60 * 60 * 1000); // 5 days in milliseconds
+
+            // Filter out entries older than 5 days and collect recent question IDs
+            const validEntries = [];
+            trackingData.forEach(entry => {
+                if (entry.timestamp >= fiveDaysAgo) {
+                    recentlyAsked.add(entry.questionId);
+                    validEntries.push(entry);
+                }
+            });
+
+            // If we removed old entries, update the file
+            if (validEntries.length !== trackingData.length) {
+                fs.writeFileSync(trackingFile, JSON.stringify(validEntries, null, 2));
+                this.logger.debug(`Cleaned up ${trackingData.length - validEntries.length} old entries for guild ${guildId}`);
+            }
+
+            this.logger.debug(`Guild ${guildId}: Found ${recentlyAsked.size} recently asked questions`);
+            return recentlyAsked;
+
+        } catch (error) {
+            this.logger.warn(`Error reading question tracking for guild ${guildId}:`, error.message);
+            return new Set(); // Return empty set on error
+        }
+    }
+
+    /**
+     * Record newly asked questions for this guild
+     */
+    recordAskedQuestions(guildId, questionIds) {
+        try {
+            const trackingFile = path.join(this.questionTrackingDir, `guild-${guildId}.json`);
+            const now = Date.now();
+
+            // Load existing data or create empty array
+            let trackingData = [];
+            if (fs.existsSync(trackingFile)) {
+                trackingData = JSON.parse(fs.readFileSync(trackingFile, 'utf8'));
+            }
+
+            // Add new entries
+            const newEntries = questionIds.map(questionId => ({
+                questionId,
+                timestamp: now
+            }));
+
+            trackingData.push(...newEntries);
+
+            // Save updated data
+            fs.writeFileSync(trackingFile, JSON.stringify(trackingData, null, 2));
+            this.logger.debug(`Recorded ${newEntries.length} questions as asked for guild ${guildId}`);
+
+        } catch (error) {
+            this.logger.warn(`Error recording question tracking for guild ${guildId}:`, error.message);
+            // Continue - tracking failure shouldn't break the game
         }
     }
 
