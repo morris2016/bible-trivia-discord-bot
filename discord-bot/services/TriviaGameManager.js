@@ -351,17 +351,20 @@ export class TriviaGameManager {
 
         this.progressTimers.set(gameId, progressInterval);
 
-        // Send initial message (ephemeral for solo games)
+        // Send initial message (ephemeral for solo games, channel for multiplayer)
         const embed = new EmbedBuilder()
             .setColor(0x0099FF)
             .setTitle('🎯 Bible Trivia Game Starting!')
             .setDescription('🔄 Generating personalized Bible questions...\n⏳ Please wait while our AI creates unique questions for you!');
 
-        // Get game state to check if solo
-        const soloGameId = this.playerGames.get(interaction.user.id);
-        const isSoloGame = soloGameId ? this.activeGames.get(soloGameId)?.isSolo : false;
+        const channel = await this.client.channels.fetch(gameState.channelId);
 
-        await interaction.followUp({ embeds: [embed], ephemeral: isSoloGame });
+        if (gameState.isSolo) {
+            await interaction.followUp({ embeds: [embed], ephemeral: true });
+        } else {
+            // For multiplayer games, send to channel
+            await channel.send({ embeds: [embed] });
+        }
 
         // Add timeout to prevent infinite waiting
         setTimeout(() => {
@@ -393,7 +396,10 @@ export class TriviaGameManager {
                 .setTitle('⏰ Generation Timeout')
                 .setDescription('Question generation is taking longer than expected. Attempting to start with available questions...');
 
-            await interaction.followUp({ embeds: [embed] });
+            const channel = await this.client.channels.fetch(gameState.channelId);
+
+            // Send timeout message to channel for multiplayer games
+            await channel.send({ embeds: [embed] });
 
             // Try to start gameplay anyway
             await this.startGameplay(gameState, interaction);
@@ -412,7 +418,8 @@ export class TriviaGameManager {
                 .setDescription('Failed to generate questions. Please try again.');
 
             try {
-                await interaction.followUp({ embeds: [embed] });
+                const channel = await this.client.channels.fetch(gameState.channelId);
+                await channel.send({ embeds: [embed] });
             } catch (followUpError) {
                 this.logger.error('Failed to send timeout error message:', followUpError);
             }
@@ -449,10 +456,15 @@ export class TriviaGameManager {
                     .setTitle('📖 No Questions Available')
                     .setDescription('Sorry, no Bible questions are currently available for this game. Please try again later or contact an administrator.');
 
-                try {
-                    const isSoloGame = gameState.isSolo || false;
-                    await interaction.followUp({ embeds: [embed], ephemeral: isSoloGame });
-                } catch (followUpError) {
+            try {
+                if (gameState.isSolo) {
+                    await interaction.followUp({ embeds: [embed], ephemeral: true });
+                } else {
+                    // For multiplayer games, send to channel
+                    const channel = await this.client.channels.fetch(gameState.channelId);
+                    await channel.send({ embeds: [embed] });
+                }
+            } catch (followUpError) {
                     this.logger.error('Failed to send no questions message:', followUpError);
                 }
 
@@ -476,8 +488,13 @@ export class TriviaGameManager {
                 .setDescription('Failed to start the trivia game. Please try again.');
 
             try {
-                const isSoloGame = gameState.isSolo || false;
-                await interaction.followUp({ embeds: [embed], ephemeral: isSoloGame });
+                if (gameState.isSolo) {
+                    await interaction.followUp({ embeds: [embed], ephemeral: true });
+                } else {
+                    // For multiplayer games, send to channel
+                    const channel = await this.client.channels.fetch(gameState.channelId);
+                    await channel.send({ embeds: [embed] });
+                }
             } catch (followUpError) {
                 this.logger.error('Failed to send follow-up:', followUpError);
             }
