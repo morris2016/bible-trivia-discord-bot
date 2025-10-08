@@ -1,0 +1,25 @@
+# Koyeb Configuration for Discord Bot
+services:
+  - name: gospelways-discord-bot
+    source:
+      buildpack: nodejs
+    instances: 1
+    ports: []
+    processes:
+      - name: discord-bot
+        command: npm start
+    env:
+      - key: NODE_ENV
+        value: production
+      - key: DISCORD_TOKEN
+        secret: DISCORD_TOKEN
+      - key: DISCORD_CLIENT_ID
+        secret: DISCORD_CLIENT_ID
+      - key: API_BASE_URL
+        value: https://gospelways.com
+      - key: API_GAME_URL
+        value: https://gospelways.com/api/bible-games
+      - key: LOG_LEVEL
+        value: info
+    public: false
+    check_health: false
