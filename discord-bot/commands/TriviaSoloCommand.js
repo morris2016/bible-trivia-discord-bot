@@ -18,7 +18,7 @@ export class TriviaSoloCommand {
                 .setTitle('⚠️ Already in Game')
                 .setDescription('You are already participating in a trivia game. Use `/trivia-quit` to leave your current game first.');
 
-            await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+            await interaction.reply({ embeds: [embed], ephemeral: true });
             return;
         }
 
@@ -32,7 +32,7 @@ export class TriviaSoloCommand {
                 .setTitle('❌ Invalid Question Count')
                 .setDescription('Please choose between 5 and 20 questions.');
 
-            await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+            await interaction.reply({ embeds: [embed], ephemeral: true });
             return;
         }
 
@@ -60,7 +60,7 @@ export class TriviaSoloCommand {
                     .setFooter({ text: 'Questions will appear in this channel shortly' })
                     .setTimestamp();
 
-                await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+                await interaction.reply({ embeds: [embed], ephemeral: true });
 
             } else {
                 const embed = new EmbedBuilder()
@@ -68,7 +68,7 @@ export class TriviaSoloCommand {
                     .setTitle('❌ Failed to Start Solo Game')
                     .setDescription(result.message);
 
-                await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+                await interaction.reply({ embeds: [embed], ephemeral: true });
             }
         } catch (error) {
             this.logger.error('Error in trivia-solo command:', error);
@@ -78,7 +78,7 @@ export class TriviaSoloCommand {
                 .setTitle('❌ Error')
                 .setDescription('An error occurred while starting the solo game. Please try again.');
 
-            await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+            await interaction.reply({ embeds: [embed], ephemeral: true });
         }
     }
 

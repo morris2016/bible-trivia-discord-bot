@@ -298,7 +298,7 @@ export class TriviaGameManager {
         const soloGameId = this.playerGames.get(interaction.user.id);
         const isSoloGame = soloGameId ? this.activeGames.get(soloGameId)?.isSolo : false;
 
-        await interaction.followUp({ embeds: [embed], flags: isSoloGame ? MessageFlags.Ephemeral : undefined });
+        await interaction.followUp({ embeds: [embed], ephemeral: isSoloGame });
 
         // Add timeout to prevent infinite waiting
         setTimeout(() => {
@@ -324,7 +324,7 @@ export class TriviaGameManager {
                 .setDescription('Question generation is taking longer than expected. Attempting to start with available questions...');
 
             const isSoloGame = gameState.isSolo || false;
-            await interaction.followUp({ embeds: [embed], flags: isSoloGame ? MessageFlags.Ephemeral : undefined });
+            await interaction.followUp({ embeds: [embed], ephemeral: isSoloGame });
 
             // Try to start gameplay anyway
             await this.startGameplay(gameState, interaction);
@@ -338,7 +338,7 @@ export class TriviaGameManager {
 
             try {
                 const isSoloGame = gameState.isSolo || false;
-                await interaction.followUp({ embeds: [embed], flags: isSoloGame ? MessageFlags.Ephemeral : undefined });
+                await interaction.followUp({ embeds: [embed], ephemeral: isSoloGame });
             } catch (followUpError) {
                 this.logger.error('Failed to send timeout error message:', followUpError);
             }
@@ -377,7 +377,7 @@ export class TriviaGameManager {
 
                 try {
                     const isSoloGame = gameState.isSolo || false;
-                    await interaction.followUp({ embeds: [embed], flags: isSoloGame ? MessageFlags.Ephemeral : undefined });
+                    await interaction.followUp({ embeds: [embed], ephemeral: isSoloGame });
                 } catch (followUpError) {
                     this.logger.error('Failed to send no questions message:', followUpError);
                 }
@@ -403,7 +403,7 @@ export class TriviaGameManager {
 
             try {
                 const isSoloGame = gameState.isSolo || false;
-                await interaction.followUp({ embeds: [embed], flags: isSoloGame ? MessageFlags.Ephemeral : undefined });
+                await interaction.followUp({ embeds: [embed], ephemeral: isSoloGame });
             } catch (followUpError) {
                 this.logger.error('Failed to send follow-up:', followUpError);
             }
@@ -548,8 +548,9 @@ export class TriviaGameManager {
             clearTimeout(this.gameTimers.get(gameId));
         }
 
-        const timer = setTimeout(async () => {
-            await this.evaluateAnswers(gameState);
+        const timer = setTimeout(() => {
+            // Use setImmediate to ensure evaluateAnswers runs asynchronously
+            setImmediate(() => this.evaluateAnswers(gameState));
         }, timeLimit * 1000);
 
         this.gameTimers.set(gameId, timer);
@@ -639,7 +640,7 @@ export class TriviaGameManager {
         if (gameState.isSolo) {
             await gameState.interaction.followUp({
                 embeds: [resultEmbed],
-                flags: MessageFlags.Ephemeral
+                ephemeral: true
             });
         } else {
             // Send results to channel for multiplayer games
@@ -708,7 +709,7 @@ export class TriviaGameManager {
         if (gameState.isSolo) {
             await gameState.interaction.followUp({
                 embeds: [resultEmbed],
-                flags: MessageFlags.Ephemeral
+                ephemeral: true
             });
 
             // Send question review after a short delay
@@ -900,7 +901,7 @@ export class TriviaGameManager {
 
             await gameState.interaction.followUp({
                 embeds: [countdownEmbed],
-                flags: MessageFlags.Ephemeral
+                ephemeral: true
             });
             return;
         }
@@ -999,7 +1000,7 @@ export class TriviaGameManager {
                 if (gameState.isSolo) {
                     await gameState.interaction.followUp({
                         embeds: [embed],
-                        flags: MessageFlags.Ephemeral
+                        ephemeral: true
                     });
                 } else {
                     // For multiplayer games, send to channel
