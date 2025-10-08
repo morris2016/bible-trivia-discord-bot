@@ -221,7 +221,8 @@ export class TriviaGameManager {
                 players: new Map(),
                 gameData: createResult.game,
                 isSolo: true,
-                participants: createResult.participants || []
+                participants: createResult.participants || [],
+                questionReviews: [] // Store answers for each question for review
             };
 
             // Add player
@@ -547,10 +548,19 @@ export class TriviaGameManager {
 
         const question = gameState.questions[gameState.currentQuestionIndex];
         const correctAnswerLetter = String.fromCharCode(65 + question.correct_answer_index);
+        const questionIndex = gameState.currentQuestionIndex;
 
-        this.logger.debug(`Evaluating answers for game ${gameState.id}, question ${gameState.currentQuestionIndex + 1}`);
+        this.logger.debug(`Evaluating answers for game ${gameState.id}, question ${questionIndex + 1}`);
         this.logger.debug(`Correct answer should be: ${correctAnswerLetter} (${question.correct_answer})`);
         this.logger.debug(`Correct answer index: ${question.correct_answer_index}`);
+
+        // Initialize questionReviews for this question if needed
+        if (!gameState.questionReviews) {
+            gameState.questionReviews = [];
+        }
+        if (!gameState.questionReviews[questionIndex]) {
+            gameState.questionReviews[questionIndex] = {};
+        }
 
         // Prepare results
         const results = [];
@@ -570,6 +580,13 @@ export class TriviaGameManager {
             } else {
                 this.logger.debug(`Player ${player.username} got it WRONG. Expected: ${correctAnswerLetter}, Got: ${player.selectedAnswer}`);
             }
+
+            // Store answer for question review (before clearing it)
+            gameState.questionReviews[questionIndex][userId] = {
+                username: player.username,
+                answer: player.selectedAnswer || 'No Answer',
+                isCorrect: isCorrect
+            };
 
             player.score += points;
             if (isCorrect) player.correctAnswers++;
@@ -886,12 +903,23 @@ export class TriviaGameManager {
                 const questionNumber = i + 1;
                 const correctAnswerLetter = String.fromCharCode(65 + question.correct_answer_index);
 
-                // Get player answers for this question
+                // Get player answers for this question from stored review data
                 const playerAnswers = [];
-                for (const [userId, player] of gameState.players) {
-                    const playerAnswer = player.selectedAnswer || 'No Answer';
-                    const isCorrect = playerAnswer === correctAnswerLetter;
-                    playerAnswers.push(`${player.username}: ${playerAnswer} ${isCorrect ? '✅' : '❌'}`);
+                const questionReview = gameState.questionReviews && gameState.questionReviews[i];
+
+                if (questionReview) {
+                    // Use stored answers from question review
+                    for (const [userId, reviewData] of Object.entries(questionReview)) {
+                        const isCorrect = reviewData.isCorrect;
+                        playerAnswers.push(`${reviewData.username}: ${reviewData.answer} ${isCorrect ? '✅' : '❌'}`);
+                    }
+                } else {
+                    // Fallback: if no review data, show current player data (will be cleared)
+                    for (const [userId, player] of gameState.players) {
+                        const playerAnswer = player.selectedAnswer || 'No Answer';
+                        const isCorrect = playerAnswer === correctAnswerLetter;
+                        playerAnswers.push(`${player.username}: ${playerAnswer} ${isCorrect ? '✅' : '❌'}`);
+                    }
                 }
 
                 reviewContent += `**Q${questionNumber}:** ${question.question_text}\n`;
