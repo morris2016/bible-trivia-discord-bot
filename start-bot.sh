@@ -43,4 +43,4 @@ if [ -z "$DISCORD_CLIENT_ID" ]; then
 fi
 
 echo "🚀 Starting the Discord bot..."
-exec npx ts-node --esm index.js
+exec npm start
