@@ -2,6 +2,7 @@ services:
   - type: worker
     name: gospelways-discord-bot
     runtime: node
+    rootDir: discord-bot
     buildCommand: npm install
     startCommand: npm start
     envVars:
