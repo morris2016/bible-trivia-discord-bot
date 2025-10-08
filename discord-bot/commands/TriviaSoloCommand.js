@@ -36,8 +36,6 @@ export class TriviaSoloCommand {
             return;
         }
 
-        await interaction.deferReply();
-
         try {
             this.logger.game(`Starting solo game for ${interaction.user.username} (${userId})`);
 
@@ -62,7 +60,7 @@ export class TriviaSoloCommand {
                     .setFooter({ text: 'Questions will appear in this channel shortly' })
                     .setTimestamp();
 
-                await interaction.editReply({ embeds: [embed], ephemeral: true });
+                await interaction.reply({ embeds: [embed], ephemeral: true });
 
             } else {
                 const embed = new EmbedBuilder()
@@ -70,7 +68,7 @@ export class TriviaSoloCommand {
                     .setTitle('❌ Failed to Start Solo Game')
                     .setDescription(result.message);
 
-                await interaction.editReply({ embeds: [embed] });
+                await interaction.reply({ embeds: [embed], ephemeral: true });
             }
         } catch (error) {
             this.logger.error('Error in trivia-solo command:', error);
@@ -80,7 +78,7 @@ export class TriviaSoloCommand {
                 .setTitle('❌ Error')
                 .setDescription('An error occurred while starting the solo game. Please try again.');
 
-            await interaction.editReply({ embeds: [embed] });
+            await interaction.reply({ embeds: [embed], ephemeral: true });
         }
     }
 

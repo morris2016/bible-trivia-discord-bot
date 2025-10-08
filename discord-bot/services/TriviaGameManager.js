@@ -288,13 +288,17 @@ export class TriviaGameManager {
 
         this.progressTimers.set(gameId, progressInterval);
 
-        // Send initial message
+        // Send initial message (ephemeral for solo games)
         const embed = new EmbedBuilder()
             .setColor(0x0099FF)
             .setTitle('🎯 Bible Trivia Game Starting!')
             .setDescription('🔄 Generating personalized Bible questions...\n⏳ Please wait while our AI creates unique questions for you!');
 
-        await interaction.followUp({ embeds: [embed] });
+        // Get game state to check if solo
+        const soloGameId = this.playerGames.get(interaction.user.id);
+        const isSoloGame = soloGameId ? this.activeGames.get(soloGameId)?.isSolo : false;
+
+        await interaction.followUp({ embeds: [embed], ephemeral: isSoloGame });
 
         // Add timeout to prevent infinite waiting
         setTimeout(() => {
@@ -319,7 +323,8 @@ export class TriviaGameManager {
                 .setTitle('⏰ Generation Timeout')
                 .setDescription('Question generation is taking longer than expected. Attempting to start with available questions...');
 
-            await interaction.followUp({ embeds: [embed] });
+            const isSoloGame = gameState.isSolo || false;
+            await interaction.followUp({ embeds: [embed], ephemeral: isSoloGame });
 
             // Try to start gameplay anyway
             await this.startGameplay(gameState, interaction);
@@ -332,7 +337,8 @@ export class TriviaGameManager {
                 .setDescription('Failed to generate questions. Please try again.');
 
             try {
-                await interaction.followUp({ embeds: [embed] });
+                const isSoloGame = gameState.isSolo || false;
+                await interaction.followUp({ embeds: [embed], ephemeral: isSoloGame });
             } catch (followUpError) {
                 this.logger.error('Failed to send timeout error message:', followUpError);
             }
@@ -370,7 +376,8 @@ export class TriviaGameManager {
                     .setDescription('Sorry, no Bible questions are currently available for this game. Please try again later or contact an administrator.');
 
                 try {
-                    await interaction.followUp({ embeds: [embed] });
+                    const isSoloGame = gameState.isSolo || false;
+                    await interaction.followUp({ embeds: [embed], ephemeral: isSoloGame });
                 } catch (followUpError) {
                     this.logger.error('Failed to send no questions message:', followUpError);
                 }
@@ -395,7 +402,8 @@ export class TriviaGameManager {
                 .setDescription('Failed to start the trivia game. Please try again.');
 
             try {
-                await interaction.followUp({ embeds: [embed] });
+                const isSoloGame = gameState.isSolo || false;
+                await interaction.followUp({ embeds: [embed], ephemeral: isSoloGame });
             } catch (followUpError) {
                 this.logger.error('Failed to send follow-up:', followUpError);
             }
