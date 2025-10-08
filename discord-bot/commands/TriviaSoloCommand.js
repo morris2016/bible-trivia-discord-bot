@@ -60,16 +60,16 @@ export class TriviaSoloCommand {
                     .setFooter({ text: 'Questions will appear in this channel shortly' })
                     .setTimestamp();
 
-                // Create support button
-                const supportRow = new ActionRowBuilder()
+                // Add support button
+                const supportButton = new ActionRowBuilder()
                     .addComponents(
                         new ButtonBuilder()
-                            .setCustomId('solo_support_help')
-                            .setLabel('❓ Need Help?')
-                            .setStyle(ButtonStyle.Secondary)
+                            .setURL('https://buymeacoffee.com/siagmoo26i')
+                            .setLabel('☕ Support')
+                            .setStyle(ButtonStyle.Link)
                     );
 
-                await interaction.reply({ embeds: [embed], components: [supportRow], ephemeral: true });
+                await interaction.reply({ embeds: [embed], components: [supportButton], ephemeral: true });
 
                 // Continue with solo gameplay after sending initial reply
                 const gameState = result.game;
