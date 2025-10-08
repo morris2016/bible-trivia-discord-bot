@@ -7,6 +7,9 @@ WORKDIR /app
 # Copy discord-bot directory contents
 COPY discord-bot/ ./
 
+# Also copy src directory for bible-questions-data.ts
+COPY src/ ./src/
+
 # Install dependencies
 RUN npm ci --only=production
 
