@@ -239,8 +239,8 @@ export class TriviaGameManager {
             this.activeGames.set(gameId, gameState);
             this.playerGames.set(userId, gameId);
 
-            // For solo games, skip API polling and go directly to local generation for speed
-            await this.startSoloGameplay(gameState, interaction);
+            // For solo games, just set up the game state and return.
+            // The command handler will call startSoloGameplay after sending initial reply.
 
             return {
                 success: true,

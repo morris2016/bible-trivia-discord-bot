@@ -62,6 +62,12 @@ export class TriviaSoloCommand {
 
                 await interaction.reply({ embeds: [embed], ephemeral: true });
 
+                // Continue with solo gameplay after sending initial reply
+                const gameState = result.game;
+                setTimeout(() => {
+                    this.startSoloGameplay(gameState, interaction);
+                }, 500);
+
             } else {
                 const embed = new EmbedBuilder()
                     .setColor(0xFF0000)
@@ -79,6 +85,28 @@ export class TriviaSoloCommand {
                 .setDescription('An error occurred while starting the solo game. Please try again.');
 
             await interaction.reply({ embeds: [embed], ephemeral: true });
+        }
+    }
+
+    /**
+     * Continue with solo gameplay after initial reply
+     */
+    async startSoloGameplay(gameState, interaction) {
+        try {
+            this.logger.game(`Continuing solo gameplay for game ${gameState.id}`);
+
+            // Use the existing game manager to start the solo gameplay
+            await this.gameManager.startSoloGameplay(gameState, interaction);
+
+        } catch (error) {
+            this.logger.error('Error starting solo gameplay:', error);
+
+            const embed = new EmbedBuilder()
+                .setColor(0xFF0000)
+                .setTitle('❌ Solo Game Start Failed')
+                .setDescription('Failed to start the solo trivia game. Please try again.');
+
+            await interaction.followUp({ embeds: [embed], ephemeral: true });
         }
     }
 
