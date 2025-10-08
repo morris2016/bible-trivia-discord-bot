@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML Styles Fix Test</title>
+    <link rel="stylesheet" href="/static/custom-editor.css">
+</head>
+<body>
+    <div class="container">
+        <h1>HTML Styles Preservation Test</h1>
+
+        <div class="test-section">
+            <h2>Test 1: Insert HTML with Styles</h2>
+            <button onclick="testInsertHTML()">Insert Styled HTML</button>
+            <div id="test-editor" style="border: 1px solid #ccc; min-height: 200px; padding: 10px; margin: 10px 0;"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Test 2: Check Saved Content</h2>
+            <button onclick="testGetContent()">Get Saved Content</button>
+            <pre id="saved-content" style="background: #f5f5f5; padding: 10px; border: 1px solid #ddd; max-height: 300px; overflow: auto;"></pre>
+        </div>
+
+        <div class="test-section">
+            <h2>Test 3: Load Content with Styles</h2>
+            <button onclick="testLoadContent()">Load Content with Styles</button>
+            <div id="load-test-editor" style="border: 1px solid #ccc; min-height: 200px; padding: 10px; margin: 10px 0;"></div>
+        </div>
+    </div>
+
+    <script src="/static/custom-editor.js"></script>
+    <script>
+        let testEditor;
+        let loadTestEditor;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize test editor
+            testEditor = new EnhancedEditor('test-editor', {
+                placeholder: 'Test editor for HTML insertion...',
+                toolbar: true
+            });
+
+            // Initialize load test editor
+            loadTestEditor = new EnhancedEditor('load-test-editor', {
+                placeholder: 'Test editor for loading content...',
+                toolbar: true
+            });
+        });
+
+        function testInsertHTML() {
+            const styledHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Document</title>
+    <style>
+        .hero-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 50px;
+            border-radius: 15px;
+            text-align: center;
+            margin: 20px 0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 8px solid #ff6b6b;
+        }
+
+        .styled-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .styled-table th, .styled-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        .styled-table th {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .correct-answer {
+            background: linear-gradient(135deg, #27ae60, #2ecc71) !important;
+            color: white;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="hero-section">
+        <h1>🎨 Styled Content Test</h1>
+        <p>This content has beautiful styles that should be preserved!</p>
+    </div>
+
+    <div class="highlight-box">
+        <h3>✨ Highlight Box</h3>
+        <p>This is a beautifully styled highlight box with gradients and colors.</p>
+    </div>
+
+    <table class="styled-table">
+        <tr>
+            <th>Feature</th>
+            <th>Status</th>
+            <th>Result</th>
+        </tr>
+        <tr class="correct-answer">
+            <td>Style Preservation</td>
+            <td>✅ Working</td>
+            <td>Styles maintained in editor</td>
+        </tr>
+        <tr>
+            <td>Gradient Backgrounds</td>
+            <td>✅ Working</td>
+            <td>Beautiful gradients applied</td>
+        </tr>
+        <tr>
+            <td>Table Styling</td>
+            <td>✅ Working</td>
+            <td>Professional table appearance</td>
+        </tr>
+    </table>
+
+    <p>This is regular paragraph text that should remain unaffected.</p>
+</body>
+</html>`;
+
+            // Use the global function to insert HTML (simulating popup insertion)
+            if (window.processHtmlInsertion) {
+                window.processHtmlInsertion(styledHTML);
+            } else {
+                // Fallback: use editor's method directly
+                testEditor.insertHtmlContent(styledHTML);
+            }
+        }
+
+        function testGetContent() {
+            const content = testEditor.getContent();
+            document.getElementById('saved-content').textContent = content;
+
+            // Check if styles are included
+            const hasStyles = content.includes('<style>');
+            console.log('Content includes styles:', hasStyles);
+            console.log('Extracted styles count:', testEditor.extractedStyles ? testEditor.extractedStyles.length : 0);
+
+            if (hasStyles) {
+                alert('✅ SUCCESS: Styles are preserved in saved content!');
+            } else {
+                alert('❌ FAILURE: Styles are missing from saved content!');
+            }
+        }
+
+        function testLoadContent() {
+            const styledContent = `<style>
+.hero-reloaded {
+    background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+    color: white;
+    padding: 40px;
+    border-radius: 15px;
+    text-align: center;
+    margin: 20px 0;
+    box-shadow: 0 10px 30px rgba(255,154,158,0.3);
+}
+
+.reload-message {
+    background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+    padding: 25px;
+    border-radius: 10px;
+    margin: 20px 0;
+    border-left: 6px solid #ff6b9d;
+}
+</style>
+
+<div class="hero-reloaded">
+    <h2>🔄 Reloaded Content Test</h2>
+    <p>This content was loaded with styles that should be applied!</p>
+</div>
+
+<div class="reload-message">
+    <h3>📝 Content Reloaded Successfully</h3>
+    <p>The styles should be automatically extracted and applied to the document head.</p>
+</div>
+
+<p>This is additional content to test the loading functionality.</p>`;
+
+            loadTestEditor.setContent(styledContent);
+        }
+    </script>
+
+    <style>
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            background: #fafbfc;
+        }
+
+        .test-section h2 {
+            margin-top: 0;
+            color: #24292f;
+        }
+
+        button {
+            background: #0366d6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        button:hover {
+            background: #0256cc;
+        }
+
+        #saved-content {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</body>
+</html>

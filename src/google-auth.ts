@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { googleAuth } from '@hono/oauth-providers/google'
-import { createUser, getUserByEmail, logActivity, linkUserOAuthAccount, setGlobalEnv } from './database-neon'
+import { createUser, getUserByEmail, logActivity, linkUserOAuthAccount, setGlobalEnv, getSiteSettings } from './database-neon'
 import { generateToken, setAuthCookie } from './auth'
 
 const googleAuthApp = new Hono()
@@ -124,18 +124,32 @@ googleAuthApp.get('/google/callback', async (c) => {
     const isSignupFlow = state.includes('signup=true')
     
     console.log(`Google OAuth callback - User: ${googleUser.email}, Flow: ${isSignupFlow ? 'Sign-up' : 'Sign-in'}`)
-    
+
     // Check if user exists in our database
     let user = await getUserByEmail(googleUser.email)
+
+    // Check registration status for new users
+    if (!user && isSignupFlow) {
+      const settings = await getSiteSettings();
+      const registrationStatus = settings.registration_status || 'open';
+
+      if (registrationStatus === 'closed') {
+        return c.redirect('/login?error=registration_closed');
+      }
+    }
     
     if (!user) {
       // Create new user from Google profile
       try {
+        // Get default user role from settings
+        const settings = await getSiteSettings();
+        const defaultRole = settings.default_user_role || 'user';
+
         user = await createUser(
-          googleUser.email, 
-          googleUser.name, 
+          googleUser.email,
+          googleUser.name,
           null, // No password for OAuth users
-          'user', // Default role
+          defaultRole, // Use setting-based default role
           {
             google_id: googleUser.id,
             avatar_url: googleUser.picture,
@@ -193,7 +207,7 @@ googleAuthApp.get('/google/callback', async (c) => {
     }
     
     // Generate JWT token
-    const token = generateToken({
+    const token = await generateToken({
       userId: user.id,
       email: user.email,
       role: user.role
@@ -203,14 +217,14 @@ googleAuthApp.get('/google/callback', async (c) => {
     setAuthCookie(c, token)
     
     // Redirect based on whether this was a new user or existing user
-    let redirectTo = '/dashboard';
-    
+    let redirectTo = '/';
+
     if (isSignupFlow && !user.id) {
       // This was a sign-up flow for a new user
-      redirectTo = '/dashboard?welcome=true';
+      redirectTo = '/?welcome=true';
     } else if (!isSignupFlow) {
       // Regular sign-in flow
-      redirectTo = '/dashboard';
+      redirectTo = '/';
     }
     
     console.log(`Redirecting user ${user.email} to: ${redirectTo}`)

@@ -1,0 +1,1319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Primary SEO -->
+    <title>HTML Preview Tool - Live HTML Editor & Tester | GospelWays</title>
+    <meta name="description" content="Test and preview HTML content in real-time with our live HTML editor. Perfect for checking how your HTML will render before publishing. Supports Chart.js, tables, and complex layouts.">
+    <meta name="keywords" content="HTML preview, live HTML editor, HTML tester, real-time HTML preview, Chart.js preview, HTML validation, web development tool, HTML sandbox">
+    <meta name="author" content="GospelWays">
+    <link rel="canonical" href="https://gospelways.org/tools/html-preview-tool.html">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://gospelways.org/tools/html-preview-tool.html">
+    <meta property="og:title" content="HTML Preview Tool - Live HTML Editor & Tester | GospelWays">
+    <meta property="og:description" content="Test and preview HTML content in real-time with our live HTML editor. Perfect for checking how your HTML will render before publishing. Supports Chart.js, tables, and complex layouts.">
+    <meta property="og:image" content="https://gospelways.org/static/html-preview-og.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:site_name" content="GospelWays">
+    <meta property="og:locale" content="en_US">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://gospelways.org/tools/html-preview-tool.html">
+    <meta property="twitter:title" content="HTML Preview Tool - Live HTML Editor & Tester | GospelWays">
+    <meta property="twitter:description" content="Test and preview HTML content in real-time with our live HTML editor. Perfect for checking how your HTML will render before publishing. Supports Chart.js, tables, and complex layouts.">
+    <meta property="twitter:image" content="https://gospelways.org/static/html-preview-og.png">
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "HTML Preview Tool",
+      "description": "Live HTML editor and preview tool for testing HTML content in real-time",
+      "url": "https://gospelways.org/tools/html-preview-tool.html",
+      "applicationCategory": "DeveloperApplication",
+      "operatingSystem": "Web Browser",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "featureList": [
+        "Live HTML preview",
+        "Real-time editing",
+        "Chart.js support",
+        "Table preview",
+        "Responsive design testing",
+        "Auto-render functionality"
+      ],
+      "author": {
+        "@type": "Organization",
+        "name": "GospelWays"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "GospelWays"
+      }
+    }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --secondary: #64748b;
+            --secondary-hover: #475569;
+            --danger: #dc2626;
+            --danger-hover: #b91c1c;
+            --success: #16a34a;
+            --dark: #0f172a;
+            --text: #1e293b;
+            --text-secondary: #475569;
+            --border: #cbd5e1;
+            --bg-light: #f8fafc;
+            --bg-white: #ffffff;
+            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-light);
+            color: var(--text);
+            line-height: 1.6;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Container Layout */
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: var(--dark);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: var(--shadow);
+        }
+
+        .header h1 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .header h1 i {
+            color: var(--primary);
+        }
+
+        /* Buttons */
+        .actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.375rem;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: all 0.15s ease;
+            color: white;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn-secondary {
+            background: var(--secondary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--secondary-hover);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+        }
+
+        .btn-danger:hover {
+            background: var(--danger-hover);
+        }
+
+        .btn-success {
+            background: var(--success);
+        }
+
+        .btn-success:hover {
+            background: #15803d;
+        }
+
+        /* Main Content Area */
+        .content {
+            flex: 1;
+            display: flex;
+            gap: 1rem;
+            padding: 1rem;
+            overflow: hidden;
+        }
+
+        /* Panels */
+        .panel {
+            background: var(--bg-white);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-left {
+            flex: 0 0 45%;
+        }
+
+        .panel-right {
+            flex: 1;
+        }
+
+        .panel-header {
+            padding: 1rem 1.25rem;
+            border-bottom: 2px solid var(--border);
+            font-weight: 600;
+            font-size: 0.9375rem;
+            color: var(--text);
+            background: var(--bg-light);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .panel-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .panel-title i {
+            color: var(--primary);
+        }
+
+        /* Toolbar */
+        .toolbar {
+            padding: 0.75rem 1rem;
+            background: var(--bg-white);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .sample-btn {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.8125rem;
+            background: var(--bg-white);
+            color: var(--text);
+            border: 1.5px solid var(--border);
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.15s;
+        }
+
+        .sample-btn:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            transform: translateY(-1px);
+        }
+
+        .sample-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Editor Area */
+        .editor-container {
+            flex: 1;
+            padding: 1rem;
+            background: #f1f5f9;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .editor-wrapper {
+            flex: 1;
+            position: relative;
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+        }
+
+        .code-editor {
+            width: 100%;
+            height: 100%;
+            padding: 1rem;
+            border: none;
+            font-family: 'JetBrains Mono', 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            background: var(--dark);
+            color: #f1f5f9;
+            resize: none;
+            outline: none;
+            overflow-y: auto;
+        }
+
+        .code-editor::placeholder {
+            color: #64748b;
+        }
+
+        .code-editor:focus {
+            box-shadow: inset 0 0 0 2px var(--primary);
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            padding: 0.75rem 1rem;
+            background: var(--bg-white);
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-around;
+        }
+
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        /* Preview Section */
+        .preview-controls {
+            padding: 0.5rem 1rem;
+            background: var(--bg-white);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .render-btn {
+            padding: 0.375rem 0.875rem;
+            background: var(--success);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+            transition: all 0.15s;
+        }
+
+        .render-btn:hover {
+            background: #15803d;
+        }
+
+        .render-btn:active {
+            transform: scale(0.95);
+        }
+
+        .auto-render-toggle {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #cbd5e1;
+            border-radius: 24px;
+            transition: 0.3s;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background: white;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+
+        input:checked + .toggle-slider {
+            background: var(--primary);
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(20px);
+        }
+
+        .preview-container {
+            flex: 1;
+            background: var(--bg-white);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .preview-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: white;
+            display: block;
+        }
+
+        .preview-empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-secondary);
+            gap: 1rem;
+        }
+
+        .preview-empty i {
+            font-size: 3rem;
+            opacity: 0.3;
+        }
+
+        .preview-empty p {
+            font-size: 0.9375rem;
+            font-weight: 500;
+        }
+
+        .preview-error {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .preview-error i {
+            font-size: 3rem;
+            color: var(--danger);
+            margin-bottom: 1rem;
+        }
+
+        .preview-error h3 {
+            color: var(--text);
+            margin-bottom: 0.5rem;
+        }
+
+        .preview-error p {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        /* Loading Spinner */
+        .loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+        }
+
+        .loading.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Status Messages */
+        .status {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: var(--shadow-lg);
+            transform: translateX(400px);
+            transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            z-index: 1000;
+        }
+
+        .status.show {
+            transform: translateX(0);
+        }
+
+        .status.success {
+            background: #dcfce7;
+            color: #14532d;
+            border: 1px solid #86efac;
+        }
+
+        .status.error {
+            background: #fee2e2;
+            color: #7f1d1d;
+            border: 1px solid #fca5a5;
+        }
+
+        .status.info {
+            background: #dbeafe;
+            color: #1e3a8a;
+            border: 1px solid #93c5fd;
+        }
+
+        /* Floating Home Button */
+        .floating-home-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #dc2626;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            box-shadow: var(--shadow-lg);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .floating-home-btn:hover {
+            background: #b91c1c;
+            transform: scale(1.1);
+        }
+
+        .floating-home-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+
+            .panel-left {
+                flex: 0 0 40%;
+            }
+
+            .floating-home-btn {
+                top: 15px;
+                left: 15px;
+                width: 45px;
+                height: 45px;
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>
+                <i class="fas fa-code"></i>
+                HTML Preview Tool
+            </h1>
+            <div class="actions">
+                <button class="btn btn-secondary" onclick="clearAll()">
+                    <i class="fas fa-eraser"></i> Clear
+                </button>
+                <button class="btn btn-success" onclick="testHtmlRendering()">
+                    <i class="fas fa-play"></i> Test HTML Rendering
+                </button>
+            </div>
+        </header>
+
+        <!-- Floating Home Button -->
+        <button class="floating-home-btn" onclick="goHome()" title="Go to Homepage">
+            <i class="fas fa-home"></i>
+        </button>
+
+        <!-- Main Content -->
+        <div class="content">
+            <!-- Left Panel: HTML Input -->
+            <div class="panel panel-left">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <i class="fas fa-code"></i>
+                        HTML Source
+                    </div>
+                </div>
+
+                <div class="toolbar">
+                    <button class="sample-btn" onclick="loadSample('basic')">
+                        Basic HTML
+                    </button>
+                    <button class="sample-btn" onclick="loadSample('chart')">
+                        Chart.js
+                    </button>
+                    <button class="sample-btn" onclick="loadSample('table')">
+                        Table
+                    </button>
+                    <button class="sample-btn" onclick="loadSample('styled')">
+                        Styled Card
+                    </button>
+                    <button class="sample-btn" onclick="loadSample('complex')">
+                        Complex Layout
+                    </button>
+                </div>
+
+                <div class="editor-container">
+                    <div class="editor-wrapper">
+                        <textarea
+                            id="htmlInput"
+                            class="code-editor"
+                            placeholder="Paste or type your HTML here. Content will render automatically..."
+                            spellcheck="false"
+                        ></textarea>
+                    </div>
+                </div>
+
+                <div class="stats-bar">
+                    <div class="stat">
+                        <span class="stat-value" id="charCount">0</span>
+                        <span class="stat-label">Characters</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value" id="lineCount">0</span>
+                        <span class="stat-label">Lines</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value" id="tagCount">0</span>
+                        <span class="stat-label">Tags</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Preview -->
+            <div class="panel panel-right">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <i class="fas fa-eye"></i>
+                        Live Preview
+                    </div>
+                    <button class="btn btn-success btn-sm" onclick="forceRender()" style="padding: 0.25rem 0.75rem; font-size: 0.8125rem;">
+                        <i class="fas fa-sync"></i> Refresh Preview
+                    </button>
+                </div>
+
+                <div class="preview-controls">
+                    <button class="render-btn" onclick="forceRender()">
+                        <i class="fas fa-play"></i>
+                        Render Now
+                    </button>
+                    <div class="auto-render-toggle">
+                        <span>Auto-render</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="autoRender" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="preview-container" id="previewContainer">
+                    <div class="preview-empty">
+                        <i class="fas fa-file-code"></i>
+                        <p>Your HTML will render here automatically</p>
+                    </div>
+                    <div class="loading" id="loadingIndicator">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Message -->
+    <div class="status" id="statusMessage"></div>
+
+    <!-- Include Chart.js for chart samples -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        // Configuration
+        const config = {
+            autoRender: true,
+            renderDelay: 500,
+            parentWindow: window.opener || null
+        };
+
+        // State
+        let renderTimer = null;
+        let currentIframe = null;
+
+        // Sample Templates
+        const samples = {
+            basic: `<h1>Welcome to My Page</h1>
+<p>This is a paragraph with <strong>bold text</strong> and <em>italic text</em>.</p>
+<ul>
+    <li>First item</li>
+    <li>Second item</li>
+    <li>Third item</li>
+</ul>
+<button onclick="alert('Hello!')">Click Me</button>`,
+
+            chart: `<div style="max-width: 600px; margin: 20px auto; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+    <h2 style="color: #333; margin-bottom: 20px;">Sales Chart</h2>
+    <canvas id="myChart"></canvas>
+</div>
+<script>
+const ctx = document.getElementById('myChart');
+new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+        datasets: [{
+            label: 'Sales',
+            data: [12000, 19000, 3000, 5000, 2000, 3000],
+            backgroundColor: 'rgba(54, 162, 235, 0.5)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+<\/script>`,
+
+            table: `<style>
+    table { width: 100%; border-collapse: collapse; font-family: Arial, sans-serif; }
+    th { background: #2563eb; color: white; padding: 12px; text-align: left; }
+    td { padding: 12px; border-bottom: 1px solid #e5e7eb; }
+    tr:hover { background: #f1f5f9; }
+</style>
+<table>
+    <thead>
+        <tr>
+            <th>Product</th>
+            <th>Price</th>
+            <th>Stock</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Laptop Pro</td>
+            <td>$1,299</td>
+            <td>15</td>
+            <td><span style="color: green;">✓ Available</span></td>
+        </tr>
+        <tr>
+            <td>Wireless Mouse</td>
+            <td>$29</td>
+            <td>48</td>
+            <td><span style="color: green;">✓ Available</span></td>
+        </tr>
+        <tr>
+            <td>USB-C Hub</td>
+            <td>$49</td>
+            <td>0</td>
+            <td><span style="color: red;">✗ Out of Stock</span></td>
+        </tr>
+    </tbody>
+</table>`,
+
+            styled: `<div style="max-width: 400px; margin: 20px auto; font-family: 'Segoe UI', sans-serif;">
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 12px 12px 0 0;">
+        <h2 style="margin: 0 0 10px 0; font-size: 24px;">Premium Plan</h2>
+        <p style="margin: 0; opacity: 0.9;">Everything you need to grow</p>
+    </div>
+    <div style="background: white; padding: 30px; border: 1px solid #e5e7eb; border-top: none;">
+        <div style="font-size: 36px; font-weight: bold; color: #1e293b;">
+            $29<span style="font-size: 16px; color: #64748b; font-weight: normal;">/month</span>
+        </div>
+        <ul style="list-style: none; padding: 20px 0; margin: 0;">
+            <li style="padding: 8px 0; color: #475569;">✓ Unlimited projects</li>
+            <li style="padding: 8px 0; color: #475569;">✓ Advanced analytics</li>
+            <li style="padding: 8px 0; color: #475569;">✓ 24/7 Priority support</li>
+            <li style="padding: 8px 0; color: #475569;">✓ Custom integrations</li>
+        </ul>
+        <button style="width: 100%; padding: 12px; background: #667eea; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 500; cursor: pointer;">
+            Get Started
+        </button>
+    </div>
+</div>`,
+
+            complex: `<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; padding: 20px; }
+        .dashboard { max-width: 1200px; margin: 0 auto; }
+        .header { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .metric { font-size: 32px; font-weight: bold; color: #2563eb; }
+        .label { color: #64748b; font-size: 14px; margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <h1 style="color: #1e293b;">Analytics Dashboard</h1>
+            <p style="color: #64748b; margin-top: 5px;">Real-time metrics and insights</p>
+        </div>
+        <div class="grid">
+            <div class="card">
+                <div class="metric">24,563</div>
+                <div class="label">Total Users</div>
+            </div>
+            <div class="card">
+                <div class="metric">$48,295</div>
+                <div class="label">Revenue</div>
+            </div>
+            <div class="card">
+                <div class="metric">89.3%</div>
+                <div class="label">Conversion Rate</div>
+            </div>
+            <div class="card">
+                <div class="metric">4.8</div>
+                <div class="label">Avg. Rating</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>`
+        };
+
+        // Initialize
+        function init() {
+            const htmlInput = document.getElementById('htmlInput');
+            const autoRenderToggle = document.getElementById('autoRender');
+
+            // Event listeners
+            htmlInput.addEventListener('input', handleInput);
+            htmlInput.addEventListener('paste', handlePaste);
+            autoRenderToggle.addEventListener('change', handleAutoRenderToggle);
+
+            // Keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    window.close();
+                } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    testHtmlRendering();
+                } else if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+                    e.preventDefault();
+                    forceRender();
+                }
+            });
+
+            // Check URL params
+            const urlParams = new URLSearchParams(window.location.search);
+            const sample = urlParams.get('sample');
+            if (sample && samples[sample]) {
+                loadSample(sample);
+            }
+        }
+
+        // Handle input changes
+        function handleInput() {
+            updateStats();
+            if (config.autoRender) {
+                scheduleRender();
+            }
+        }
+
+        // Handle paste event
+        function handlePaste(e) {
+            setTimeout(() => {
+                updateStats();
+                if (config.autoRender) {
+                    renderPreview();
+                }
+            }, 10);
+        }
+
+        // Handle auto-render toggle
+        function handleAutoRenderToggle(e) {
+            config.autoRender = e.target.checked;
+            if (config.autoRender) {
+                renderPreview();
+                showStatus('Auto-render enabled', 'info');
+            } else {
+                showStatus('Auto-render disabled', 'info');
+            }
+        }
+
+        // Schedule render with debouncing
+        function scheduleRender() {
+            clearTimeout(renderTimer);
+            renderTimer = setTimeout(() => {
+                renderPreview();
+            }, config.renderDelay);
+        }
+
+        // Force immediate render
+        function forceRender() {
+            clearTimeout(renderTimer);
+            renderPreview();
+        }
+
+        // FIXED Render preview function
+        function renderPreview() {
+            const htmlInput = document.getElementById('htmlInput');
+            const container = document.getElementById('previewContainer');
+            const loading = document.getElementById('loadingIndicator');
+
+            const html = htmlInput.value.trim();
+
+            if (!html) {
+                container.innerHTML = `
+                    <div class="preview-empty">
+                        <i class="fas fa-file-code"></i>
+                        <p>Your HTML will render here automatically</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Show loading
+            loading.classList.add('active');
+
+            requestAnimationFrame(() => {
+                try {
+                    // Remove existing iframe
+                    if (currentIframe) {
+                        currentIframe.remove();
+                        currentIframe = null;
+                    }
+
+                    // Create new iframe
+                    const iframe = document.createElement('iframe');
+                    iframe.className = 'preview-iframe';
+                    iframe.style.width = '100%';
+                    iframe.style.height = '100%';
+                    iframe.style.border = 'none';
+                    iframe.style.display = 'block';
+
+                    // Clear container
+                    container.innerHTML = '';
+                    container.appendChild(iframe);
+                    container.appendChild(loading);
+
+                    currentIframe = iframe;
+
+                    // Prepare HTML with fixes for positioning
+                    let fullHtml;
+                    if (html.includes('<!DOCTYPE') || html.includes('<html')) {
+                        // Inject positioning fixes into existing complete document
+                        fullHtml = html.replace('</head>', `
+                            <style>
+                                /* Fix for absolute positioning in iframe */
+                                html, body {
+                                    margin: 0 !important;
+                                    padding: 0 !important;
+                                    width: 100% !important;
+                                    min-height: 100vh !important;
+                                    overflow: auto !important;
+                                }
+
+                                /* Ensure containers with absolute children have position relative */
+                                div:has(> [style*="position: absolute"]),
+                                div:has(> [style*="position:absolute"]) {
+                                    position: relative !important;
+                                }
+
+                                /* Fix chart containers */
+                                .chart-container,
+                                [style*="min-height"],
+                                div[style*="height:"][style*="position: relative"] {
+                                    position: relative !important;
+                                }
+
+                                /* Preserve absolute positioning */
+                                [style*="position: absolute"],
+                                [style*="position:absolute"] {
+                                    position: absolute !important;
+                                }
+
+                                /* Fix transforms */
+                                [style*="transform"] {
+                                    transform-style: preserve-3d !important;
+                                }
+                            </style>
+                        </head>`);
+
+                        // If no head tag, add the styles at the beginning
+                        if (!fullHtml.includes('</head>')) {
+                            fullHtml = fullHtml.replace('<body', `
+                                <style>
+                                    html, body { margin: 0; padding: 0; width: 100%; min-height: 100vh; }
+                                    div:has(> [style*="position: absolute"]) { position: relative !important; }
+                                </style>
+                                <body`);
+                        }
+                    } else {
+                        fullHtml = createCompleteDocument(html);
+                    }
+
+                    // Use blob URL for better reliability
+                    const blob = new Blob([fullHtml], { type: 'text/html; charset=utf-8' });
+                    const blobUrl = URL.createObjectURL(blob);
+
+                    iframe.onload = function() {
+                        URL.revokeObjectURL(blobUrl);
+
+                        try {
+                            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+
+                            // Apply post-load fixes for positioning
+                            const fixPositioning = () => {
+                                // Find all absolutely positioned elements
+                                const absoluteElements = iframeDoc.querySelectorAll('[style*="position: absolute"], [style*="position:absolute"]');
+                                absoluteElements.forEach(el => {
+                                    const parent = el.parentElement;
+                                    if (parent) {
+                                        const parentStyle = parent.getAttribute('style') || '';
+                                        if (!parentStyle.includes('position:') || parentStyle.includes('position: static')) {
+                                            parent.style.position = 'relative';
+                                        }
+                                    }
+                                });
+
+                                // Fix chart containers specifically
+                                const chartContainers = iframeDoc.querySelectorAll('.chart-container, [style*="min-height"], div[style*="height:"][style*="background"]');
+                                chartContainers.forEach(container => {
+                                    if (!container.style.position || container.style.position === 'static') {
+                                        container.style.position = 'relative';
+                                    }
+                                });
+                            };
+
+                            // Apply fixes after a short delay to ensure DOM is ready
+                            setTimeout(() => {
+                                fixPositioning();
+                                loading.classList.remove('active');
+                            }, 100);
+
+                        } catch (error) {
+                            console.warn('Post-load fixes warning:', error);
+                            loading.classList.remove('active');
+                        }
+                    };
+
+                    iframe.onerror = function() {
+                        showError(container, new Error('Failed to load content'));
+                        loading.classList.remove('active');
+                    };
+
+                    // Load the content
+                    iframe.src = blobUrl;
+
+                } catch (error) {
+                    console.error('Render error:', error);
+                    showError(container, error);
+                    loading.classList.remove('active');
+                }
+            });
+        }
+
+        // ENHANCED Create complete HTML document
+        function createCompleteDocument(partialHtml) {
+            const needsChart = partialHtml.includes('Chart') || partialHtml.includes('chart');
+
+            return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Preview</title>
+    ${needsChart ? '<script src="https://cdn.jsdelivr.net/npm/chart.js"><\/script>' : ''}
+    <style>
+        /* Reset and base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            min-height: 100vh;
+            overflow: auto;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: white;
+            padding: 20px;
+        }
+
+        /* Critical: Fix for positioned elements */
+        div[style*="position: relative"],
+        div[style*="position:relative"] {
+            position: relative !important;
+        }
+
+        div[style*="position: absolute"],
+        div[style*="position:absolute"] {
+            position: absolute !important;
+        }
+
+        /* Ensure parent containers of absolute elements are positioned */
+        div:has(> [style*="position: absolute"]),
+        div:has(> [style*="position:absolute"]) {
+            position: relative !important;
+        }
+
+        /* Chart and visualization container fixes */
+        .chart-container,
+        [class*="chart"],
+        div[style*="min-height"],
+        div[style*="height:"][style*="background"] {
+            position: relative !important;
+            overflow: visible !important;
+        }
+
+        /* Ensure images are responsive */
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* Code blocks */
+        pre {
+            overflow-x: auto;
+            background: #f4f4f4;
+            padding: 1rem;
+            border-radius: 4px;
+            margin: 1rem 0;
+        }
+
+        code {
+            background: #f4f4f4;
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        /* Tables */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 1rem 0;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 0.5rem;
+        }
+
+        /* Preserve transforms */
+        [style*="transform"] {
+            transform-origin: center center !important;
+            transform-style: preserve-3d !important;
+        }
+    </style>
+</head>
+<body>
+${partialHtml}
+</body>
+</html>`;
+        }
+
+        // Show error in preview
+        function showError(container, error) {
+            container.innerHTML = `
+                <div class="preview-error">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h3>Rendering Error</h3>
+                    <p>${error.message || 'Unable to render HTML content. Please check your HTML syntax.'}</p>
+                </div>
+            `;
+        }
+
+        // Update statistics
+        function updateStats() {
+            const htmlInput = document.getElementById('htmlInput');
+            const html = htmlInput.value;
+
+            document.getElementById('charCount').textContent = html.length.toLocaleString();
+
+            const lines = html ? html.split('\n').length : 0;
+            document.getElementById('lineCount').textContent = lines.toLocaleString();
+
+            const tags = (html.match(/<[^>]+>/g) || []).length;
+            document.getElementById('tagCount').textContent = tags.toLocaleString();
+        }
+
+        // Load sample
+        function loadSample(type) {
+            const htmlInput = document.getElementById('htmlInput');
+            htmlInput.value = samples[type] || '';
+            updateStats();
+            renderPreview();
+            showStatus(`Loaded ${type} sample`, 'success');
+        }
+
+        // Clear all content
+        function clearAll() {
+            const htmlInput = document.getElementById('htmlInput');
+            htmlInput.value = '';
+            updateStats();
+            renderPreview();
+            showStatus('Content cleared', 'info');
+        }
+
+        // Test HTML rendering (replaces insertToEditor)
+        function testHtmlRendering() {
+            const htmlInput = document.getElementById('htmlInput');
+            const html = htmlInput.value.trim();
+
+            if (!html) {
+                showStatus('No content to test', 'error');
+                return;
+            }
+
+            // Force render the preview
+            forceRender();
+            showStatus('HTML rendered successfully!', 'success');
+        }
+
+        // Show status message
+        function showStatus(message, type = 'info') {
+            const status = document.getElementById('statusMessage');
+
+            const icons = {
+                success: 'fa-check-circle',
+                error: 'fa-exclamation-circle',
+                info: 'fa-info-circle'
+            };
+
+            status.innerHTML = `
+                <i class="fas ${icons[type]}"></i>
+                <span>${message}</span>
+            `;
+            status.className = `status ${type}`;
+
+            setTimeout(() => {
+                status.classList.add('show');
+            }, 10);
+
+            setTimeout(() => {
+                status.classList.remove('show');
+            }, 3000);
+        }
+
+        // Go to homepage
+        function goHome() {
+            window.location.href = '/';
+        }
+
+        // Start application
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

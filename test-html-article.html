@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test HTML Article with Charts</title>
+    <link rel="stylesheet" href="/static/custom-editor.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+</head>
+<body>
+    <div style="max-width: 1200px; margin: 0 auto; padding: 20px;">
+        <h1>Test: Daniel's 70 Weeks Prophecy Article</h1>
+
+        <div class="container">
+            <h1>Daniel's 70 Weeks Prophecy: Christ-Centered Fulfillment</h1>
+
+            <div class="prophecy-text">
+                <strong>Daniel 9:25-27 (ESV):</strong><br>
+                "Know therefore and understand that from the going out of the word to restore and build Jerusalem to the coming of an anointed one, a prince, there shall be seven weeks. Then for sixty-two weeks it shall be built again with squares and moat, but in a troubled time. And after the sixty-two weeks, an anointed one shall be cut off and shall have nothing. And the people of the prince who is to come shall destroy the city and the sanctuary. Its end shall come with a flood, and to the end there shall be war. Desolations are decreed. And he shall make a strong covenant with many for one week, and for half of the week he shall put an end to sacrifice and offering."
+            </div>
+
+            <h2>III. The Mathematical Calculations</h2>
+
+            <div class="chart-container">
+                <h3>Timeline Calculation from 445 BC</h3>
+                <canvas id="calculationChart" width="800" height="400"></canvas>
+            </div>
+
+            <div class="calculation-box">
+                <h3>Precise Mathematical Analysis:</h3>
+                <p><strong>Starting Point:</strong> March 5, 445 BC (Nisan 1, 20th year of Artaxerxes I)</p>
+
+                <h4>Phase 1: The First 69 Weeks (483 Years)</h4>
+                <ul>
+                    <li>69 weeks × 7 years/week = 483 prophetic years</li>
+                    <li>483 years × 360 days/year = 173,880 days</li>
+                    <li>Converting to solar years: 173,880 ÷ 365.25 = 476.067 solar years</li>
+                    <li>445 BC + 476 years = AD 32 (accounting for no year zero)</li>
+                    <li><strong>Endpoint:</strong> March 30, AD 32 - Palm Sunday (Triumphal Entry)</li>
+                </ul>
+            </div>
+
+            <div class="timeline-visual">
+                <div class="timeline-point">
+                    <strong>445 BC</strong><br>
+                    Nehemiah's Decree<br>
+                    <small>March 5, 445 BC</small>
+                </div>
+                <div class="timeline-point">
+                    <strong>483 Years Later</strong><br>
+                    Messiah Appears<br>
+                    <small>March 30, AD 32</small>
+                </div>
+                <div class="timeline-point">
+                    <strong>4 Days Later</strong><br>
+                    Messiah Cut Off<br>
+                    <small>April 3, AD 32</small>
+                </div>
+                <div class="timeline-point">
+                    <strong>AD 70</strong><br>
+                    Jerusalem Destroyed<br>
+                    <small>Roman Conquest</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Timeline Calculation Chart
+        const ctx1 = document.getElementById('calculationChart').getContext('2d');
+        new Chart(ctx1, {
+            type: 'line',
+            data: {
+                labels: ['445 BC (Start)', '396 BC (49 years)', '32 AD (483 years)', '32 AD (Crucifixion)'],
+                datasets: [{
+                    label: '69 Weeks Timeline',
+                    data: [0, 49, 483, 483.08],
+                    borderColor: '#3498db',
+                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                    borderWidth: 3,
+                    pointBackgroundColor: '#e74c3c',
+                    pointRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Years from Start'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Historical Timeline'
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Daniel 9:25-27 Precise Timeline Calculation'
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

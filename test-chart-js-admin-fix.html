@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chart.js Admin Editor Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+        .success { background: #d4edda; border-color: #c3e6cb; }
+        .error { background: #f8d7da; border-color: #f5c6cb; }
+        .chart-container { width: 400px; height: 300px; margin: 20px 0; }
+    </style>
+    <!-- Include Chart.js library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>Chart.js Admin Editor Test</h1>
+
+    <div class="test-section">
+        <h2>Test 1: Chart.js Library Loading</h2>
+        <div id="library-test" class="test-section">
+            <p>Checking if Chart.js library is loaded...</p>
+            <div id="library-result"></div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 2: Chart Creation and Rendering</h2>
+        <div class="chart-container">
+            <canvas id="testChart"></canvas>
+        </div>
+        <div id="chart-test-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 3: Script Execution in Content</h2>
+        <div id="script-execution-test">
+            <p>Testing script execution from loaded content...</p>
+            <div id="script-result"></div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 4: Admin Editor Simulation</h2>
+        <div id="admin-editor-simulation">
+            <p>Simulating content loaded into admin editor...</p>
+            <div id="editor-content"></div>
+            <div id="editor-test-result"></div>
+        </div>
+    </div>
+
+    <script>
+        // Test 1: Check if Chart.js is loaded
+        function testLibraryLoading() {
+            const resultDiv = document.getElementById('library-result');
+            try {
+                if (typeof Chart !== 'undefined') {
+                    resultDiv.innerHTML = '<div class="success">✅ Chart.js library loaded successfully!</div>';
+                    return true;
+                } else {
+                    resultDiv.innerHTML = '<div class="error">❌ Chart.js library not found</div>';
+                    return false;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = '<div class="error">❌ Error checking Chart.js: ' + error.message + '</div>';
+                return false;
+            }
+        }
+
+        // Test 2: Create a test chart
+        function testChartCreation() {
+            const resultDiv = document.getElementById('chart-test-result');
+            try {
+                const ctx = document.getElementById('testChart').getContext('2d');
+                const chart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
+                        datasets: [{
+                            label: 'Test Data',
+                            data: [10, 20, 30, 40, 50],
+                            backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+
+                resultDiv.innerHTML = '<div class="success">✅ Chart created and rendered successfully!</div>';
+                return true;
+            } catch (error) {
+                resultDiv.innerHTML = '<div class="error">❌ Error creating chart: ' + error.message + '</div>';
+                return false;
+            }
+        }
+
+        // Test 3: Simulate script execution from content
+        function testScriptExecution() {
+            const resultDiv = document.getElementById('script-result');
+
+            // Create content element
+            const contentDiv = document.createElement('div');
+            contentDiv.style.cssText = 'padding: 20px; background: #f0f0f0; border-radius: 8px;';
+            contentDiv.innerHTML = '<h3>Test Chart from Content</h3>' +
+                '<div style="width: 300px; height: 200px;">' +
+                '<canvas id="contentChart"></canvas>' +
+                '</div>';
+
+            // Create script element
+            const scriptElement = document.createElement('script');
+            scriptElement.textContent = 'try { const ctx = document.getElementById("contentChart"); if (ctx) { const chart = new Chart(ctx, { type: "line", data: { labels: ["Q1", "Q2", "Q3", "Q4"], datasets: [{ label: "Quarterly Data", data: [15, 25, 35, 45], borderColor: "rgba(255, 99, 132, 1)", backgroundColor: "rgba(255, 99, 132, 0.2)", borderWidth: 2 }] }, options: { responsive: true, scales: { y: { beginAtZero: true } } } }); console.log("Content chart created successfully"); } } catch (error) { console.error("Error in content script:", error); }';
+
+            // Load content and execute scripts
+            const container = document.getElementById('script-execution-test');
+            container.appendChild(contentDiv);
+            container.appendChild(scriptElement);
+
+            // Execute scripts in the loaded content
+            setTimeout(() => {
+                try {
+                    const func = new Function(scriptElement.textContent);
+                    func();
+                    resultDiv.innerHTML = '<div class="success">✅ Script executed successfully from loaded content!</div>';
+                } catch (error) {
+                    resultDiv.innerHTML = '<div class="error">❌ Error executing script: ' + error.message + '</div>';
+                }
+            }, 100);
+        }
+
+        // Test 4: Simulate admin editor loading
+        function testAdminEditorSimulation() {
+            const resultDiv = document.getElementById('editor-test-result');
+            const editorDiv = document.getElementById('editor-content');
+
+            // Simulate article content with Chart.js
+            const articleContent = '<h2>Article with Chart</h2>' +
+                '<p>This article contains a chart that should render properly.</p>' +
+                '<div style="max-width: 600px; margin: 20px auto; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">' +
+                '<h3 style="color: #333; margin-bottom: 20px;">Sales Performance Chart</h3>' +
+                '<canvas id="articleChart" width="400" height="300"></canvas>' +
+                '</div>' +
+                '<script>' +
+                'console.log("Article script executing...");' +
+                'try {' +
+                'const ctx = document.getElementById("articleChart");' +
+                'if (ctx) {' +
+                'const chart = new Chart(ctx, {' +
+                'type: "bar",' +
+                'data: {' +
+                'labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],' +
+                'datasets: [{' +
+                'label: "Monthly Sales",' +
+                'data: [12000, 19000, 3000, 5000, 2000, 3000],' +
+                'backgroundColor: ["rgba(255, 99, 132, 0.5)", "rgba(54, 162, 235, 0.5)", "rgba(255, 205, 86, 0.5)", "rgba(75, 192, 192, 0.5)", "rgba(153, 102, 255, 0.5)", "rgba(255, 159, 64, 0.5)"],' +
+                'borderColor: ["rgba(255, 99, 132, 1)", "rgba(54, 162, 235, 1)", "rgba(255, 205, 86, 1)", "rgba(75, 192, 192, 1)", "rgba(153, 102, 255, 1)", "rgba(255, 159, 64, 1)"],' +
+                'borderWidth: 1' +
+                '}]' +
+                '},' +
+                'options: {' +
+                'responsive: true,' +
+                'scales: {' +
+                'y: {' +
+                'beginAtZero: true' +
+                '}' +
+                '}' +
+                '}' +
+                '});' +
+                'console.log("Article chart created successfully");' +
+                '} else {' +
+                'console.error("Article chart canvas not found");' +
+                '}' +
+                '} catch (error) {' +
+                'console.error("Error creating article chart:", error);' +
+                '}' +
+                '</' + 'script>' +
+                '<p>Chart should appear above this text when the article is loaded for editing.</p>';
+
+            // Load content into editor simulation
+            editorDiv.innerHTML = articleContent;
+
+            // Execute scripts (simulating the admin editor behavior)
+            setTimeout(() => {
+                const scripts = editorDiv.querySelectorAll('script');
+                let scriptExecuted = false;
+
+                scripts.forEach(script => {
+                    if (script.textContent && !script.src) {
+                        try {
+                            console.log('Executing script from editor content...');
+                            const func = new Function(script.textContent);
+                            func();
+                            scriptExecuted = true;
+                        } catch (error) {
+                            console.error('Error executing script in editor:', error);
+                            resultDiv.innerHTML = '<div class="error">❌ Error executing script in editor: ' + error.message + '</div>';
+                        }
+                    }
+                });
+
+                if (scriptExecuted) {
+                    resultDiv.innerHTML = '<div class="success">✅ Article content loaded and Chart.js executed successfully in editor simulation!</div>';
+                } else {
+                    resultDiv.innerHTML = '<div class="error">❌ No scripts found or executed in editor content</div>';
+                }
+            }, 200);
+        }
+
+        // Run all tests
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Starting Chart.js admin editor tests...');
+
+            // Test 1: Library loading
+            const libraryLoaded = testLibraryLoading();
+
+            // Test 2: Chart creation (only if library loaded)
+            if (libraryLoaded) {
+                setTimeout(() => {
+                    testChartCreation();
+
+                    // Test 3: Script execution
+                    setTimeout(() => {
+                        testScriptExecution();
+
+                        // Test 4: Admin editor simulation
+                        setTimeout(() => {
+                            testAdminEditorSimulation();
+                        }, 500);
+                    }, 500);
+                }, 500);
+            }
+        });
+    </script>
+</body>
+</html>

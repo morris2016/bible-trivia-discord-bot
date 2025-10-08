@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extract All Users and Badges</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f8fafc;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .warning {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .warning strong {
+            color: #92400e;
+        }
+
+        .code-block {
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 16px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            margin: 16px 0;
+            white-space: pre-wrap;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn.secondary {
+            background: linear-gradient(135deg, #6b7280, #4b5563);
+        }
+
+        .btn.secondary:hover {
+            box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
+        }
+
+        .status {
+            padding: 12px;
+            border-radius: 6px;
+            margin: 16px 0;
+            font-weight: 500;
+        }
+
+        .status.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #34d399;
+        }
+
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #f87171;
+        }
+
+        .status.info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #60a5fa;
+        }
+
+        .results {
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+
+        .badge-display {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin: 2px;
+        }
+
+        .badge-superadmin {
+            background: linear-gradient(135deg, #dc2626, #ef4444);
+            color: white;
+        }
+
+        .badge-admin {
+            background: linear-gradient(135deg, #7c3aed, #8b5cf6);
+            color: white;
+        }
+
+        .badge-moderator {
+            background: linear-gradient(135deg, #059669, #10b981);
+            color: white;
+        }
+
+        .badge-user {
+            background: linear-gradient(135deg, #3b82f6, #60a5fa);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Extract All Users and Badges</h1>
+            <p>Complete user extraction with badge level information</p>
+        </div>
+
+        <div class="warning">
+            <strong>⚠️ Important:</strong> You must be logged in as an administrator to use this tool.
+            The extraction script requires admin privileges to access the user database.
+        </div>
+
+        <div class="card">
+            <h3>📋 Instructions</h3>
+            <ol>
+                <li>Make sure you're logged in as an admin user</li>
+                <li>Click the "Load Extraction Script" button</li>
+                <li>Click "Extract All Users" to fetch user data</li>
+                <li>View the results in the console and on this page</li>
+                <li>Download the data as JSON if needed</li>
+            </ol>
+        </div>
+
+        <div class="card">
+            <h3>🔧 Script Controls</h3>
+            <button class="btn" onclick="loadExtractionScript()">Load Extraction Script</button>
+            <button class="btn secondary" onclick="runExtraction()" id="extractBtn" disabled>Extract All Users</button>
+            <button class="btn secondary" onclick="downloadData()" id="downloadBtn" disabled>Download JSON</button>
+            <button class="btn secondary" onclick="clearResults()">Clear Results</button>
+        </div>
+
+        <div id="status" class="status info">
+            Status: Ready - Click "Load Extraction Script" to begin
+        </div>
+
+        <div class="card">
+            <h3>📊 Extraction Results</h3>
+            <div id="results" class="results">
+                Results will appear here after extraction...
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>💻 Console Commands</h3>
+            <p>You can also run these commands directly in the browser console:</p>
+            <div class="code-block">
+// Load the extraction script
+const script = document.createElement('script');
+script.src = '/extract-users-console.js';
+document.head.appendChild(script);
+
+// Wait for script to load, then run
+setTimeout(() => {
+    extractAllUsersAndBadges();
+}, 1000);
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let extractionLoaded = false;
+        let userData = null;
+
+        function loadExtractionScript() {
+            if (extractionLoaded) {
+                updateStatus('Script already loaded', 'info');
+                return;
+            }
+
+            updateStatus('Loading extraction script...', 'info');
+
+            const script = document.createElement('script');
+            script.src = '/extract-users-console.js';
+            script.onload = function() {
+                extractionLoaded = true;
+                updateStatus('Extraction script loaded successfully!', 'success');
+                document.getElementById('extractBtn').disabled = false;
+            };
+            script.onerror = function() {
+                updateStatus('Failed to load extraction script', 'error');
+            };
+            document.head.appendChild(script);
+        }
+
+        function runExtraction() {
+            if (!extractionLoaded) {
+                updateStatus('Please load the extraction script first', 'error');
+                return;
+            }
+
+            if (typeof extractAllUsersAndBadges !== 'function') {
+                updateStatus('Extraction function not found', 'error');
+                return;
+            }
+
+            updateStatus('Extracting users...', 'info');
+
+            // Override console.log to capture output
+            const originalLog = console.log;
+            let capturedOutput = [];
+
+            console.log = function(...args) {
+                capturedOutput.push(args.join(' '));
+                originalLog.apply(console, args);
+            };
+
+            // Run extraction
+            extractAllUsersAndBadges().then(() => {
+                // Restore console.log
+                console.log = originalLog;
+
+                // Get the extracted data
+                if (window.extractedUserData) {
+                    userData = window.extractedUserData;
+                    document.getElementById('downloadBtn').disabled = false;
+                    displayResults(capturedOutput);
+                    updateStatus('Extraction completed successfully!', 'success');
+                } else {
+                    updateStatus('Extraction completed but no data found', 'error');
+                }
+            }).catch(error => {
+                console.log = originalLog;
+                updateStatus('Extraction failed: ' + error.message, 'error');
+            });
+        }
+
+        function displayResults(output) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = output.join('\n');
+
+            // Also display structured data if available
+            if (userData && userData.users) {
+                const structuredDiv = document.createElement('div');
+                structuredDiv.innerHTML = '<h4>📋 Structured User Data:</h4>';
+
+                userData.users.forEach(user => {
+                    const userDiv = document.createElement('div');
+                    userDiv.style.cssText = 'margin: 8px 0; padding: 8px; border: 1px solid #e2e8f0; border-radius: 6px;';
+
+                    const badgeClass = `badge-${user.role}`;
+                    const badgeHtml = `<span class="badge-display ${badgeClass}">👑 ${user.badge_label}</span>`;
+
+                    userDiv.innerHTML = `
+                        <strong>${user.name}</strong> ${badgeHtml}<br>
+                        <small>Email: ${user.email} | ID: ${user.id} | Joined: ${new Date(user.created_at).toLocaleDateString()}</small>
+                    `;
+
+                    structuredDiv.appendChild(userDiv);
+                });
+
+                resultsDiv.appendChild(structuredDiv);
+            }
+        }
+
+        function downloadData() {
+            if (!userData) {
+                updateStatus('No data available for download', 'error');
+                return;
+            }
+
+            if (window.downloadUserData) {
+                window.downloadUserData();
+                updateStatus('Download initiated', 'success');
+            } else {
+                // Fallback download method
+                const dataStr = JSON.stringify(userData, null, 2);
+                const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+
+                const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+                const filename = `users-badges-${timestamp}.json`;
+
+                const linkElement = document.createElement('a');
+                linkElement.setAttribute('href', dataUri);
+                linkElement.setAttribute('download', filename);
+                linkElement.click();
+
+                updateStatus('Download initiated', 'success');
+            }
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = 'Results will appear here after extraction...';
+            userData = null;
+            document.getElementById('downloadBtn').disabled = true;
+            updateStatus('Results cleared', 'info');
+        }
+
+        function updateStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = `Status: ${message}`;
+            statusDiv.className = `status ${type}`;
+        }
+
+        // Auto-load script on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateStatus('Page loaded - Click "Load Extraction Script" to begin', 'info');
+        });
+    </script>
+</body>
+</html>

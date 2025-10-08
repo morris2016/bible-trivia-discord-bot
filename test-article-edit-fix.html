@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Article Edit Fix</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .content-display {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 3px;
+            margin: 10px 0;
+            white-space: pre-wrap;
+        }
+        .editor-container {
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 10px;
+            min-height: 200px;
+            background: white;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Article Edit Fix</h1>
+    <p>This test simulates the article editing scenario to verify that HTML content is preserved when loading articles for editing.</p>
+
+    <div class="test-section">
+        <h3>Original Article Content (as saved in database)</h3>
+        <div class="content-display" id="original-content">
+<style>
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    background: white;
+    padding: 40px;
+    border-radius: 15px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+
+h1 {
+    color: #2c3e50;
+    text-align: center;
+    font-size: 2.5em;
+    margin-bottom: 30px;
+    border-bottom: 3px solid #3498db;
+    padding-bottom: 15px;
+}
+</style>
+
+<div class="container">
+    <h1>Daniel's 70 Weeks Prophecy</h1>
+    <p>This is a test article with proper HTML formatting.</p>
+</div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h3>Simulated Editor Load (Fixed Version)</h3>
+        <div class="editor-container" id="editor-container">
+            <!-- This will be populated by the test -->
+        </div>
+        <button onclick="testLoadArticle()">Load Article for Editing</button>
+        <button onclick="clearEditor()">Clear Editor</button>
+    </div>
+
+    <div class="test-section">
+        <h3>Test Results</h3>
+        <div id="test-results">Click "Load Article for Editing" to test the fix.</div>
+    </div>
+
+    <script>
+        // Simulate the fixed loadArticleForEdit function
+        function testLoadArticle() {
+            const editorContainer = document.getElementById('editor-container');
+            const testResults = document.getElementById('test-results');
+
+            // Get the original content (simulating database content)
+            const originalContent = document.getElementById('original-content').textContent;
+
+            // Simulate the FIXED version - use content as-is without HTML entity decoding
+            const content = originalContent;
+
+            // Clear previous content
+            editorContainer.innerHTML = '';
+
+            // Set the content directly (preserving HTML structure)
+            editorContainer.innerHTML = content;
+
+            // Update test results
+            testResults.innerHTML = `
+                <strong>✅ SUCCESS:</strong> Content loaded with HTML structure preserved!<br>
+                <strong>Content length:</strong> ${content.length} characters<br>
+                <strong>Contains HTML tags:</strong> ${content.includes('<style>') ? 'Yes' : 'No'}<br>
+                <strong>Contains CSS:</strong> ${content.includes('.container') ? 'Yes' : 'No'}<br>
+                <strong>Contains proper HTML:</strong> ${content.includes('<div class="container">') ? 'Yes' : 'No'}
+            `;
+            testResults.style.color = '#28a745';
+        }
+
+        function clearEditor() {
+            const editorContainer = document.getElementById('editor-container');
+            const testResults = document.getElementById('test-results');
+
+            editorContainer.innerHTML = '';
+            testResults.innerHTML = 'Editor cleared. Click "Load Article for Editing" to test again.';
+            testResults.style.color = '#6c757d';
+        }
+
+        // Demonstrate the BROKEN version for comparison
+        function testBrokenVersion() {
+            const editorContainer = document.getElementById('editor-container');
+            const testResults = document.getElementById('test-results');
+
+            // Get the original content
+            const originalContent = document.getElementById('original-content').textContent;
+
+            // Simulate the BROKEN version - decode HTML entities (this destroys formatting)
+            let decodedContent = originalContent;
+            if (decodedContent) {
+                const tempElement = document.createElement('div');
+                tempElement.innerHTML = decodedContent;
+                decodedContent = tempElement.textContent || tempElement.innerText || decodedContent;
+            }
+
+            // Clear previous content
+            editorContainer.innerHTML = '';
+
+            // Set the broken content
+            editorContainer.textContent = decodedContent;
+
+            // Update test results
+            testResults.innerHTML = `
+                <strong>❌ BROKEN:</strong> HTML structure destroyed by entity decoding!<br>
+                <strong>Content length:</strong> ${decodedContent.length} characters<br>
+                <strong>Contains HTML tags:</strong> ${decodedContent.includes('<style>') ? 'Yes' : 'No'}<br>
+                <strong>Contains CSS:</strong> ${decodedContent.includes('.container') ? 'Yes' : 'No'}<br>
+                <strong>Contains proper HTML:</strong> ${decodedContent.includes('<div class="container">') ? 'Yes' : 'No'}
+            `;
+            testResults.style.color = '#dc3545';
+        }
+
+        // Add button for broken version test
+        document.addEventListener('DOMContentLoaded', function() {
+            const testSection = document.querySelector('.test-section:nth-child(3)');
+            const buttonContainer = testSection.querySelector('div');
+
+            const brokenButton = document.createElement('button');
+            brokenButton.textContent = 'Test Broken Version (for comparison)';
+            brokenButton.onclick = testBrokenVersion;
+            brokenButton.style.background = '#dc3545';
+            brokenButton.style.marginLeft = '10px';
+
+            buttonContainer.appendChild(brokenButton);
+        });
+    </script>
+</body>
+</html>

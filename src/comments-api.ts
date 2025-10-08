@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { createComment, getComments, deleteComment } from './database-neon'
+import { createComment, getComments, deleteComment, getSiteSettings } from './database-neon'
 
 const commentsApi = new Hono()
 
@@ -8,16 +8,19 @@ commentsApi.get('/comments', async (c) => {
   try {
     const articleId = c.req.query('articleId')
     const resourceId = c.req.query('resourceId')
-    
+
     if (!articleId && !resourceId) {
       return c.json({ error: 'Article ID or Resource ID is required' }, 400)
     }
-    
+
     const comments = await getComments(
       articleId ? parseInt(articleId) : undefined,
       resourceId ? parseInt(resourceId) : undefined
     )
-    
+
+    // TODO: Filter out comments pending approval when status field is added
+    // For now, all comments are returned as they don't have approval status
+
     return c.json({ comments })
   } catch (error) {
     console.error('Error fetching comments:', error)
@@ -29,13 +32,23 @@ commentsApi.get('/comments', async (c) => {
 commentsApi.post('/comments', async (c) => {
   try {
     const user = c.get('user')
+
+    // Get site settings for comment configuration
+    const settings = await getSiteSettings()
+    const allowGuestComments = settings.allow_guest_comments !== false // Default to true if not set
+    const requireCommentApproval = settings.require_comment_approval === true
+
     if (!user) {
-      return c.json({ error: 'Authentication required' }, 401)
+      if (!allowGuestComments) {
+        return c.json({ error: 'Authentication required to comment' }, 401)
+      }
+      // For guest comments, we'll need to handle this differently
+      return c.json({ error: 'Guest commenting not yet implemented' }, 501)
     }
-    
+
     // Check if user's email is verified (skip for OAuth and admin users)
     if (!user.email_verified && user.auth_provider !== 'google' && user.role !== 'admin') {
-      return c.json({ 
+      return c.json({
         error: 'Please verify your email address before commenting',
         requiresVerification: true,
         userId: user.id
@@ -64,10 +77,16 @@ commentsApi.post('/comments', async (c) => {
       resourceId ? parseInt(resourceId) : undefined,
       parentId ? parseInt(parentId) : undefined
     )
-    
-    return c.json({ 
-      message: 'Comment created successfully', 
-      comment 
+
+    // Check if comment requires approval
+    const approvalMessage = requireCommentApproval
+      ? 'Your comment has been submitted and is pending approval.'
+      : 'Comment created successfully';
+
+    return c.json({
+      message: approvalMessage,
+      comment,
+      requiresApproval: requireCommentApproval
     }, 201)
   } catch (error) {
     console.error('Error creating comment:', error)
@@ -87,13 +106,13 @@ commentsApi.delete('/comments/:id', async (c) => {
     if (!commentId) {
       return c.json({ error: 'Invalid comment ID' }, 400)
     }
-    
-    const success = await deleteComment(commentId, user.id)
-    
+
+    const success = await deleteComment(commentId, user.id, user.role)
+
     if (!success) {
       return c.json({ error: 'Comment not found or unauthorized' }, 404)
     }
-    
+
     return c.json({ message: 'Comment deleted successfully' })
   } catch (error) {
     console.error('Error deleting comment:', error)

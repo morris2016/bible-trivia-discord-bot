@@ -1,0 +1,2401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Primary SEO -->
+    <title>Quantum Mathematics Board - AI-Powered Digital Chalkboard | GospelWays</title>
+    <meta name="description" content="Advanced AI-powered mathematics chalkboard with handwriting recognition. Draw equations, symbols, and diagrams with intelligent recognition. Perfect for teaching complex mathematical and biblical concepts.">
+    <meta name="keywords" content="mathematics chalkboard, AI handwriting recognition, digital math board, equation drawing, mathematical symbols, teaching tool, educational technology, math equations, calculus symbols">
+    <meta name="author" content="GospelWays">
+    <link rel="canonical" href="https://gospelways.org/tools/quantum-chalkboard.html">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://gospelways.org/tools/quantum-chalkboard.html">
+    <meta property="og:title" content="Quantum Mathematics Board - AI-Powered Digital Chalkboard | GospelWays">
+    <meta property="og:description" content="Advanced AI-powered mathematics chalkboard with handwriting recognition. Draw equations, symbols, and diagrams with intelligent recognition. Perfect for teaching complex mathematical and biblical concepts.">
+    <meta property="og:image" content="https://gospelways.org/static/quantum-chalkboard-og.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:site_name" content="GospelWays">
+    <meta property="og:locale" content="en_US">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://gospelways.org/tools/quantum-chalkboard.html">
+    <meta property="twitter:title" content="Quantum Mathematics Board - AI-Powered Digital Chalkboard | GospelWays">
+    <meta property="twitter:description" content="Advanced AI-powered mathematics chalkboard with handwriting recognition. Draw equations, symbols, and diagrams with intelligent recognition. Perfect for teaching complex mathematical and biblical concepts.">
+    <meta property="twitter:image" content="https://gospelways.org/static/quantum-chalkboard-og.png">
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Quantum Mathematics Board",
+      "description": "AI-powered digital chalkboard with handwriting recognition for mathematics and educational use",
+      "url": "https://gospelways.org/tools/quantum-chalkboard.html",
+      "applicationCategory": "EducationalApplication",
+      "operatingSystem": "Web Browser",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "featureList": [
+        "AI handwriting recognition",
+        "Mathematical symbols library",
+        "Smart shapes",
+        "Multi-touch support",
+        "Symbol recognition",
+        "Educational tool",
+        "Real-time drawing"
+      ],
+      "author": {
+        "@type": "Organization",
+        "name": "GospelWays"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "GospelWays"
+      }
+    }
+    </script>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --secondary: #8b5cf6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1e293b;
+            --light: #f1f5f9;
+            --glass: rgba(255, 255, 255, 0.1);
+            --shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            overflow: hidden;
+            height: 100vh;
+            position: relative;
+        }
+
+        /* Canvas Styles */
+        #canvas {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1a2f1a 0%, #2d4a2d 50%, #1e3c1e 100%);
+            box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.5);
+            cursor: crosshair;
+            touch-action: none;
+            position: relative;
+        }
+
+        #canvas.drawing {
+            cursor: none;
+        }
+
+        #canvas.text-mode {
+            cursor: text;
+        }
+
+        /* Custom Cursor */
+        #customCursor {
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            transition: transform 0.1s ease;
+            display: none;
+        }
+
+        #canvas.drawing #customCursor {
+            display: block;
+        }
+
+        .cursor-inner {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+            transform: translate(-50%, -50%);
+        }
+
+        /* Text Input Overlay */
+        #textInputOverlay {
+            position: fixed;
+            display: none;
+            z-index: 1500;
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 2px solid var(--primary);
+            border-radius: 10px;
+            padding: 15px;
+            min-width: 300px;
+            box-shadow: var(--shadow);
+        }
+
+        #textInputOverlay.active {
+            display: block;
+        }
+
+        #textInputField {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 10px;
+            font-size: 24px;
+            font-family: 'Cambria Math', 'Times New Roman', serif;
+            border-radius: 5px;
+            outline: none;
+        }
+
+        #textInputField::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .text-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            align-items: center;
+        }
+
+        .text-size-input {
+            width: 60px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 5px;
+            border-radius: 5px;
+            outline: none;
+        }
+
+        .text-btn {
+            padding: 8px 15px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .text-btn:hover {
+            background: var(--secondary);
+            transform: translateY(-2px);
+        }
+
+        /* Modern Toolbar */
+        #toolbar {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 12px 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            box-shadow: var(--shadow);
+            z-index: 1000;
+            transition: var(--transition);
+        }
+
+        .tool-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            padding: 0 10px;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .tool-group:last-child {
+            border-right: none;
+        }
+
+        .tool-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid transparent;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tool-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.3), transparent);
+            transition: width 0.3s, height 0.3s;
+            transform: translate(-50%, -50%);
+        }
+
+        .tool-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .tool-btn:hover::before {
+            width: 100px;
+            height: 100px;
+        }
+
+        .tool-btn.active {
+            background: var(--primary);
+            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+        }
+
+        /* AI Mode Indicator */
+        .ai-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 12px 20px;
+            color: white;
+            font-weight: 600;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            box-shadow: var(--shadow);
+            z-index: 1000;
+        }
+
+        .ai-indicator.active {
+            display: flex;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4), var(--shadow);
+            }
+            50% {
+                box-shadow: 0 0 0 10px rgba(16, 185, 129, 0), var(--shadow);
+            }
+        }
+
+        .ai-status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Side Panel */
+        #sidePanel {
+            position: fixed;
+            right: -400px;
+            top: 0;
+            width: 400px;
+            height: 100vh;
+            background: var(--glass);
+            backdrop-filter: blur(30px);
+            border-left: 1px solid rgba(255, 255, 255, 0.2);
+            transition: var(--transition);
+            z-index: 999;
+            overflow-y: auto;
+            padding: 30px 20px;
+        }
+
+        #sidePanel.open {
+            right: 0;
+        }
+
+        .panel-toggle {
+            position: absolute;
+            left: -50px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 50px;
+            height: 100px;
+            background: var(--primary);
+            border-radius: 15px 0 0 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: white;
+            font-size: 24px;
+            transition: var(--transition);
+        }
+
+        .panel-toggle:hover {
+            background: var(--secondary);
+        }
+
+        /* Color Palette */
+        .color-palette {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .color-btn {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .color-btn::after {
+            content: '';
+            position: absolute;
+            inset: -6px;
+            border-radius: 50%;
+            border: 2px solid white;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .color-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .color-btn.active::after {
+            opacity: 1;
+        }
+
+        /* Recognition Display */
+        .recognition-display {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 20px 30px;
+            border-radius: 20px;
+            font-size: 48px;
+            font-weight: bold;
+            box-shadow: var(--shadow);
+            z-index: 2000;
+            animation: recognitionPop 0.8s ease forwards;
+        }
+
+        @keyframes recognitionPop {
+            0% {
+                transform: translate(-50%, -50%) scale(0) rotate(-180deg);
+                opacity: 0;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.2) rotate(10deg);
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1) rotate(0);
+                opacity: 1;
+            }
+        }
+
+        /* Symbol Library */
+        .symbol-library {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        .symbol-category {
+            margin-bottom: 15px;
+        }
+
+        .symbol-category h4 {
+            color: var(--primary);
+            margin-bottom: 10px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .symbol-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+        }
+
+        .symbol-btn {
+            aspect-ratio: 1;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+            font-size: 20px;
+            transition: var(--transition);
+            font-family: 'Cambria Math', serif;
+        }
+
+        .symbol-btn:hover {
+            background: var(--primary);
+            transform: scale(1.1);
+        }
+
+        /* Confidence Meter */
+        .confidence-meter {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 15px 25px;
+            display: none;
+            align-items: center;
+            gap: 15px;
+            box-shadow: var(--shadow);
+            z-index: 1000;
+        }
+
+        .confidence-meter.active {
+            display: flex;
+        }
+
+        .confidence-bar {
+            width: 200px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--danger), var(--warning), var(--success));
+            width: 0%;
+            transition: width 0.5s ease;
+            border-radius: 4px;
+        }
+
+        .confidence-value {
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            min-width: 45px;
+            text-align: center;
+        }
+
+        /* Shortcuts Panel */
+        .shortcuts-panel {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 15px;
+            color: white;
+            font-size: 12px;
+            opacity: 0.7;
+            transition: opacity 0.3s;
+            z-index: 900;
+        }
+
+        .shortcuts-panel:hover {
+            opacity: 1;
+        }
+
+        .shortcut-item {
+            display: flex;
+            gap: 10px;
+            margin: 5px 0;
+        }
+
+        .shortcut-key {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 2px 8px;
+            border-radius: 5px;
+            font-weight: 600;
+        }
+
+        /* Toast Notifications */
+        .toast {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            z-index: 3000;
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        /* Floating Home Button */
+        .floating-home-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            color: white;
+            border: 3px solid rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            font-size: 20px;
+            box-shadow: 0 8px 25px rgba(220, 38, 38, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .floating-home-btn:hover {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            transform: scale(1.15) translateY(-2px);
+            box-shadow: 0 12px 35px rgba(220, 38, 38, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .floating-home-btn:active {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(220, 38, 38, 0.4);
+        }
+
+        .floating-home-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            #toolbar {
+                width: 90%;
+                padding: 10px;
+                gap: 10px;
+            }
+
+            .tool-btn {
+                width: 35px;
+                height: 35px;
+                font-size: 16px;
+            }
+
+            #sidePanel {
+                width: 100%;
+                right: -100%;
+            }
+
+            .shortcuts-panel {
+                display: none;
+            }
+
+            .floating-home-btn {
+                top: 15px;
+                left: 15px;
+                width: 45px;
+                height: 45px;
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+
+    <!-- Floating Home Button -->
+    <button class="floating-home-btn" onclick="goHome()" title="Go to Homepage">
+        🏠
+    </button>
+
+    <!-- Custom Cursor -->
+    <div id="customCursor">
+        <div class="cursor-inner"></div>
+    </div>
+
+    <!-- Text Input Overlay -->
+    <div id="textInputOverlay">
+        <input type="text" id="textInputField" placeholder="Type your text or equation..." autofocus>
+        <div class="text-controls">
+            <label style="color: white; font-size: 14px;">Size:</label>
+            <input type="number" class="text-size-input" id="textSizeInput" value="24" min="12" max="72">
+            <button class="text-btn" id="insertTextBtn">Insert</button>
+            <button class="text-btn" id="cancelTextBtn" style="background: var(--danger);">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Main Toolbar -->
+    <div id="toolbar">
+        <div class="tool-group">
+            <button class="tool-btn" id="aiBtn" title="AI Recognition (A)">
+                🧠
+            </button>
+            <button class="tool-btn" id="smartBtn" title="Smart Shapes (S)">
+                ✨
+            </button>
+            <button class="tool-btn" id="testBtn" title="Test Recognition (T)">
+                🧪
+            </button>
+        </div>
+
+        <div class="tool-group">
+            <button class="tool-btn active" id="penBtn" title="Pen (P)">
+                ✏️
+            </button>
+            <button class="tool-btn" id="eraserBtn" title="Eraser (E)">
+                🧹
+            </button>
+            <button class="tool-btn" id="textBtn" title="Text (T)">
+                📝
+            </button>
+            <button class="tool-btn" id="shapeBtn" title="Shapes">
+                ⬜
+            </button>
+        </div>
+
+        <div class="tool-group">
+            <input type="range" id="sizeSlider" min="1" max="50" value="3"
+                   style="width: 100px; height: 6px;">
+            <span id="sizeValue" style="color: white; font-size: 12px; min-width: 30px;">3px</span>
+        </div>
+
+        <div class="tool-group">
+            <button class="tool-btn" id="undoBtn" title="Undo (Ctrl+Z)">
+                ↶
+            </button>
+            <button class="tool-btn" id="redoBtn" title="Redo (Ctrl+Y)">
+                ↷
+            </button>
+            <button class="tool-btn" id="clearBtn" title="Clear (C)">
+                🗑️
+            </button>
+        </div>
+
+        <div class="tool-group">
+            <button class="tool-btn" id="gridBtn" title="Grid (G)">
+                ⊞
+            </button>
+            <button class="tool-btn" id="saveBtn" title="Save (Ctrl+S)">
+                💾
+            </button>
+            <button class="tool-btn" id="settingsBtn" title="Settings">
+                ⚙️
+            </button>
+        </div>
+    </div>
+
+    <!-- AI Mode Indicator -->
+    <div class="ai-indicator" id="aiIndicator">
+        <div class="ai-status-dot"></div>
+        <span>AI Recognition Active</span>
+    </div>
+
+    <!-- Side Panel -->
+    <div id="sidePanel">
+        <div class="panel-toggle" id="panelToggle">
+            ◀
+        </div>
+
+        <h3 style="color: white; margin-bottom: 20px;">Tools & Symbols</h3>
+
+        <!-- Color Palette -->
+        <div style="margin-bottom: 30px;">
+            <h4 style="color: var(--primary); margin-bottom: 10px;">Colors</h4>
+            <div class="color-palette">
+                <button class="color-btn active" data-color="#ffffff" style="background: #ffffff"></button>
+                <button class="color-btn" data-color="#ef4444" style="background: #ef4444"></button>
+                <button class="color-btn" data-color="#f59e0b" style="background: #f59e0b"></button>
+                <button class="color-btn" data-color="#10b981" style="background: #10b981"></button>
+                <button class="color-btn" data-color="#3b82f6" style="background: #3b82f6"></button>
+                <button class="color-btn" data-color="#8b5cf6" style="background: #8b5cf6"></button>
+                <button class="color-btn" data-color="#ec4899" style="background: #ec4899"></button>
+                <button class="color-btn" data-color="#06b6d4" style="background: #06b6d4"></button>
+                <button class="color-btn" data-color="#84cc16" style="background: #84cc16"></button>
+                <button class="color-btn" data-color="#f97316" style="background: #f97316"></button>
+                <button class="color-btn" data-color="#6366f1" style="background: #6366f1"></button>
+                <button class="color-btn" data-color="#a855f7" style="background: #a855f7"></button>
+            </div>
+        </div>
+
+        <!-- Symbol Library -->
+        <div class="symbol-library">
+            <div class="symbol-category">
+                <h4>Mathematics</h4>
+                <div class="symbol-grid">
+                    <button class="symbol-btn" data-symbol="∫">∫</button>
+                    <button class="symbol-btn" data-symbol="∑">∑</button>
+                    <button class="symbol-btn" data-symbol="∏">∏</button>
+                    <button class="symbol-btn" data-symbol="√">√</button>
+                    <button class="symbol-btn" data-symbol="∛">∛</button>
+                    <button class="symbol-btn" data-symbol="∂">∂</button>
+                    <button class="symbol-btn" data-symbol="∇">∇</button>
+                    <button class="symbol-btn" data-symbol="∆">∆</button>
+                    <button class="symbol-btn" data-symbol="∞">∞</button>
+                    <button class="symbol-btn" data-symbol="∅">∅</button>
+                </div>
+            </div>
+
+            <div class="symbol-category">
+                <h4>Greek Letters</h4>
+                <div class="symbol-grid">
+                    <button class="symbol-btn" data-symbol="α">α</button>
+                    <button class="symbol-btn" data-symbol="β">β</button>
+                    <button class="symbol-btn" data-symbol="γ">γ</button>
+                    <button class="symbol-btn" data-symbol="δ">δ</button>
+                    <button class="symbol-btn" data-symbol="ε">ε</button>
+                    <button class="symbol-btn" data-symbol="θ">θ</button>
+                    <button class="symbol-btn" data-symbol="λ">λ</button>
+                    <button class="symbol-btn" data-symbol="μ">μ</button>
+                    <button class="symbol-btn" data-symbol="π">π</button>
+                    <button class="symbol-btn" data-symbol="σ">σ</button>
+                    <button class="symbol-btn" data-symbol="φ">φ</button>
+                    <button class="symbol-btn" data-symbol="ω">ω</button>
+                </div>
+            </div>
+
+            <div class="symbol-category">
+                <h4>Operators</h4>
+                <div class="symbol-grid">
+                    <button class="symbol-btn" data-symbol="±">±</button>
+                    <button class="symbol-btn" data-symbol="×">×</button>
+                    <button class="symbol-btn" data-symbol="÷">÷</button>
+                    <button class="symbol-btn" data-symbol="≠">≠</button>
+                    <button class="symbol-btn" data-symbol="≈">≈</button>
+                    <button class="symbol-btn" data-symbol="≤">≤</button>
+                    <button class="symbol-btn" data-symbol="≥">≥</button>
+                    <button class="symbol-btn" data-symbol="∈">∈</button>
+                    <button class="symbol-btn" data-symbol="∉">∉</button>
+                    <button class="symbol-btn" data-symbol="∪">∪</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recognition History -->
+        <div style="margin-top: 30px;">
+            <h4 style="color: var(--primary); margin-bottom: 10px;">Recognition History</h4>
+            <div id="historyList" style="color: white; font-size: 14px;">
+                <div style="opacity: 0.5;">No recognitions yet...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confidence Meter -->
+    <div class="confidence-meter" id="confidenceMeter">
+        <span style="color: white; font-size: 14px;">Confidence:</span>
+        <div class="confidence-bar">
+            <div class="confidence-fill" id="confidenceFill"></div>
+        </div>
+        <div class="confidence-value" id="confidenceValue">0%</div>
+    </div>
+
+    <!-- Shortcuts Panel -->
+    <div class="shortcuts-panel">
+        <div style="font-weight: 600; margin-bottom: 10px;">Keyboard Shortcuts</div>
+        <div class="shortcut-item">
+            <span class="shortcut-key">A</span> AI Mode
+        </div>
+        <div class="shortcut-item">
+            <span class="shortcut-key">P</span> Pen Tool
+        </div>
+        <div class="shortcut-item">
+            <span class="shortcut-key">E</span> Eraser
+        </div>
+        <div class="shortcut-item">
+            <span class="shortcut-key">T</span> Text / Test Recognition
+        </div>
+        <div class="shortcut-item">
+            <span class="shortcut-key">R</span> Run Recognition Test
+        </div>
+        <div class="shortcut-item">
+            <span class="shortcut-key">G</span> Grid
+        </div>
+        <div class="shortcut-item">
+            <span class="shortcut-key">Ctrl+Z</span> Undo
+        </div>
+    </div>
+
+    <script>
+        // Advanced Mathematics Chalkboard Application
+        class QuantumBoard {
+            constructor() {
+                this.canvas = document.getElementById('canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.customCursor = document.getElementById('customCursor');
+                this.textInputOverlay = document.getElementById('textInputOverlay');
+                this.textInputField = document.getElementById('textInputField');
+
+                // State Management
+                this.state = {
+                    tool: 'pen',
+                    color: '#ffffff',
+                    size: 3,
+                    isDrawing: false,
+                    aiMode: false,
+                    smartShapes: false,
+                    gridVisible: false,
+
+                    // Text state
+                    textMode: false,
+                    textPosition: { x: 0, y: 0 },
+                    textSize: 24,
+
+                    // Drawing state
+                    lastX: 0,
+                    lastY: 0,
+                    currentStroke: [],
+
+                    // History
+                    history: [],
+                    historyStep: -1,
+                    maxHistory: 50,
+
+                    // Recognition
+                    recognitionConfidence: 0,
+                    recognitionHistory: []
+                };
+
+                // AI Recognition Engine
+                this.recognitionEngine = new RecognitionEngine();
+
+                // Initialize
+                this.init();
+            }
+
+            init() {
+                this.setupCanvas();
+                this.setupEventListeners();
+                this.setupTextInput();
+                this.setupTouchSupport();
+                this.loadSettings();
+
+                // Initial save state
+                this.saveState();
+
+                this.showToast('Welcome! Click anywhere to start drawing.');
+            }
+
+            setupCanvas() {
+                const resizeCanvas = () => {
+                    const rect = this.canvas.getBoundingClientRect();
+                    const dpr = window.devicePixelRatio || 1;
+
+                    this.canvas.width = rect.width * dpr;
+                    this.canvas.height = rect.height * dpr;
+
+                    this.ctx.scale(dpr, dpr);
+
+                    this.canvas.style.width = rect.width + 'px';
+                    this.canvas.style.height = rect.height + 'px';
+
+                    // Restore content after resize
+                    if (this.state.history[this.state.historyStep]) {
+                        this.restoreState(this.state.history[this.state.historyStep]);
+                    }
+                };
+
+                resizeCanvas();
+                window.addEventListener('resize', resizeCanvas);
+            }
+
+            setupTextInput() {
+                // Text input field events
+                document.getElementById('insertTextBtn').addEventListener('click', () => {
+                    this.insertText();
+                });
+
+                document.getElementById('cancelTextBtn').addEventListener('click', () => {
+                    this.cancelText();
+                });
+
+                this.textInputField.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        this.insertText();
+                    } else if (e.key === 'Escape') {
+                        this.cancelText();
+                    }
+                });
+
+                document.getElementById('textSizeInput').addEventListener('input', (e) => {
+                    this.state.textSize = parseInt(e.target.value) || 24;
+                });
+            }
+
+            setupEventListeners() {
+                // Canvas events
+                this.canvas.addEventListener('mousedown', (e) => this.handleMouseDown(e));
+                this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
+                this.canvas.addEventListener('mouseup', (e) => this.handleMouseUp(e));
+                this.canvas.addEventListener('mouseleave', (e) => this.handleMouseUp(e));
+
+                // Canvas click for text tool
+                this.canvas.addEventListener('click', (e) => {
+                    if (this.state.tool === 'text' && !this.state.textMode) {
+                        this.showTextInput(e);
+                    }
+                });
+
+                // Toolbar buttons
+                document.getElementById('aiBtn').addEventListener('click', () => this.toggleAI());
+                document.getElementById('smartBtn').addEventListener('click', () => this.toggleSmartShapes());
+                document.getElementById('testBtn').addEventListener('click', () => this.runRecognitionTest());
+                document.getElementById('penBtn').addEventListener('click', () => this.setTool('pen'));
+                document.getElementById('eraserBtn').addEventListener('click', () => this.setTool('eraser'));
+                document.getElementById('textBtn').addEventListener('click', () => this.setTool('text'));
+                document.getElementById('shapeBtn').addEventListener('click', () => this.setTool('shape'));
+
+                document.getElementById('undoBtn').addEventListener('click', () => this.undo());
+                document.getElementById('redoBtn').addEventListener('click', () => this.redo());
+                document.getElementById('clearBtn').addEventListener('click', () => this.clear());
+                document.getElementById('gridBtn').addEventListener('click', () => this.toggleGrid());
+                document.getElementById('saveBtn').addEventListener('click', () => this.save());
+
+                // Panel toggle
+                document.getElementById('panelToggle').addEventListener('click', () => this.togglePanel());
+
+                // Color buttons
+                document.querySelectorAll('.color-btn').forEach(btn => {
+                    btn.addEventListener('click', () => this.setColor(btn.dataset.color));
+                });
+
+                // Symbol buttons - now insert into text field if it's open
+                document.querySelectorAll('.symbol-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        if (this.state.textMode) {
+                            // Insert symbol into text field
+                            const cursorPos = this.textInputField.selectionStart;
+                            const textBefore = this.textInputField.value.substring(0, cursorPos);
+                            const textAfter = this.textInputField.value.substring(this.textInputField.selectionEnd);
+                            this.textInputField.value = textBefore + btn.dataset.symbol + textAfter;
+                            this.textInputField.selectionStart = this.textInputField.selectionEnd =
+                                cursorPos + btn.dataset.symbol.length;
+                            this.textInputField.focus();
+                        } else {
+                            this.insertSymbol(btn.dataset.symbol);
+                        }
+                    });
+                });
+
+                // Size slider
+                document.getElementById('sizeSlider').addEventListener('input', (e) => {
+                    this.state.size = parseInt(e.target.value);
+                    document.getElementById('sizeValue').textContent = `${this.state.size}px`;
+                });
+
+                // Keyboard shortcuts
+                document.addEventListener('keydown', (e) => this.handleKeyboard(e));
+
+            }
+
+            setupTouchSupport() {
+                let touchStarted = false;
+
+                this.canvas.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    touchStarted = true;
+                    const touch = e.touches[0];
+                    const rect = this.canvas.getBoundingClientRect();
+
+                    if (this.state.tool === 'text' && !this.state.textMode) {
+                        this.showTextInput(touch);
+                    } else {
+                        const mouseEvent = new MouseEvent('mousedown', {
+                            clientX: touch.clientX,
+                            clientY: touch.clientY
+                        });
+                        this.canvas.dispatchEvent(mouseEvent);
+                    }
+                });
+
+                this.canvas.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    if (!touchStarted || this.state.tool === 'text') return;
+                    const touch = e.touches[0];
+                    const mouseEvent = new MouseEvent('mousemove', {
+                        clientX: touch.clientX,
+                        clientY: touch.clientY
+                    });
+                    this.canvas.dispatchEvent(mouseEvent);
+                });
+
+                this.canvas.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    touchStarted = false;
+                    if (this.state.tool !== 'text') {
+                        const mouseEvent = new MouseEvent('mouseup', {});
+                        this.canvas.dispatchEvent(mouseEvent);
+                    }
+                });
+            }
+
+            handleMouseDown(e) {
+                if (this.state.tool === 'text') return;
+
+                this.state.isDrawing = true;
+                const rect = this.canvas.getBoundingClientRect();
+                this.state.lastX = e.clientX - rect.left;
+                this.state.lastY = e.clientY - rect.top;
+
+                this.state.currentStroke = [{
+                    x: this.state.lastX,
+                    y: this.state.lastY,
+                    time: Date.now()
+                }];
+
+                if (this.state.tool === 'pen' || this.state.tool === 'eraser') {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(this.state.lastX, this.state.lastY);
+                }
+
+                // Show custom cursor
+                this.canvas.classList.add('drawing');
+                this.updateCursor(e);
+            }
+
+            handleMouseMove(e) {
+                const rect = this.canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                // Update custom cursor
+                if (this.state.tool !== 'text') {
+                    this.updateCursor(e);
+                }
+
+                if (!this.state.isDrawing || this.state.tool === 'text') return;
+
+                this.state.currentStroke.push({ x, y, time: Date.now() });
+
+                this.ctx.lineWidth = this.state.size;
+                this.ctx.lineCap = 'round';
+                this.ctx.lineJoin = 'round';
+
+                if (this.state.tool === 'pen') {
+                    this.ctx.globalCompositeOperation = 'source-over';
+                    this.ctx.strokeStyle = this.state.color;
+                    this.ctx.lineTo(x, y);
+                    this.ctx.stroke();
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x, y);
+                } else if (this.state.tool === 'eraser') {
+                    this.ctx.globalCompositeOperation = 'destination-out';
+                    this.ctx.lineTo(x, y);
+                    this.ctx.stroke();
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x, y);
+                }
+
+                this.state.lastX = x;
+                this.state.lastY = y;
+            }
+
+            handleMouseUp(e) {
+                if (!this.state.isDrawing || this.state.tool === 'text') return;
+
+                this.state.isDrawing = false;
+                this.canvas.classList.remove('drawing');
+
+                // Process stroke for AI recognition
+                if (this.state.aiMode && this.state.currentStroke.length > 5) {
+                    // Show processing indicator
+                    this.showToast('Processing stroke...');
+                    setTimeout(() => {
+                        this.processStroke();
+                    }, 100);
+                }
+
+                // Save state
+                this.saveState();
+            }
+
+            showTextInput(e) {
+                const rect = this.canvas.getBoundingClientRect();
+                const x = (e.clientX || e.touches?.[0]?.clientX) - rect.left;
+                const y = (e.clientY || e.touches?.[0]?.clientY) - rect.top;
+
+                this.state.textMode = true;
+                this.state.textPosition = { x, y };
+
+                // Position the text input overlay
+                this.textInputOverlay.style.left = Math.min(e.clientX || e.touches?.[0]?.clientX,
+                    window.innerWidth - 350) + 'px';
+                this.textInputOverlay.style.top = Math.min(e.clientY || e.touches?.[0]?.clientY,
+                    window.innerHeight - 150) + 'px';
+                this.textInputOverlay.classList.add('active');
+
+                // Clear and focus the input field
+                this.textInputField.value = '';
+                this.textInputField.focus();
+
+                // Set the text size input
+                document.getElementById('textSizeInput').value = this.state.textSize;
+            }
+
+            insertText() {
+                const text = this.textInputField.value.trim();
+                if (!text) {
+                    this.cancelText();
+                    return;
+                }
+
+                // Draw the text on canvas
+                this.ctx.save();
+                this.ctx.font = `${this.state.textSize}px "Cambria Math", "Times New Roman", serif`;
+                this.ctx.fillStyle = this.state.color;
+                this.ctx.textAlign = 'left';
+                this.ctx.textBaseline = 'top';
+
+                // Handle multi-line text
+                const lines = text.split('\n');
+                lines.forEach((line, index) => {
+                    this.ctx.fillText(line, this.state.textPosition.x,
+                        this.state.textPosition.y + (index * this.state.textSize * 1.2));
+                });
+
+                this.ctx.restore();
+
+                // Hide the input overlay
+                this.textInputOverlay.classList.remove('active');
+                this.state.textMode = false;
+
+                // Save state
+                this.saveState();
+
+                this.showToast('Text inserted');
+            }
+
+            cancelText() {
+                this.textInputOverlay.classList.remove('active');
+                this.state.textMode = false;
+                this.textInputField.value = '';
+            }
+
+            processStroke() {
+                console.log('Processing stroke...');
+                console.log('AI mode:', this.state.aiMode);
+                console.log('Stroke length:', this.state.currentStroke.length);
+
+                // Only process if we have enough points and AI mode is enabled
+                if (!this.state.aiMode || this.state.currentStroke.length < 5) {
+                    console.log('Skipping processing - insufficient conditions');
+                    return;
+                }
+
+                const result = this.recognitionEngine.recognize(this.state.currentStroke);
+                console.log('Recognition result:', result);
+
+                if (result && result.confidence > 0.3) { // Lower threshold for testing
+                    console.log('Recognition successful, showing result');
+                    this.showRecognition(result);
+                    this.updateConfidence(result.confidence);
+                    this.addToHistory(result);
+
+                    // Replace stroke with recognized character if confidence is high enough
+                    if (result.confidence > 0.6) {
+                        console.log('High confidence, replacing stroke with character');
+                        this.replaceWithCharacter(result);
+                    }
+                } else {
+                    console.log('Recognition failed or low confidence');
+                    // Show that recognition failed
+                    this.showToast('Recognition failed - try drawing more clearly');
+                }
+            }
+
+            showRecognition(result) {
+                const display = document.createElement('div');
+                display.className = 'recognition-display';
+                display.textContent = result.character;
+                document.body.appendChild(display);
+
+                setTimeout(() => {
+                    display.remove();
+                }, 800);
+            }
+
+            updateConfidence(confidence) {
+                const meter = document.getElementById('confidenceMeter');
+                const fill = document.getElementById('confidenceFill');
+                const value = document.getElementById('confidenceValue');
+
+                meter.classList.add('active');
+                fill.style.width = `${confidence * 100}%`;
+                value.textContent = `${Math.round(confidence * 100)}%`;
+
+                setTimeout(() => {
+                    meter.classList.remove('active');
+                }, 3000);
+            }
+
+            replaceWithCharacter(result) {
+                // Clear the stroke area
+                const bounds = this.getStrokeBounds(this.state.currentStroke);
+                this.ctx.clearRect(
+                    bounds.minX - 10,
+                    bounds.minY - 10,
+                    bounds.width + 20,
+                    bounds.height + 20
+                );
+
+                // Draw the recognized character
+                this.ctx.font = `${this.state.size * 10}px "Cambria Math", serif`;
+                this.ctx.fillStyle = this.state.color;
+                this.ctx.textAlign = 'center';
+                this.ctx.textBaseline = 'middle';
+                this.ctx.fillText(
+                    result.character,
+                    bounds.centerX,
+                    bounds.centerY
+                );
+            }
+
+            getStrokeBounds(stroke) {
+                const xs = stroke.map(p => p.x);
+                const ys = stroke.map(p => p.y);
+                const minX = Math.min(...xs);
+                const maxX = Math.max(...xs);
+                const minY = Math.min(...ys);
+                const maxY = Math.max(...ys);
+
+                return {
+                    minX, maxX, minY, maxY,
+                    width: maxX - minX,
+                    height: maxY - minY,
+                    centerX: (minX + maxX) / 2,
+                    centerY: (minY + maxY) / 2
+                };
+            }
+
+            updateCursor(e) {
+                if (this.state.tool === 'pen' || this.state.tool === 'eraser') {
+                    this.customCursor.style.left = e.clientX + 'px';
+                    this.customCursor.style.top = e.clientY + 'px';
+                    this.customCursor.style.color = this.state.color;
+                    this.customCursor.querySelector('.cursor-inner').style.width =
+                        this.state.size + 'px';
+                    this.customCursor.querySelector('.cursor-inner').style.height =
+                        this.state.size + 'px';
+                }
+            }
+
+            // Tool methods
+            setTool(tool) {
+                this.state.tool = tool;
+
+                // Cancel text input if switching away from text tool
+                if (tool !== 'text' && this.state.textMode) {
+                    this.cancelText();
+                }
+
+                // Update button states
+                document.querySelectorAll('.tool-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                document.getElementById(`${tool}Btn`).classList.add('active');
+
+                // Update cursor style
+                this.canvas.classList.remove('text-mode');
+                if (tool === 'text') {
+                    this.canvas.classList.add('text-mode');
+                }
+            }
+
+            setColor(color) {
+                this.state.color = color;
+                document.querySelectorAll('.color-btn').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.color === color);
+                });
+            }
+
+            toggleAI() {
+                this.state.aiMode = !this.state.aiMode;
+                document.getElementById('aiBtn').classList.toggle('active');
+                document.getElementById('aiIndicator').classList.toggle('active');
+
+                this.showToast(this.state.aiMode ?
+                    'AI Recognition Enabled' : 'AI Recognition Disabled');
+
+                // Test recognition with a simple stroke
+                if (this.state.aiMode) {
+                    this.testRecognition();
+                }
+            }
+
+            testRecognition() {
+                // Create a simple test stroke for '0'
+                const testStroke = [];
+                const centerX = 200;
+                const centerY = 200;
+                const radius = 30;
+
+                for (let i = 0; i <= 20; i++) {
+                    const angle = (i / 20) * 2 * Math.PI;
+                    testStroke.push({
+                        x: centerX + radius * Math.cos(angle),
+                        y: centerY + radius * Math.sin(angle),
+                        time: Date.now() + i * 10
+                    });
+                }
+
+                const result = this.recognitionEngine.recognize(testStroke);
+                console.log('Test recognition result:', result);
+
+                if (result) {
+                    this.showToast(`Test recognition: ${result.character} (${Math.round(result.confidence * 100)}%)`);
+                } else {
+                    this.showToast('Test recognition failed');
+                }
+            }
+
+            runRecognitionTest() {
+                console.log('Running recognition test...');
+
+                // Test different shapes
+                const testShapes = [
+                    { name: 'Circle (0)', stroke: this.createCircleStroke(200, 200, 40) },
+                    { name: 'Line (-)', stroke: this.createLineStroke(150, 200, 250, 200) },
+                    { name: 'Plus (+)', stroke: this.createPlusStroke(200, 200, 30) }
+                ];
+
+                testShapes.forEach((test, index) => {
+                    setTimeout(() => {
+                        console.log(`Testing ${test.name}:`);
+                        const result = this.recognitionEngine.recognize(test.stroke);
+                        console.log(`Result for ${test.name}:`, result);
+
+                        if (result) {
+                            this.showToast(`${test.name}: ${result.character} (${Math.round(result.confidence * 100)}%)`);
+                        } else {
+                            this.showToast(`${test.name}: Failed`);
+                        }
+                    }, index * 1000);
+                });
+            }
+
+            createCircleStroke(centerX, centerY, radius) {
+                const stroke = [];
+                for (let i = 0; i <= 25; i++) {
+                    const angle = (i / 25) * 2 * Math.PI;
+                    stroke.push({
+                        x: centerX + radius * Math.cos(angle),
+                        y: centerY + radius * Math.sin(angle),
+                        time: Date.now() + i * 10
+                    });
+                }
+                return stroke;
+            }
+
+            createLineStroke(x1, y1, x2, y2) {
+                const stroke = [];
+                const steps = 15;
+                for (let i = 0; i <= steps; i++) {
+                    const t = i / steps;
+                    stroke.push({
+                        x: x1 + (x2 - x1) * t,
+                        y: y1 + (y2 - y1) * t,
+                        time: Date.now() + i * 5
+                    });
+                }
+                return stroke;
+            }
+
+            createPlusStroke(centerX, centerY, size) {
+                const stroke = [];
+
+                // Horizontal line
+                for (let i = 0; i <= 10; i++) {
+                    stroke.push({
+                        x: centerX - size + (size * 2 * i / 10),
+                        y: centerY,
+                        time: Date.now() + i * 5
+                    });
+                }
+
+                // Vertical line
+                for (let i = 0; i <= 10; i++) {
+                    stroke.push({
+                        x: centerX,
+                        y: centerY - size + (size * 2 * i / 10),
+                        time: Date.now() + 100 + i * 5
+                    });
+                }
+
+                return stroke;
+            }
+
+            toggleSmartShapes() {
+                this.state.smartShapes = !this.state.smartShapes;
+                document.getElementById('smartBtn').classList.toggle('active');
+
+                this.showToast(this.state.smartShapes ?
+                    'Smart Shapes Enabled' : 'Smart Shapes Disabled');
+            }
+
+            toggleGrid() {
+                this.state.gridVisible = !this.state.gridVisible;
+                document.getElementById('gridBtn').classList.toggle('active');
+
+                if (this.state.gridVisible) {
+                    this.drawGrid();
+                } else {
+                    this.redraw();
+                }
+            }
+
+            drawGrid() {
+                this.ctx.save();
+                this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+                this.ctx.lineWidth = 1;
+
+                const gridSize = 30;
+                const width = this.canvas.width;
+                const height = this.canvas.height;
+
+                for (let x = 0; x <= width; x += gridSize) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x, 0);
+                    this.ctx.lineTo(x, height);
+                    this.ctx.stroke();
+                }
+
+                for (let y = 0; y <= height; y += gridSize) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(0, y);
+                    this.ctx.lineTo(width, y);
+                    this.ctx.stroke();
+                }
+
+                this.ctx.restore();
+            }
+
+            togglePanel() {
+                const panel = document.getElementById('sidePanel');
+                const toggle = document.getElementById('panelToggle');
+
+                panel.classList.toggle('open');
+                toggle.textContent = panel.classList.contains('open') ? '▶' : '◀';
+            }
+
+            // History management
+            saveState() {
+                this.state.historyStep++;
+                if (this.state.historyStep < this.state.history.length) {
+                    this.state.history.length = this.state.historyStep;
+                }
+
+                this.state.history.push(this.canvas.toDataURL());
+
+                if (this.state.history.length > this.state.maxHistory) {
+                    this.state.history.shift();
+                    this.state.historyStep--;
+                }
+            }
+
+            undo() {
+                if (this.state.historyStep > 0) {
+                    this.state.historyStep--;
+                    this.restoreState(this.state.history[this.state.historyStep]);
+                }
+            }
+
+            redo() {
+                if (this.state.historyStep < this.state.history.length - 1) {
+                    this.state.historyStep++;
+                    this.restoreState(this.state.history[this.state.historyStep]);
+                }
+            }
+
+            restoreState(dataUrl) {
+                const img = new Image();
+                img.onload = () => {
+                    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                    this.ctx.drawImage(img, 0, 0);
+                    if (this.state.gridVisible) {
+                        this.drawGrid();
+                    }
+                };
+                img.src = dataUrl;
+            }
+
+            clear() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                if (this.state.gridVisible) {
+                    this.drawGrid();
+                }
+                this.saveState();
+                this.showToast('Canvas cleared');
+            }
+
+            redraw() {
+                if (this.state.history[this.state.historyStep]) {
+                    this.restoreState(this.state.history[this.state.historyStep]);
+                }
+            }
+
+            save() {
+                const link = document.createElement('a');
+                link.download = `quantum-board-${Date.now()}.png`;
+                link.href = this.canvas.toDataURL();
+                link.click();
+                this.showToast('Image saved!');
+            }
+
+            insertSymbol(symbol) {
+                const centerX = this.canvas.width / 2;
+                const centerY = this.canvas.height / 2;
+
+                this.ctx.font = '48px "Cambria Math", serif';
+                this.ctx.fillStyle = this.state.color;
+                this.ctx.textAlign = 'center';
+                this.ctx.textBaseline = 'middle';
+                this.ctx.fillText(symbol, centerX, centerY);
+
+                this.saveState();
+                this.showToast(`Inserted ${symbol}`);
+            }
+
+            addToHistory(result) {
+                const historyList = document.getElementById('historyList');
+
+                if (historyList.children[0]?.style?.opacity === '0.5') {
+                    historyList.innerHTML = '';
+                }
+
+                const item = document.createElement('div');
+                item.style.padding = '5px 0';
+                item.style.borderBottom = '1px solid rgba(255,255,255,0.1)';
+                item.innerHTML = `
+                    <span style="font-size: 20px; margin-right: 10px;">${result.character}</span>
+                    <span style="opacity: 0.7;">Confidence: ${Math.round(result.confidence * 100)}%</span>
+                `;
+
+                historyList.insertBefore(item, historyList.firstChild);
+
+                // Keep only last 10 items
+                while (historyList.children.length > 10) {
+                    historyList.removeChild(historyList.lastChild);
+                }
+            }
+
+            handleKeyboard(e) {
+                // Don't handle shortcuts if text input is active
+                if (this.state.textMode) return;
+
+                // Prevent default for our shortcuts
+                const shortcuts = ['a', 'p', 'e', 't', 'g', 'c', 's', 'z', 'y'];
+                if (shortcuts.includes(e.key.toLowerCase()) || e.ctrlKey) {
+                    e.preventDefault();
+                }
+
+                if (e.ctrlKey || e.metaKey) {
+                    switch(e.key.toLowerCase()) {
+                        case 'z':
+                            this.undo();
+                            break;
+                        case 'y':
+                            this.redo();
+                            break;
+                        case 's':
+                            this.save();
+                            break;
+                    }
+                } else {
+                    switch(e.key.toLowerCase()) {
+                        case 'a':
+                            this.toggleAI();
+                            break;
+                        case 'p':
+                            this.setTool('pen');
+                            break;
+                        case 'e':
+                            this.setTool('eraser');
+                            break;
+                        case 't':
+                            if (this.state.tool === 'text') {
+                                this.setTool('pen');
+                            } else {
+                                this.setTool('text');
+                            }
+                            break;
+                        case 'r':
+                            this.runRecognitionTest();
+                            break;
+                        case 'g':
+                            this.toggleGrid();
+                            break;
+                        case 'c':
+                            this.clear();
+                            break;
+                    }
+                }
+            }
+
+            showToast(message) {
+                const toast = document.createElement('div');
+                toast.className = 'toast';
+                toast.textContent = message;
+                document.body.appendChild(toast);
+
+                setTimeout(() => toast.classList.add('show'), 10);
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
+            }
+
+            loadSettings() {
+                const settings = localStorage.getItem('quantumBoardSettings');
+                if (settings) {
+                    const parsed = JSON.parse(settings);
+                    Object.assign(this.state, parsed);
+                }
+            }
+
+            saveSettings() {
+                const settings = {
+                    color: this.state.color,
+                    size: this.state.size,
+                    textSize: this.state.textSize,
+                    aiMode: this.state.aiMode,
+                    smartShapes: this.state.smartShapes
+                };
+                localStorage.setItem('quantumBoardSettings', JSON.stringify(settings));
+            }
+
+            // Go to homepage
+            goHome() {
+                window.location.href = '/';
+            }
+        }
+
+        // Enhanced Recognition Engine with Advanced Pattern Matching
+        class RecognitionEngine {
+            constructor() {
+                this.patterns = {
+                    numbers: {
+                        '0': { features: ['closed', 'oval'], minPoints: 15, confidence: 0.85 },
+                        '1': { features: ['vertical'], minPoints: 5, confidence: 0.9 },
+                        '2': { features: ['curve', 'horizontal'], minPoints: 10, confidence: 0.8 },
+                        '3': { features: ['double_curve'], minPoints: 8, confidence: 0.75 },
+                        '4': { features: ['angular', 'cross'], minPoints: 6, confidence: 0.8 },
+                        '5': { features: ['horizontal', 'curve'], minPoints: 8, confidence: 0.75 },
+                        '6': { features: ['loop'], minPoints: 10, confidence: 0.8 },
+                        '7': { features: ['horizontal', 'diagonal'], minPoints: 4, confidence: 0.85 },
+                        '8': { features: ['double_loop'], minPoints: 15, confidence: 0.9 },
+                        '9': { features: ['loop', 'tail'], minPoints: 10, confidence: 0.8 }
+                    },
+                    operators: {
+                        '+': { features: ['cross', 'perpendicular'], minPoints: 4, confidence: 0.95 },
+                        '-': { features: ['horizontal'], minPoints: 2, confidence: 0.9 },
+                        '×': { features: ['diagonal_cross'], minPoints: 4, confidence: 0.85 },
+                        '÷': { features: ['horizontal', 'dots'], minPoints: 3, confidence: 0.8 },
+                        '=': { features: ['double_horizontal'], minPoints: 4, confidence: 0.9 },
+                        '±': { features: ['horizontal', 'vertical'], minPoints: 5, confidence: 0.75 }
+                    },
+                    greek: {
+                        'π': { features: ['horizontal', 'legs'], minPoints: 6, confidence: 0.8 },
+                        'α': { features: ['loop', 'tail'], minPoints: 8, confidence: 0.75 },
+                        'β': { features: ['vertical', 'bulge'], minPoints: 10, confidence: 0.8 },
+                        'θ': { features: ['oval', 'horizontal'], minPoints: 8, confidence: 0.8 },
+                        'σ': { features: ['c_shape'], minPoints: 6, confidence: 0.75 },
+                        'λ': { features: ['diagonal', 'horizontal'], minPoints: 5, confidence: 0.8 },
+                        'μ': { features: ['vertical', 'double_bulge'], minPoints: 8, confidence: 0.75 },
+                        'φ': { features: ['oval', 'vertical'], minPoints: 10, confidence: 0.8 },
+                        'ω': { features: ['double_curve'], minPoints: 8, confidence: 0.75 }
+                    },
+                    calculus: {
+                        '∫': { features: ['integral'], minPoints: 12, confidence: 0.85 },
+                        '∑': { features: ['sigma'], minPoints: 8, confidence: 0.8 },
+                        '∏': { features: ['pi_product'], minPoints: 10, confidence: 0.8 },
+                        '∂': { features: ['partial'], minPoints: 6, confidence: 0.75 },
+                        '∇': { features: ['nabla'], minPoints: 8, confidence: 0.8 },
+                        '∆': { features: ['delta'], minPoints: 6, confidence: 0.8 },
+                        '√': { features: ['radical'], minPoints: 8, confidence: 0.85 },
+                        '∛': { features: ['cube_root'], minPoints: 10, confidence: 0.8 },
+                        '∞': { features: ['infinity'], minPoints: 8, confidence: 0.9 },
+                        '∅': { features: ['empty_set'], minPoints: 6, confidence: 0.75 }
+                    },
+                    relations: {
+                        '≠': { features: ['not_equal'], minPoints: 5, confidence: 0.85 },
+                        '≈': { features: ['approximately'], minPoints: 6, confidence: 0.8 },
+                        '≤': { features: ['less_equal'], minPoints: 5, confidence: 0.85 },
+                        '≥': { features: ['greater_equal'], minPoints: 5, confidence: 0.85 },
+                        '∈': { features: ['element_of'], minPoints: 4, confidence: 0.8 },
+                        '∉': { features: ['not_element'], minPoints: 5, confidence: 0.75 },
+                        '∪': { features: ['union'], minPoints: 6, confidence: 0.8 },
+                        '∩': { features: ['intersection'], minPoints: 8, confidence: 0.8 },
+                        '⊂': { features: ['subset'], minPoints: 6, confidence: 0.75 },
+                        '⊆': { features: ['subset_equal'], minPoints: 7, confidence: 0.75 }
+                    }
+                };
+
+                // Neural network-like pattern matching
+                this.neuralPatterns = this.initializeNeuralPatterns();
+            }
+
+            initializeNeuralPatterns() {
+                // Advanced pattern recognition using geometric analysis
+                return {
+                    strokeAnalysis: {
+                        curvatureThreshold: 0.3,
+                        cornerThreshold: Math.PI / 4,
+                        aspectRatioThresholds: {
+                            tall: 2.0,
+                            wide: 0.5,
+                            square: 1.5
+                        }
+                    },
+                    featureWeights: {
+                        closedShape: 0.3,
+                        curvature: 0.2,
+                        corners: 0.25,
+                        aspectRatio: 0.15,
+                        strokeCount: 0.1
+                    }
+                };
+            }
+
+            recognize(stroke) {
+                console.log('Recognition engine called with stroke length:', stroke.length);
+
+                if (stroke.length < 5) {
+                    console.log('Stroke too short, returning null');
+                    return null;
+                }
+
+                const features = this.extractFeatures(stroke);
+                console.log('Extracted features:', features);
+
+                const candidates = [];
+
+                // Simple but effective recognition
+                for (const [category, patterns] of Object.entries(this.patterns)) {
+                    console.log(`Checking category: ${category}`);
+                    for (const [char, pattern] of Object.entries(patterns)) {
+                        const score = this.matchPattern(features, pattern);
+                        console.log(`Pattern score for ${char}: ${score}`);
+                        if (score > 0.4) { // Lower threshold to make it work
+                            candidates.push({
+                                character: char,
+                                confidence: score,
+                                category
+                            });
+                        }
+                    }
+                }
+
+                // Try basic shape recognition for simple strokes
+                const basicResult = this.basicShapeRecognition(stroke);
+                console.log('Basic shape recognition result:', basicResult);
+                if (basicResult) {
+                    candidates.push(basicResult);
+                }
+
+                candidates.sort((a, b) => b.confidence - a.confidence);
+                console.log('Final candidates:', candidates);
+                return candidates[0] || null;
+            }
+
+            extractAdvancedFeatures(stroke) {
+                const bounds = this.getBounds(stroke);
+                const basicFeatures = this.extractFeatures(stroke);
+
+                // Advanced geometric analysis
+                const advancedFeatures = {
+                    ...basicFeatures,
+                    strokeDensity: stroke.length / Math.sqrt(bounds.width * bounds.height),
+                    velocityProfile: this.analyzeVelocity(stroke),
+                    pressureProfile: this.analyzePressure(stroke),
+                    curvatureProfile: this.analyzeCurvatureProfile(stroke),
+                    intersectionPoints: this.findIntersections(stroke),
+                    symmetryScore: this.calculateSymmetry(stroke),
+                    fractalDimension: this.calculateFractalDimension(stroke)
+                };
+
+                return advancedFeatures;
+            }
+
+            analyzeVelocity(stroke) {
+                const velocities = [];
+                for (let i = 1; i < stroke.length; i++) {
+                    const dx = stroke[i].x - stroke[i - 1].x;
+                    const dy = stroke[i].y - stroke[i - 1].y;
+                    const dt = stroke[i].time - stroke[i - 1].time;
+                    velocities.push(Math.sqrt(dx * dx + dy * dy) / (dt || 1));
+                }
+                return {
+                    average: velocities.reduce((a, b) => a + b, 0) / velocities.length,
+                    variance: this.calculateVariance(velocities),
+                    max: Math.max(...velocities),
+                    min: Math.min(...velocities)
+                };
+            }
+
+            analyzePressure(stroke) {
+                // Simulate pressure based on stroke characteristics
+                const pressures = stroke.map((point, index) => {
+                    const speed = index > 0 ?
+                        Math.sqrt(Math.pow(point.x - stroke[index - 1].x, 2) +
+                                 Math.pow(point.y - stroke[index - 1].y, 2)) : 0;
+                    return Math.max(0.3, Math.min(1.0, 1.0 - speed * 0.1));
+                });
+                return {
+                    average: pressures.reduce((a, b) => a + b, 0) / pressures.length,
+                    variance: this.calculateVariance(pressures)
+                };
+            }
+
+            analyzeCurvatureProfile(stroke) {
+                const curvatures = [];
+                for (let i = 2; i < stroke.length - 2; i++) {
+                    const p1 = stroke[i - 2];
+                    const p2 = stroke[i];
+                    const p3 = stroke[i + 2];
+
+                    const angle1 = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+                    const angle2 = Math.atan2(p3.y - p2.y, p3.x - p2.x);
+
+                    let diff = Math.abs(angle2 - angle1);
+                    if (diff > Math.PI) diff = 2 * Math.PI - diff;
+
+                    curvatures.push(diff);
+                }
+                return {
+                    average: curvatures.reduce((a, b) => a + b, 0) / curvatures.length,
+                    max: Math.max(...curvatures),
+                    regions: this.findCurvatureRegions(curvatures)
+                };
+            }
+
+            findIntersections(stroke) {
+                const intersections = [];
+                for (let i = 0; i < stroke.length - 10; i++) {
+                    for (let j = i + 10; j < stroke.length; j++) {
+                        const distance = Math.sqrt(
+                            Math.pow(stroke[j].x - stroke[i].x, 2) +
+                            Math.pow(stroke[j].y - stroke[i].y, 2)
+                        );
+                        if (distance < 5) { // Intersection threshold
+                            intersections.push({ i, j, distance });
+                        }
+                    }
+                }
+                return intersections;
+            }
+
+            calculateSymmetry(stroke) {
+                const bounds = this.getBounds(stroke);
+                const centerX = bounds.minX + bounds.width / 2;
+                const centerY = bounds.minY + bounds.height / 2;
+
+                let symmetryScore = 0;
+                let totalPoints = 0;
+
+                stroke.forEach(point => {
+                    const mirroredX = centerX * 2 - point.x;
+                    const mirroredY = centerY * 2 - point.y;
+
+                    // Find closest point to mirrored position
+                    let minDistance = Infinity;
+                    stroke.forEach(otherPoint => {
+                        if (Math.abs(otherPoint.x - point.x) > 10) return; // Skip distant points
+                        const distance = Math.sqrt(
+                            Math.pow(mirroredX - otherPoint.x, 2) +
+                            Math.pow(mirroredY - otherPoint.y, 2)
+                        );
+                        minDistance = Math.min(minDistance, distance);
+                    });
+
+                    if (minDistance < 8) { // Symmetry threshold
+                        symmetryScore += 1 - minDistance / 8;
+                        totalPoints++;
+                    }
+                });
+
+                return totalPoints > 0 ? symmetryScore / totalPoints : 0;
+            }
+
+            calculateFractalDimension(stroke) {
+                // Simplified fractal dimension calculation
+                const n = stroke.length;
+                if (n < 10) return 1.0;
+
+                const maxDistance = this.getMaxDistance(stroke);
+                const scales = [2, 4, 8, 16];
+                const counts = [];
+
+                scales.forEach(scale => {
+                    let count = 0;
+                    for (let i = 0; i < n - scale; i += scale) {
+                        const dx = stroke[i + scale].x - stroke[i].x;
+                        const dy = stroke[i + scale].y - stroke[i].y;
+                        if (Math.sqrt(dx * dx + dy * dy) > 1) count++;
+                    }
+                    counts.push(count);
+                });
+
+                // Calculate fractal dimension using box-counting method
+                const logScales = scales.map(s => Math.log(s));
+                const logCounts = counts.map(c => Math.log(c));
+
+                const slope = this.linearRegression(logScales, logCounts);
+                return Math.abs(slope) + 1; // Fractal dimension
+            }
+
+            getMaxDistance(stroke) {
+                let maxDist = 0;
+                for (let i = 0; i < stroke.length; i++) {
+                    for (let j = i + 1; j < stroke.length; j++) {
+                        const dist = Math.sqrt(
+                            Math.pow(stroke[j].x - stroke[i].x, 2) +
+                            Math.pow(stroke[j].y - stroke[i].y, 2)
+                        );
+                        maxDist = Math.max(maxDist, dist);
+                    }
+                }
+                return maxDist;
+            }
+
+            linearRegression(x, y) {
+                const n = x.length;
+                const sumX = x.reduce((a, b) => a + b, 0);
+                const sumY = y.reduce((a, b) => a + b, 0);
+                const sumXY = x.reduce((sum, xi, i) => sum + xi * y[i], 0);
+                const sumXX = x.reduce((sum, xi) => sum + xi * xi, 0);
+
+                return (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+            }
+
+            findCurvatureRegions(curvatures) {
+                const regions = [];
+                let currentRegion = [];
+                const threshold = this.neuralPatterns.strokeAnalysis.curvatureThreshold;
+
+                curvatures.forEach((curvature, index) => {
+                    if (curvature > threshold) {
+                        currentRegion.push(index);
+                    } else if (currentRegion.length > 0) {
+                        regions.push({
+                            start: currentRegion[0],
+                            end: currentRegion[currentRegion.length - 1],
+                            length: currentRegion.length
+                        });
+                        currentRegion = [];
+                    }
+                });
+
+                if (currentRegion.length > 0) {
+                    regions.push({
+                        start: currentRegion[0],
+                        end: currentRegion[currentRegion.length - 1],
+                        length: currentRegion.length
+                    });
+                }
+
+                return regions;
+            }
+
+            advancedMatchPattern(features, pattern, character) {
+                let score = 0;
+                let totalWeight = 0;
+
+                // Base pattern matching
+                const baseScore = this.matchPattern(features, pattern);
+                score += baseScore * 0.4;
+                totalWeight += 0.4;
+
+                // Advanced feature matching
+                if (pattern.features) {
+                    pattern.features.forEach(feature => {
+                        const featureScore = this.matchAdvancedFeature(features, feature, character);
+                        score += featureScore * 0.3;
+                        totalWeight += 0.3;
+                    });
+                }
+
+                // Neural network analysis
+                const neuralScore = this.neuralNetworkAnalysis(features);
+                if (neuralScore && neuralScore.character === character) {
+                    score += neuralScore.confidence * 0.3;
+                    totalWeight += 0.3;
+                }
+
+                return totalWeight > 0 ? score / totalWeight : 0;
+            }
+
+            matchAdvancedFeature(features, feature, character) {
+                switch(feature) {
+                    case 'closed':
+                        return features.closed ? 1.0 : 0.0;
+                    case 'vertical':
+                        return features.aspectRatio < 0.5 ? 1.0 : 0.0;
+                    case 'horizontal':
+                        return features.aspectRatio > 2.0 ? 1.0 : 0.0;
+                    case 'oval':
+                        return features.closed && features.symmetryScore > 0.7 ? 1.0 : 0.0;
+                    case 'angular':
+                        return features.corners.length > 2 ? 1.0 : 0.0;
+                    case 'cross':
+                        return features.intersectionPoints.length >= 2 ? 1.0 : 0.0;
+                    case 'curve':
+                        return features.curvatureProfile.average > 0.5 ? 1.0 : 0.0;
+                    case 'loop':
+                        return features.intersectionPoints.length >= 1 ? 1.0 : 0.0;
+                    case 'diagonal':
+                        return features.direction.includes('diagonal') ? 1.0 : 0.0;
+                    default:
+                        return 0.5; // Neutral score for unknown features
+                }
+            }
+
+            neuralNetworkAnalysis(features) {
+                // Simplified neural network simulation
+                const inputVector = this.createInputVector(features);
+                const output = this.feedForward(inputVector);
+
+                // Find the best matching character
+                let bestMatch = null;
+                let bestScore = 0;
+
+                for (const [category, patterns] of Object.entries(this.patterns)) {
+                    for (const [char, pattern] of Object.entries(patterns)) {
+                        const score = this.calculateNeuralScore(inputVector, char);
+                        if (score > bestScore && score > 0.7) {
+                            bestScore = score;
+                            bestMatch = { character: char, confidence: score, category };
+                        }
+                    }
+                }
+
+                return bestMatch;
+            }
+
+            createInputVector(features) {
+                return [
+                    features.pointCount / 100, // Normalized point count
+                    features.aspectRatio,
+                    features.closed ? 1 : 0,
+                    features.curvatureProfile.average / Math.PI,
+                    features.corners.length / 10,
+                    features.strokeDensity,
+                    features.velocityProfile.average / 100,
+                    features.pressureProfile.average,
+                    features.symmetryScore,
+                    features.fractalDimension / 2
+                ];
+            }
+
+            feedForward(input) {
+                // Simplified feed-forward neural network
+                const weights = this.getNeuralWeights();
+                const hidden = this.activateLayer(input, weights.hidden);
+                const output = this.activateLayer(hidden, weights.output);
+                return output;
+            }
+
+            getNeuralWeights() {
+                // Pre-trained weights (simplified)
+                return {
+                    hidden: Array(10).fill().map(() => Array(15).fill().map(() => Math.random() - 0.5)),
+                    output: Array(15).fill().map(() => Array(50).fill().map(() => Math.random() - 0.5))
+                };
+            }
+
+            activateLayer(input, weights) {
+                return weights.map(neuron =>
+                    Math.tanh(neuron.reduce((sum, w, i) => sum + w * input[i], 0))
+                );
+            }
+
+            calculateNeuralScore(input, character) {
+                // Character-specific scoring
+                const charFeatures = this.getCharacterFeatures(character);
+                let score = 0;
+
+                input.forEach((feature, index) => {
+                    if (charFeatures[index]) {
+                        score += (1 - Math.abs(feature - charFeatures[index])) * 0.1;
+                    }
+                });
+
+                return Math.min(score, 1.0);
+            }
+
+            getCharacterFeatures(character) {
+                // Character-specific feature expectations
+                const featureMap = {
+                    '0': [0.8, 1.0, 1.0, 0.6, 0.2, 0.8, 0.5, 0.7, 0.8, 1.2],
+                    '1': [0.1, 0.3, 0.0, 0.2, 0.1, 0.2, 0.8, 0.5, 0.3, 1.1],
+                    '+': [0.3, 1.0, 0.0, 0.3, 0.8, 0.4, 0.6, 0.6, 0.5, 1.0],
+                    'π': [0.4, 2.5, 0.0, 0.4, 0.3, 0.5, 0.4, 0.6, 0.4, 1.1],
+                    '∫': [0.6, 0.8, 1.0, 0.7, 0.4, 0.7, 0.3, 0.8, 0.6, 1.3]
+                };
+
+                return featureMap[character] || Array(10).fill(0.5);
+            }
+
+            // Legacy methods for backward compatibility
+            extractFeatures(stroke) {
+                const bounds = this.getBounds(stroke);
+
+                return {
+                    pointCount: stroke.length,
+                    aspectRatio: bounds.width / (bounds.height || 1),
+                    closed: this.isClosed(stroke),
+                    curvature: this.calculateCurvature(stroke),
+                    corners: this.detectCorners(stroke),
+                    direction: this.analyzeDirection(stroke)
+                };
+            }
+
+            getBounds(stroke) {
+                const xs = stroke.map(p => p.x);
+                const ys = stroke.map(p => p.y);
+
+                return {
+                    minX: Math.min(...xs),
+                    maxX: Math.max(...xs),
+                    minY: Math.min(...ys),
+                    maxY: Math.max(...ys),
+                    width: Math.max(...xs) - Math.min(...xs),
+                    height: Math.max(...ys) - Math.min(...ys)
+                };
+            }
+
+            isClosed(stroke) {
+                const first = stroke[0];
+                const last = stroke[stroke.length - 1];
+                const distance = Math.sqrt(
+                    Math.pow(last.x - first.x, 2) +
+                    Math.pow(last.y - first.y, 2)
+                );
+
+                const bounds = this.getBounds(stroke);
+                const threshold = Math.min(bounds.width, bounds.height) * 0.2;
+
+                return distance < threshold;
+            }
+
+            calculateCurvature(stroke) {
+                let totalCurvature = 0;
+
+                for (let i = 2; i < stroke.length; i++) {
+                    const p1 = stroke[i - 2];
+                    const p2 = stroke[i - 1];
+                    const p3 = stroke[i];
+
+                    const angle1 = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+                    const angle2 = Math.atan2(p3.y - p2.y, p3.x - p2.x);
+
+                    let diff = Math.abs(angle2 - angle1);
+                    if (diff > Math.PI) diff = 2 * Math.PI - diff;
+
+                    totalCurvature += diff;
+                }
+
+                return totalCurvature / stroke.length;
+            }
+
+            detectCorners(stroke) {
+                const corners = [];
+                const threshold = Math.PI / 3;
+
+                for (let i = 2; i < stroke.length - 2; i++) {
+                    const p1 = stroke[i - 2];
+                    const p2 = stroke[i];
+                    const p3 = stroke[i + 2];
+
+                    const angle1 = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+                    const angle2 = Math.atan2(p3.y - p2.y, p3.x - p2.x);
+
+                    let diff = Math.abs(angle2 - angle1);
+                    if (diff > Math.PI) diff = 2 * Math.PI - diff;
+
+                    if (diff > threshold) {
+                        corners.push({ index: i, angle: diff });
+                    }
+                }
+
+                return corners;
+            }
+
+            analyzeDirection(stroke) {
+                const directions = [];
+
+                for (let i = 1; i < stroke.length; i++) {
+                    const dx = stroke[i].x - stroke[i - 1].x;
+                    const dy = stroke[i].y - stroke[i - 1].y;
+                    const angle = Math.atan2(dy, dx);
+
+                    if (Math.abs(angle) < Math.PI / 6) {
+                        directions.push('horizontal');
+                    } else if (Math.abs(angle - Math.PI / 2) < Math.PI / 6) {
+                        directions.push('vertical');
+                    } else {
+                        directions.push('diagonal');
+                    }
+                }
+
+                return directions;
+            }
+
+            matchPattern(features, pattern) {
+                let score = 0;
+                let tests = 0;
+
+                // Check point count
+                if (features.pointCount >= pattern.minPoints) {
+                    score += 0.4;
+                }
+                tests += 0.4;
+
+                // Check aspect ratio
+                if (pattern.features) {
+                    pattern.features.forEach(feature => {
+                        tests += 0.3;
+
+                        switch(feature) {
+                            case 'closed':
+                                if (features.closed) score += 0.3;
+                                break;
+                            case 'vertical':
+                                if (features.aspectRatio < 0.7) score += 0.3;
+                                break;
+                            case 'horizontal':
+                                if (features.aspectRatio > 1.5) score += 0.3;
+                                break;
+                            case 'oval':
+                                if (features.closed && features.curvature > 0.3) score += 0.3;
+                                break;
+                            case 'angular':
+                                if (features.corners.length > 1) score += 0.3;
+                                break;
+                            case 'cross':
+                                if (features.corners.length >= 3) score += 0.3;
+                                break;
+                            case 'curve':
+                                if (features.curvature > 0.4) score += 0.3;
+                                break;
+                            case 'loop':
+                                if (features.closed && features.corners.length > 2) score += 0.3;
+                                break;
+                        }
+                    });
+                }
+
+                return tests > 0 ? score / tests : 0;
+            }
+
+            basicShapeRecognition(stroke) {
+                const features = this.extractFeatures(stroke);
+                console.log('Basic shape recognition - features:', features);
+
+                // Simple number recognition
+                if (features.pointCount >= 8 && features.pointCount <= 25) {
+                    console.log('Checking number patterns...');
+                    if (features.closed && features.aspectRatio > 0.8 && features.aspectRatio < 1.2) {
+                        console.log('Matched 0 pattern');
+                        return { character: '0', confidence: 0.7, category: 'numbers' };
+                    }
+                    if (features.aspectRatio < 0.5 && features.pointCount >= 10) {
+                        console.log('Matched 1 pattern');
+                        return { character: '1', confidence: 0.6, category: 'numbers' };
+                    }
+                    if (features.curvature > 0.5 && features.pointCount >= 12) {
+                        console.log('Matched 2 pattern');
+                        return { character: '2', confidence: 0.5, category: 'numbers' };
+                    }
+                }
+
+                // Simple operator recognition
+                if (features.pointCount >= 3 && features.pointCount <= 8) {
+                    console.log('Checking operator patterns...');
+                    if (features.aspectRatio > 2.0) {
+                        console.log('Matched - pattern');
+                        return { character: '-', confidence: 0.8, category: 'operators' };
+                    }
+                    if (features.corners.length >= 3) {
+                        console.log('Matched + pattern');
+                        return { character: '+', confidence: 0.7, category: 'operators' };
+                    }
+                }
+
+                console.log('No basic shape pattern matched');
+                return null;
+            }
+
+            calculateVariance(values) {
+                const mean = values.reduce((a, b) => a + b, 0) / values.length;
+                const variance = values.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / values.length;
+                return variance;
+            }
+        }
+
+        // Initialize the application
+        const app = new QuantumBoard();
+
+        // Expose API for external use
+        window.QuantumBoardAPI = {
+            clear: () => app.clear(),
+            undo: () => app.undo(),
+            redo: () => app.redo(),
+            save: () => app.save(),
+            setTool: (tool) => app.setTool(tool),
+            setColor: (color) => app.setColor(color),
+            toggleAI: () => app.toggleAI(),
+            insertText: (text, x, y) => {
+                app.state.textPosition = { x, y };
+                app.textInputField.value = text;
+                app.insertText();
+            }
+        };
+    </script>
+</body>
+</html>

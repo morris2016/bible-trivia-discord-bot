@@ -96,24 +96,31 @@ export async function initializeDatabase() {
       );
     `);
 
-    // Check if admin user exists, if not create it
-    const adminCheck = await client.query('SELECT id FROM users WHERE email = $1', ['siagmoo26@gmail.com']);
-    
-    if (adminCheck.rows.length === 0) {
-      // Insert admin user with pre-generated hash for Famous2016?
+    // Check if superadmin user exists, if not create it
+    const superAdminCheck = await client.query('SELECT id, role FROM users WHERE email = $1', ['siagmoo26@gmail.com']);
+
+    if (superAdminCheck.rows.length === 0) {
+      // Insert superadmin user with pre-generated hash for Famous2016?
       await client.query(`
-        INSERT INTO users (email, name, password_hash, role, created_at) 
+        INSERT INTO users (email, name, password_hash, role, created_at)
         VALUES ($1, $2, $3, $4, $5)
       `, [
         'siagmoo26@gmail.com',
-        'Admin',
+        'Super Admin',
         '$2b$12$LyqXRi/3ydfFM/A7urZUQOZjO3bKWIFGd3cicUMx9Pc5S9OYAFMd6',
-        'admin',
+        'superadmin',
         new Date('2025-01-01')
       ]);
-      console.log('Admin user created in PostgreSQL');
+      console.log('Superadmin user created in PostgreSQL');
     } else {
-      console.log('Admin user already exists in PostgreSQL');
+      // Ensure existing user is superadmin
+      const existingUser = superAdminCheck.rows[0];
+      if (existingUser.role !== 'superadmin') {
+        await client.query('UPDATE users SET role = $1 WHERE id = $2', ['superadmin', existingUser.id]);
+        console.log('Existing admin user upgraded to superadmin');
+      } else {
+        console.log('Superadmin user already exists in PostgreSQL');
+      }
     }
 
     // Insert sample resources if they don't exist
@@ -148,11 +155,20 @@ export async function initializeDatabase() {
 // User functions
 export async function createUser(email: string, name: string, passwordHash: string, role: string = 'user'): Promise<User> {
   const client = await getClient();
-  
-  // Only make specific admin emails an admin, not any first user
-  const isAdminEmail = email === 'admin@faithdefenders.com' || email === 'siagmoo26@gmail.com';
-  const userRole = isAdminEmail ? 'admin' : role;
-  
+
+  // Superadmin protection - siagmoo26@gmail.com is always superadmin
+  const isSuperAdminEmail = email === 'siagmoo26@gmail.com';
+  const isAdminEmail = email === 'admin@faithdefenders.com' || isSuperAdminEmail;
+
+  let userRole: string;
+  if (isSuperAdminEmail) {
+    userRole = 'superadmin';
+  } else if (isAdminEmail) {
+    userRole = 'admin';
+  } else {
+    userRole = role;
+  }
+
   const result = await client.query(`
     INSERT INTO users (email, name, password_hash, role, created_at)
     VALUES ($1, $2, $3, $4, $5)
@@ -180,8 +196,52 @@ export async function getAllUsers(): Promise<User[]> {
   return result.rows;
 }
 
+export async function deleteUser(id: number): Promise<boolean> {
+  const client = await getClient();
+
+  // Check if target user is superadmin - prevent deletion
+  const targetUser = await getUserById(id);
+  if (!targetUser) {
+    return false;
+  }
+
+  if (targetUser.role === 'superadmin') {
+    throw new Error('Superadmin users cannot be deleted');
+  }
+
+  const result = await client.query('DELETE FROM users WHERE id = $1', [id]);
+  return (result.rowCount || 0) > 0;
+}
+
+// Superadmin protection functions
+export async function isSuperAdmin(userId: number): Promise<boolean> {
+  const client = await getClient();
+  const result = await client.query('SELECT role FROM users WHERE id = $1', [userId]);
+  return result.rows.length > 0 && result.rows[0].role === 'superadmin';
+}
+
+export async function isSuperAdminEmail(email: string): Promise<boolean> {
+  return email === 'siagmoo26@gmail.com';
+}
+
 export async function updateUserRole(id: number, role: string): Promise<User | null> {
   const client = await getClient();
+
+  // Check if target user is superadmin - prevent any role changes
+  const targetUser = await getUserById(id);
+  if (!targetUser) {
+    throw new Error('User not found');
+  }
+
+  if (targetUser.role === 'superadmin') {
+    throw new Error('Superadmin users cannot have their role changed');
+  }
+
+  // Prevent changing to superadmin role (only siagmoo26@gmail.com can be superadmin)
+  if (role === 'superadmin') {
+    throw new Error('Superadmin role can only be assigned to authorized users');
+  }
+
   const result = await client.query(`
     UPDATE users SET role = $1 WHERE id = $2
     RETURNING id, email, name, role, created_at

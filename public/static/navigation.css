@@ -1,0 +1,1107 @@
+/* Enhanced Navigation Styles */
+
+/* CSS Variables for consistency */
+:root {
+  --nav-primary-color: #1e293b;
+  --nav-secondary-color: #475569;
+  --nav-accent-color: #3b82f6;
+  --nav-accent-hover: #2563eb;
+  --nav-bg-primary: #ffffff;
+  --nav-bg-secondary: #f8fafc;
+  --nav-bg-hover: #f1f5f9;
+  --nav-border-color: #e2e8f0;
+  --nav-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --nav-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --nav-transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --nav-border-radius: 0.5rem;
+}
+
+/* Global Navigation */
+.global-navigation {
+  background: var(--nav-bg-primary);
+  box-shadow: var(--nav-shadow);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  border-bottom: 1px solid var(--nav-border-color);
+  backdrop-filter: blur(8px);
+  background: rgba(255, 255, 255, 0.95);
+  width: 100%;
+  /* REMOVED: contain: layout; - This was preventing child elements from breaking out */
+  /* REMOVED: transform: translateZ(0); - This was creating a new stacking context */
+  overflow: visible; /* Ensure children can extend beyond bounds */
+}
+
+.nav-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 70px;
+  gap: 1rem;
+  overflow: visible; /* Allow children to extend beyond container */
+  position: relative; /* Maintain positioning context but don't create new layer */
+}
+
+/* Brand/Logo Section - Always on the left */
+.nav-brand {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  z-index: 1001;
+}
+
+.brand-link {
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  color: var(--nav-primary-color);
+  transition: var(--nav-transition);
+  padding: 0.5rem 0;
+}
+
+.brand-link:hover {
+  color: var(--nav-accent-color);
+}
+
+.brand-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.2;
+  color: var(--nav-primary-color);
+  letter-spacing: -0.025em;
+}
+
+.brand-tagline {
+  font-size: 0.75rem;
+  color: var(--nav-secondary-color);
+  font-weight: 500;
+  margin-top: 0.125rem;
+  letter-spacing: 0.025em;
+}
+
+/* Desktop Navigation Menu - Right aligned with auth actions */
+.nav-menu {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+}
+
+.nav-links {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  text-decoration: none;
+  color: var(--nav-secondary-color);
+  font-weight: 500;
+  font-size: 0.875rem;
+  border-radius: var(--nav-border-radius);
+  transition: var(--nav-transition);
+  position: relative;
+  white-space: nowrap;
+}
+
+.nav-link:hover {
+  color: var(--nav-primary-color);
+  background-color: var(--nav-bg-hover);
+  transform: translateY(-1px);
+}
+
+.nav-link.active {
+  color: var(--nav-accent-color);
+  background-color: rgba(59, 130, 246, 0.1);
+  font-weight: 600;
+}
+
+.nav-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 2px;
+  background-color: var(--nav-accent-color);
+  border-radius: 1px;
+}
+
+.nav-link i {
+  font-size: 1rem;
+  width: 16px;
+  flex-shrink: 0;
+}
+
+/* User Actions - Connected to navigation menu */
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: 0.5rem;
+}
+
+/* User Menu */
+.user-menu {
+  position: relative;
+}
+
+.user-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  background: none;
+  border: 1px solid var(--nav-border-color);
+  border-radius: var(--nav-border-radius);
+  color: var(--nav-secondary-color);
+  cursor: pointer;
+  transition: var(--nav-transition);
+  font-size: 0.875rem;
+  font-weight: 500;
+  min-height: 44px;
+}
+
+.user-toggle:hover {
+  border-color: var(--nav-accent-color);
+  background-color: var(--nav-bg-hover);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, var(--nav-accent-color), var(--nav-accent-hover));
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.user-name {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.user-dropdown {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  min-width: 220px;
+  background: var(--nav-bg-primary);
+  border: 1px solid var(--nav-border-color);
+  border-radius: var(--nav-border-radius);
+  box-shadow: var(--nav-shadow-lg);
+  padding: 0.5rem;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px) scale(0.95);
+  transition: var(--nav-transition);
+  backdrop-filter: blur(8px);
+}
+
+.user-dropdown.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  color: var(--nav-secondary-color);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: calc(var(--nav-border-radius) - 2px);
+  transition: var(--nav-transition);
+  margin-bottom: 0.25rem;
+}
+
+.dropdown-item:last-child {
+  margin-bottom: 0;
+}
+
+.dropdown-item:hover {
+  background-color: var(--nav-bg-hover);
+  color: var(--nav-primary-color);
+  transform: translateX(2px);
+}
+
+.dropdown-item i {
+  width: 16px;
+  color: var(--nav-secondary-color);
+  flex-shrink: 0;
+}
+
+.dropdown-item:hover i {
+  color: var(--nav-accent-color);
+}
+
+.dropdown-divider {
+  height: 1px;
+  background-color: var(--nav-border-color);
+  margin: 0.5rem 0;
+}
+
+.logout-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  color: #dc2626;
+}
+
+.logout-btn:hover {
+  background-color: rgba(220, 38, 38, 0.1);
+  color: #b91c1c;
+}
+
+/* Auth Actions */
+.auth-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.btn-login {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background-color: var(--nav-accent-color);
+  color: white;
+  text-decoration: none;
+  border-radius: var(--nav-border-radius);
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: var(--nav-transition);
+  min-height: 44px;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-login:hover {
+  background-color: var(--nav-accent-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.btn-login:active {
+  transform: translateY(0);
+}
+
+/* Secondary button for sign up */
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background-color: transparent;
+  color: var(--nav-secondary-color);
+  text-decoration: none;
+  border: 1px solid var(--nav-border-color);
+  border-radius: var(--nav-border-radius);
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: var(--nav-transition);
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background-color: var(--nav-bg-hover);
+  color: var(--nav-primary-color);
+  border-color: var(--nav-accent-color);
+}
+
+/* Mobile Menu Toggle - Clean Simple Design */
+.mobile-menu-toggle {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 44px;
+  height: 44px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+  z-index: 1001; /* Ensure it's above other nav elements */
+}
+
+.mobile-menu-toggle:hover {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.hamburger-line {
+  width: 20px;
+  height: 2px;
+  background-color: #374151;
+  border-radius: 1px;
+  transition: all 0.3s ease;
+  transform-origin: center;
+}
+
+.hamburger-line:not(:last-child) {
+  margin-bottom: 4px;
+}
+
+.mobile-menu-toggle.active .hamburger-line:nth-child(1) {
+  transform: translateY(6px) rotate(45deg);
+  background-color: #2563eb;
+}
+
+.mobile-menu-toggle.active .hamburger-line:nth-child(2) {
+  opacity: 0;
+  transform: scale(0);
+}
+
+.mobile-menu-toggle.active .hamburger-line:nth-child(3) {
+  transform: translateY(-6px) rotate(-45deg);
+  background-color: #2563eb;
+}
+
+/* Mobile Menu Overlay - Simple and Clean */
+.mobile-menu-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: rgba(0, 0, 0, 0.5) !important;
+  z-index: 9998 !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  transition: opacity 0.3s ease, visibility 0.3s ease !important;
+  backdrop-filter: blur(2px) !important;
+  display: none !important;
+}
+
+.mobile-menu-overlay.show {
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: block !important;
+}
+
+.mobile-menu-overlay.show,
+.mobile-menu-overlay.active {
+  display: block !important;
+  opacity: 1 !important;
+}
+
+/* Mobile Menu - Clean Implementation */
+.mobile-menu {
+  position: fixed !important;
+  top: 0 !important;
+  right: -300px !important;
+  bottom: 0 !important;
+  width: 280px !important;
+  height: 100vh !important;
+  background: white !important;
+  z-index: 9999 !important; /* Higher than overlay */
+  transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  /* Remove transform that might create new stacking context */
+  transform: none !important;
+  /* Ensure it's not contained by parent */
+  contain: none !important;
+  isolation: auto !important;
+}
+
+.mobile-menu.show {
+  right: 0 !important;
+}
+
+.mobile-menu.show,
+.mobile-menu.open {
+  right: 0 !important;
+  display: flex !important;
+}
+
+.mobile-menu-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 1.25rem !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%) !important;
+  position: relative !important;
+  z-index: 1001 !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+  width: 100% !important;
+  flex-shrink: 0 !important;
+  /* Prevent any duplication */
+  contain: layout style !important;
+  overflow: hidden !important;
+  /* Ensure single close button */
+  position: relative !important;
+}
+
+.mobile-menu-header::after {
+  content: '';
+  position: absolute !important;
+  top: 0 !important;
+  right: 0 !important;
+  width: 1px !important;
+  height: 100% !important;
+  background: transparent !important;
+}
+
+/* Ensure mobile menu header has only one child button */
+.mobile-menu-header {
+  position: relative !important;
+  isolation: isolate !important;
+}
+
+.mobile-menu-header > button:only-child {
+  position: relative !important;
+  z-index: 10 !important;
+}
+
+/* Hide any duplicate buttons that might be inserted */
+.mobile-menu-header > button:nth-child(2),
+.mobile-menu-header > button:nth-of-type(2) {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+.mobile-menu-brand h2 {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #1f2937;
+  margin: 0 0 0.25rem 0;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  letter-spacing: -0.025em;
+}
+
+.mobile-menu-brand p {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin: 0;
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.mobile-menu-close {
+  background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+  border: none !important;
+  font-size: 1.25rem !important;
+  color: white !important;
+  cursor: pointer !important;
+  padding: 0.75rem !important;
+  border-radius: 0.75rem !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 44px !important;
+  height: 44px !important;
+  position: relative !important;
+  z-index: 1001 !important;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3) !important;
+  /* Ensure no duplication */
+  float: none !important;
+  clear: both !important;
+  margin: 0 !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+}
+
+.mobile-menu-close:hover {
+  background: linear-gradient(135deg, #dc2626, #b91c1c) !important;
+  transform: scale(1.1) !important;
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4) !important;
+}
+
+.mobile-menu-close:focus {
+  outline: 2px solid #ef4444 !important;
+  outline-offset: 2px !important;
+}
+
+.mobile-menu-close:active {
+  transform: scale(0.95) !important;
+}
+
+/* Hide any duplicate close buttons that might be created by inheritance */
+.mobile-menu-header .mobile-menu-close ~ .mobile-menu-close,
+.mobile-menu .mobile-menu-close + .mobile-menu-close {
+  display: none !important;
+}
+
+/* Ensure only one close button is visible */
+.mobile-menu-header .mobile-menu-close {
+  position: relative !important;
+  float: right !important;
+  clear: both !important;
+}
+
+/* Hide any inherited or duplicate close button styles */
+.mobile-menu-close:not(.mobile-menu-header .mobile-menu-close) {
+  display: none !important;
+}
+
+/* Override any potential duplication from CSS specificity */
+.mobile-menu-header button.mobile-menu-close {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Hide all close buttons except the one in mobile menu header */
+.mobile-menu-close {
+  display: none !important;
+}
+
+.mobile-menu-header .mobile-menu-close {
+  display: flex !important;
+}
+
+/* Additional safety to prevent any duplication */
+.mobile-menu .mobile-menu-close {
+  display: none !important;
+}
+
+.mobile-menu-header .mobile-menu-close {
+  display: flex !important;
+  position: relative !important;
+  float: right !important;
+  margin-left: auto !important;
+}
+
+/* Ultimate safety - hide any close button that's not directly in mobile-menu-header */
+.mobile-menu-close {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+.mobile-menu-header > .mobile-menu-close,
+.mobile-menu-header > button.mobile-menu-close {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Ensure no other close buttons appear anywhere else */
+.mobile-menu .mobile-menu-close,
+.mobile-nav-menu .mobile-menu-close,
+.mobile-user-section .mobile-menu-close {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+/* Additional protection against duplication */
+.mobile-menu-header .mobile-menu-close ~ .mobile-menu-close,
+.mobile-menu-header button.mobile-menu-close ~ button.mobile-menu-close {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+/* Hide any X icons that might be created by pseudo-elements or generated content */
+.mobile-menu-close::before,
+.mobile-menu-close::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* Ensure only the FontAwesome X icon is visible */
+.mobile-menu-close .fas.fa-times,
+.mobile-menu-close .fa-times {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+/* Hide any other X icons that might appear */
+.mobile-menu-header .fas.fa-times ~ .fas.fa-times,
+.mobile-menu-header .fa-times ~ .fa-times,
+.mobile-menu-header .fas.fa-times + .fas.fa-times,
+.mobile-menu-header .fa-times + .fa-times {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+/* Additional protection - hide any duplicate icons */
+.mobile-menu-close .fas.fa-times:nth-of-type(2),
+.mobile-menu-close .fa-times:nth-of-type(2) {
+  display: none !important;
+}
+
+/* Comprehensive duplication prevention */
+.mobile-menu-header * {
+  position: relative !important;
+  z-index: auto !important;
+}
+
+.mobile-menu-header > button {
+  position: relative !important;
+  z-index: 10 !important;
+}
+
+/* Hide any element that might be creating duplicate X buttons */
+.mobile-menu-header .mobile-menu-close ~ *,
+.mobile-menu-header button.mobile-menu-close ~ * {
+  display: none !important;
+}
+
+/* Ensure only the first close button is visible */
+.mobile-menu-header .mobile-menu-close:first-of-type,
+.mobile-menu-header button.mobile-menu-close:first-of-type {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Mobile Navigation Menu */
+.mobile-nav-menu {
+  flex: 1;
+  padding: 0.5rem 0;
+  overflow-y: auto;
+  min-height: 0; /* Allow flex item to shrink */
+}
+
+.mobile-nav-links {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.mobile-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  color: #374151;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  margin: 0.25rem 0.75rem;
+  border-radius: 0.75rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.mobile-nav-link::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  transform: scaleY(0);
+  transition: transform 0.3s ease;
+  border-radius: 0 2px 2px 0;
+}
+
+.mobile-nav-link:hover {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  color: #1f2937;
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+}
+
+.mobile-nav-link:hover::before {
+  transform: scaleY(1);
+}
+
+.mobile-nav-link.active {
+  color: #2563eb;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.15);
+}
+
+.mobile-nav-link.active::before {
+  transform: scaleY(1);
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+}
+
+.mobile-nav-link i {
+  width: 18px;
+  font-size: 1rem;
+  color: #6b7280;
+  flex-shrink: 0;
+}
+
+.mobile-nav-link:hover i,
+.mobile-nav-link.active i {
+  color: #2563eb;
+}
+
+/* Mobile User Section - Clean and Simple */
+.mobile-user-section {
+  border-top: 1px solid #e5e7eb;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  margin-top: auto;
+  position: relative;
+}
+
+.mobile-user-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #3b82f6, #1d4ed8, #3b82f6);
+  background-size: 200% 100%;
+  animation: gradientShift 3s ease infinite;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.mobile-user-info {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.mobile-user-avatar {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.25rem;
+  font-weight: 600;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  border: 3px solid rgba(255, 255, 255, 0.2);
+}
+
+.mobile-user-details h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 0.25rem 0;
+  letter-spacing: -0.025em;
+}
+
+.mobile-user-details p {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin: 0;
+  opacity: 0.9;
+}
+
+.mobile-user-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.mobile-user-action {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 0.75rem;
+  background: none;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  color: #374151;
+  text-decoration: none;
+  font-size: 0.75rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+
+.mobile-user-action:hover {
+  background-color: #f3f4f6;
+  color: #111827;
+  border-color: #2563eb;
+}
+
+.mobile-user-action.logout {
+  color: #dc2626;
+  border-color: rgba(220, 38, 38, 0.3);
+}
+
+.mobile-user-action.logout:hover {
+  background-color: rgba(220, 38, 38, 0.1);
+  color: #b91c1c;
+}
+
+/* Responsive Design - Clean and Simple */
+@media (max-width: 1024px) {
+  .nav-container {
+    padding: 0 1rem;
+  }
+
+  .nav-links {
+    gap: 0.5rem;
+  }
+
+  .nav-link {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8125rem;
+  }
+
+  .nav-link span {
+    display: none;
+  }
+
+  .user-name {
+    max-width: 100px;
+  }
+}
+
+@media (max-width: 768px) {
+  .nav-menu,
+  .nav-actions {
+    display: none !important;
+  }
+
+  .mobile-menu-toggle {
+    display: flex !important;
+  }
+
+  .nav-container {
+    height: 60px !important;
+    padding: 0 1rem !important;
+  }
+
+  .brand-title {
+    font-size: 1.25rem !important;
+  }
+
+  .brand-tagline {
+    font-size: 0.6875rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .nav-container {
+    padding: 0 0.75rem;
+    height: 56px;
+  }
+
+  .brand-title {
+    font-size: 1.125rem;
+  }
+
+  .brand-tagline {
+    display: none;
+  }
+
+  .mobile-menu {
+    width: 260px;
+  }
+}
+
+@media (max-width: 360px) {
+  .mobile-menu {
+    width: 100vw;
+    right: -100vw;
+  }
+}
+
+/* Additional fixes for specific issues */
+
+/* Ensure hamburger menu stays visible */
+.mobile-menu-toggle {
+  position: relative !important;
+  z-index: 10000 !important; /* Highest z-index to stay on top */
+}
+
+/* Prevent any parent containers from clipping the mobile menu */
+@media (max-width: 768px) {
+  /* Remove any transforms or contain properties that might interfere */
+  .global-navigation,
+  .nav-container,
+  .nav-brand,
+  .brand-link {
+    contain: none !important;
+    transform: none !important;
+    overflow: visible !important;
+  }
+}
+
+/* Mobile Menu Behavior - Clean */
+@media (max-width: 768px) {
+  .nav-menu,
+  .nav-actions {
+    display: none !important;
+  }
+
+  .mobile-menu-toggle {
+    display: flex !important;
+  }
+
+  /* Prevent body scroll when mobile menu is open */
+  body.mobile-menu-open {
+    overflow: hidden !important;
+    position: fixed !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  /* Ensure navigation doesn't interfere with mobile menu */
+  .global-navigation {
+    overflow: visible !important;
+    contain: none !important;
+    transform: none !important;
+  }
+
+  .nav-container {
+    overflow: visible !important;
+    contain: none !important;
+    transform: none !important;
+  }
+}
+
+/* Focus states for accessibility */
+.nav-link:focus-visible,
+.user-toggle:focus-visible,
+.btn-login:focus-visible,
+.btn-secondary:focus-visible,
+.mobile-menu-toggle:focus-visible,
+.mobile-menu-close:focus-visible,
+.mobile-nav-link:focus-visible,
+.dropdown-item:focus-visible,
+.mobile-user-action:focus-visible {
+  outline: 2px solid var(--nav-accent-color);
+  outline-offset: 2px;
+  border-radius: var(--nav-border-radius);
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --nav-border-color: #000000;
+    --nav-secondary-color: #000000;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* Dark mode support (optional) */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --nav-primary-color: #f8fafc;
+    --nav-secondary-color: #cbd5e1;
+    --nav-bg-primary: #0f172a;
+    --nav-bg-secondary: #1e293b;
+    --nav-bg-hover: #334155;
+    --nav-border-color: #334155;
+  }
+  
+  .global-navigation {
+    background: rgba(15, 23, 42, 0.95);
+  }
+}
+
+/* Loading and skeleton states */
+.nav-skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, transparent 37%, #f0f0f0 63%);
+  background-size: 400% 100%;
+  animation: loading 1.4s ease infinite;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: -100% 50%;
+  }
+}
+/* Mobile Auth Section Styling */
+.mobile-auth-section {
+  padding: 1.5rem;
+  text-align: center;
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin: 1rem 0;
+}
+
+.mobile-auth-section p {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin: 0 0 1rem 0;
+  font-weight: 500;
+}
+
+.mobile-login-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+  text-decoration: none;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.mobile-login-btn:hover {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+}

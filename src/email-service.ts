@@ -209,14 +209,14 @@ export const EmailTemplates = {
             <h1 style="color: #2d1b2d; margin: 0; font-size: 28px;">Faith Defenders</h1>
             <p style="color: #666; margin: 5px 0;">Password Reset Request</p>
           </div>
-          
+
           <h2 style="color: #2d1b2d; margin-bottom: 20px;">Hello ${name},</h2>
-          
+
           <p style="color: #333; line-height: 1.6; margin-bottom: 25px;">
-            We received a request to reset your password for your Faith Defenders account. 
+            We received a request to reset your password for your Faith Defenders account.
             If you made this request, please use the verification code below:
           </p>
-          
+
           <div style="background: #f8f9fa; border: 2px dashed #dee2e6; border-radius: 8px; padding: 25px; text-align: center; margin: 30px 0;">
             <p style="margin: 0 0 10px 0; color: #666; font-size: 14px;">Your password reset code:</p>
             <div style="font-size: 36px; font-weight: bold; color: #dc2626; letter-spacing: 5px; font-family: monospace;">
@@ -224,19 +224,19 @@ export const EmailTemplates = {
             </div>
             <p style="margin: 10px 0 0 0; color: #666; font-size: 12px;">This code expires in 15 minutes</p>
           </div>
-          
+
           <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 15px; margin: 25px 0;">
             <p style="color: #991b1b; margin: 0; font-size: 14px;">
-              <strong>⚠️ Important:</strong> If you didn't request this password reset, please ignore this email. 
+              <strong>⚠️ Important:</strong> If you didn't request this password reset, please ignore this email.
               Your password will remain unchanged.
             </p>
           </div>
-          
+
           <p style="color: #333; line-height: 1.6; margin-bottom: 25px;">
-            For your security, this code will expire in 15 minutes. If you need to request a new code, 
+            For your security, this code will expire in 15 minutes. If you need to request a new code,
             please visit the password reset page again.
           </p>
-          
+
           <div style="border-top: 1px solid #eee; margin-top: 30px; padding-top: 20px;">
             <p style="color: #666; font-size: 14px; margin: 0;">
               Need help? Contact us at hakunamatataministry@gmail.com
@@ -247,18 +247,88 @@ export const EmailTemplates = {
     `,
     text: `
       Password Reset Request - Faith Defenders
-      
+
       Hello ${name},
-      
+
       We received a request to reset your password for your Faith Defenders account.
-      
+
       Your password reset code: ${otpCode}
-      
+
       This code expires in 15 minutes. Enter it on the password reset page to create a new password.
-      
+
       If you didn't request this password reset, please ignore this email. Your password will remain unchanged.
-      
+
       Need help? Contact us at hakunamatataministry@gmail.com
+    `
+  }),
+
+  adminVerification: (adminName: string, targetUserName: string, newRole: string, verificationToken: string) => ({
+    subject: '🛡️ Admin Role Change Verification - Faith Defenders',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 25%, #a78bfa 50%, #c4b5fd 75%, #7c3aed 100%); padding: 20px; border-radius: 10px;">
+        <div style="background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #2d1b2d; margin: 0; font-size: 28px;">🛡️ Faith Defenders</h1>
+            <p style="color: #666; margin: 5px 0;">Admin Role Change Verification</p>
+          </div>
+
+          <h2 style="color: #2d1b2d; margin-bottom: 20px;">Hello ${adminName},</h2>
+
+          <p style="color: #333; line-height: 1.6; margin-bottom: 25px;">
+            You have requested to change the role of user <strong>${targetUserName}</strong> to <strong>${newRole}</strong>.
+            This is a critical security action that requires your verification.
+          </p>
+
+          <div style="background: #f8f9fa; border: 2px dashed #dee2e6; border-radius: 8px; padding: 25px; text-align: center; margin: 30px 0;">
+            <p style="margin: 0 0 10px 0; color: #666; font-size: 14px;">Your verification token:</p>
+            <div style="font-size: 32px; font-weight: bold; color: #7c3aed; letter-spacing: 3px; font-family: monospace; word-break: break-all;">
+              ${verificationToken}
+            </div>
+            <p style="margin: 10px 0 0 0; color: #666; font-size: 12px;">This token expires in 15 minutes</p>
+          </div>
+
+          <div style="background: #fefce8; border: 1px solid #fde047; border-radius: 6px; padding: 15px; margin: 25px 0;">
+            <p style="color: #92400e; margin: 0; font-size: 14px;">
+              <strong>⚠️ Security Notice:</strong> This action will ${newRole === 'admin' ? 'grant administrative privileges' : newRole === 'moderator' ? 'grant moderation privileges' : 'revoke elevated privileges'} for user ${targetUserName}.
+              Please ensure this change is authorized and necessary.
+            </p>
+          </div>
+
+          <p style="color: #333; line-height: 1.6; margin-bottom: 25px;">
+            To complete this role change, please enter the verification token above in the admin panel.
+            If you did not request this change, please contact security immediately.
+          </p>
+
+          <div style="border-top: 1px solid #eee; margin-top: 30px; padding-top: 20px;">
+            <p style="color: #666; font-size: 14px; margin: 0;">
+              This is an automated security notification from Faith Defenders.
+            </p>
+            <p style="color: #666; font-size: 14px; margin: 10px 0 0 0;">
+              Need help? Contact security at hakunamatataministry@gmail.com
+            </p>
+          </div>
+        </div>
+      </div>
+    `,
+    text: `
+      Admin Role Change Verification - Faith Defenders
+
+      Hello ${adminName},
+
+      You have requested to change the role of user ${targetUserName} to ${newRole}.
+      This is a critical security action that requires your verification.
+
+      Your verification token: ${verificationToken}
+
+      This token expires in 15 minutes.
+
+      SECURITY NOTICE: This action will ${newRole === 'admin' ? 'grant administrative privileges' : newRole === 'moderator' ? 'grant moderation privileges' : 'revoke elevated privileges'} for user ${targetUserName}.
+
+      To complete this role change, please enter the verification token above in the admin panel.
+      If you did not request this change, please contact security immediately.
+
+      This is an automated security notification from Faith Defenders.
+      Need help? Contact security at hakunamatataministry@gmail.com
     `
   })
 }
@@ -367,14 +437,14 @@ export async function sendPasswordResetEmail(
 ): Promise<{ success: boolean; messageId?: string; error?: string; previewUrl?: string }> {
   try {
     const transporter = await createTransporter(env)
-    
+
     if (!transporter) {
       return { success: false, error: 'Email service not configured' }
     }
-    
+
     const template = EmailTemplates.passwordReset(name, otpCode)
     const fromEmail = env?.FROM_EMAIL || process.env.FROM_EMAIL || 'Faith Defenders <noreply@faithdefenders.com>'
-    
+
     const info = await transporter.sendMail({
       from: fromEmail,
       to: email,
@@ -382,26 +452,76 @@ export async function sendPasswordResetEmail(
       text: template.text,
       html: template.html
     })
-    
+
     console.log('Password reset email sent successfully:', info.messageId)
-    
+
     // If using Ethereal Email, provide preview URL
     const useEthereal = env?.USE_ETHEREAL_EMAIL === 'true' || process.env.USE_ETHEREAL_EMAIL === 'true'
-    const previewUrl = useEthereal 
-      ? nodemailer.getTestMessageUrl(info) 
+    const previewUrl = useEthereal
+      ? nodemailer.getTestMessageUrl(info)
       : undefined
-    
+
     if (previewUrl) {
       console.log('📧 Password reset email preview URL:', previewUrl)
     }
-    
+
     return { success: true, messageId: info.messageId, previewUrl }
-    
+
   } catch (error) {
     console.error('Error sending password reset email:', error)
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown email error' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown email error'
+    }
+  }
+}
+
+// Send admin verification email
+export async function sendAdminVerificationEmail(
+  adminEmail: string,
+  adminName: string,
+  targetUserName: string,
+  newRole: string,
+  verificationToken: string,
+  env?: any
+): Promise<{ success: boolean; messageId?: string; error?: string; previewUrl?: string }> {
+  try {
+    const transporter = await createTransporter(env)
+
+    if (!transporter) {
+      return { success: false, error: 'Email service not configured' }
+    }
+
+    const template = EmailTemplates.adminVerification(adminName, targetUserName, newRole, verificationToken)
+    const fromEmail = env?.FROM_EMAIL || process.env.FROM_EMAIL || 'Faith Defenders <security@faithdefenders.com>'
+
+    const info = await transporter.sendMail({
+      from: fromEmail,
+      to: adminEmail,
+      subject: template.subject,
+      text: template.text,
+      html: template.html
+    })
+
+    console.log('Admin verification email sent successfully:', info.messageId)
+
+    // If using Ethereal Email, provide preview URL
+    const useEthereal = env?.USE_ETHEREAL_EMAIL === 'true' || process.env.USE_ETHEREAL_EMAIL === 'true'
+    const previewUrl = useEthereal
+      ? nodemailer.getTestMessageUrl(info)
+      : undefined
+
+    if (previewUrl) {
+      console.log('📧 Admin verification email preview URL:', previewUrl)
+    }
+
+    return { success: true, messageId: info.messageId, previewUrl }
+
+  } catch (error) {
+    console.error('Error sending admin verification email:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown email error'
     }
   }
 }

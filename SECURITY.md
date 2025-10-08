@@ -167,3 +167,128 @@ npx wrangler secret put USE_ETHEREAL_EMAIL
 - **MUST** change admin credentials from defaults
 - **MUST** set all environment variables using Cloudflare secrets
 - **SHOULD** use strong passwords and enable account monitoring
+
+## 🔒 Enhanced Security Features (Latest Update)
+
+### 1. **Rate Limiting & Request Protection**
+- ✅ **Global Rate Limiting**: 1000 requests per 15-minute window (professional-grade limits)
+- ✅ **Endpoint-Specific Limits**: Reasonable limits on authentication endpoints
+  - Login: 20 attempts per 15 minutes
+  - Registration: 10 attempts per hour
+  - Password Reset: 10 attempts per hour
+- ✅ **Admin API Rate Limiting**: 1000 requests per 15 minutes for admin endpoints
+- ✅ **Rate Limit Headers**: X-RateLimit-* headers for client awareness
+
+### 2. **Content Security Policy (CSP)**
+- ✅ **Strict CSP Headers**: Prevents XSS and injection attacks
+- ✅ **Whitelisted Sources**: Only trusted domains for scripts, styles, and resources
+- ✅ **Self-Contained Resources**: Minimizes external dependencies
+- ✅ **No Unsafe Inline**: Prevents inline script execution (where possible)
+
+### 3. **Input Validation & Sanitization**
+- ✅ **Automatic Sanitization**: All JSON inputs sanitized recursively
+- ✅ **XSS Prevention**: Removes script tags and dangerous patterns
+- ✅ **File Upload Validation**:
+  - File type validation with allowlist
+  - File size limits (50MB public, 100MB admin)
+  - Magic number validation
+  - Dangerous file extension blocking
+
+### 4. **CSRF Protection**
+- ✅ **Token-Based CSRF**: Secure tokens for state-changing operations
+- ✅ **HTTP-Only Cookies**: CSRF tokens stored securely
+- ✅ **Automatic Validation**: All POST/PUT/DELETE requests validated
+- ✅ **Token Endpoint**: `/csrf-token` for client-side token retrieval
+
+### 5. **Security Headers**
+- ✅ **Complete Security Header Suite**:
+  - X-Content-Type-Options: nosniff
+  - X-Frame-Options: DENY
+  - X-XSS-Protection: 1; mode=block
+  - Referrer-Policy: strict-origin-when-cross-origin
+  - Strict-Transport-Security (HTTPS only)
+- ✅ **Permissions Policy**: Restricts dangerous browser features
+
+### 6. **Security Logging & Monitoring**
+- ✅ **Comprehensive Audit Logging**: All security events logged
+- ✅ **Failed Attempt Tracking**: Login failures, validation failures
+- ✅ **File Upload Monitoring**: Upload attempts and validations
+- ✅ **Admin Action Logging**: Enhanced logging for admin operations
+- ✅ **IP Address Logging**: Client IP tracking for security analysis
+
+### 7. **API Key Protection**
+- ✅ **Admin Endpoint Protection**: API key validation for sensitive operations
+- ✅ **Environment Variable Configuration**: Secure API key storage
+- ✅ **Request Origin Validation**: Additional verification for admin actions
+
+### 8. **Enhanced File Security**
+- ✅ **Multi-Layer Validation**: File type, size, and content validation
+- ✅ **Security Event Logging**: All file operations logged
+- ✅ **Dangerous File Blocking**: Executable files automatically rejected
+- ✅ **Upload Monitoring**: Real-time security monitoring
+
+## 🛡️ Security Configuration
+
+### Environment Variables for Security:
+```bash
+# Security API Key
+API_KEY=your-secret-api-key-for-admin-endpoints
+
+# Rate Limiting Configuration
+RATE_LIMIT_MAX_REQUESTS=100
+RATE_LIMIT_WINDOW_MS=900000
+
+# Security Features Toggle
+ENABLE_CSRF_PROTECTION=true
+ENABLE_RATE_LIMITING=true
+ENABLE_SECURITY_HEADERS=true
+
+# Security Reporting
+CSP_REPORT_URI=https://your-domain.com/api/security/csp-report
+```
+
+### Security Middleware Stack:
+1. **Rate Limiting** → Prevents abuse
+2. **Security Headers** → Browser-level protection
+3. **Input Validation** → Data sanitization
+4. **CSRF Protection** → State-changing operation protection
+5. **Authentication** → User verification
+6. **Authorization** → Permission validation
+
+## 📊 Security Monitoring
+
+### Logged Security Events:
+- `USER_REGISTRATION_ATTEMPT` / `USER_REGISTRATION_SUCCESS` / `USER_REGISTRATION_FAILED`
+- `LOGIN_ATTEMPT` / `LOGIN_SUCCESS` / `LOGIN_FAILED`
+- `FILE_UPLOAD_VALIDATION_FAILED` / `FILE_UPLOAD_VALIDATED`
+- `ADMIN_FILE_UPLOAD_STARTED` / `ADMIN_FILE_UPLOAD_SUCCESS` / `ADMIN_FILE_UPLOAD_FAILED`
+- `INVALID_API_KEY` / `CSRF_TOKEN_MISMATCH`
+- Rate limit violations and suspicious activities
+
+### Security Response Procedures:
+1. **Rate Limit Exceeded**: 429 status with retry-after header
+2. **CSRF Validation Failed**: 403 status with clear error message
+3. **File Validation Failed**: 400 status with detailed validation errors
+4. **Authentication Failed**: 401 status with generic error message
+5. **Authorization Failed**: 403 status with permission details
+
+## 🚨 Security Incident Response
+
+### Monitoring Recommendations:
+- Set up alerts for repeated security event patterns
+- Monitor for unusual file upload activities
+- Track failed authentication attempts by IP
+- Alert on admin privilege escalation attempts
+- Monitor for CSRF token mismatches
+
+### Production Security Checklist:
+- [ ] Configure strong API keys in production
+- [ ] Set up security event monitoring and alerting
+- [ ] Enable all security features in production environment
+- [ ] Configure CSP reporting endpoint
+- [ ] Set up rate limiting monitoring
+- [ ] Configure file upload size limits appropriately
+- [ ] Test CSRF protection on all forms
+- [ ] Verify security headers are applied
+- [ ] Test rate limiting thresholds
+- [ ] Validate input sanitization is working

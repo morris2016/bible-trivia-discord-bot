@@ -1,0 +1,5 @@
+{
+  "version": 1,
+  "include": ["/*"],
+  "exclude": ["/static/*", "/bible-contest.html", "/bible-trivia.html", "/security-dashboard.html", "/simple-chart-test.html", "/test-admin-chart-fix.html", "/test-custom-editor.html"]
+}

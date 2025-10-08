@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test insertHTML popup</title>
+    <style>body { font-family: Arial; padding: 20px; }</style>
+</head>
+    <body>
+    <h1>Test insertHTML Popup</h1>
+    <p>Open the popup and paste your Daniel's 70 Weeks HTML content manually to test if the charts render.</p>
+    <button onclick="testPopup()">Open HTML Insert Popup</button>
+
+    <script>
+        function testPopup() {
+            window.open('/static/html-insert-popup.html', 'testPopup', 'width=1400,height=900,scrollbars=yes,resizable=yes');
+        }
+    </script>
+</body>
+</html>

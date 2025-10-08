@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chart.js Timing Fix Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .test-section {
+            margin-bottom: 40px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+
+        .test-section h2 {
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .chart-container {
+            width: 100%;
+            height: 400px;
+            margin: 20px 0;
+        }
+
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        button.success {
+            background: #28a745;
+        }
+
+        button.success:hover {
+            background: #218838;
+        }
+
+        .code-block {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Chart.js Timing Fix Test</h1>
+
+        <div class="test-section">
+            <h2>Test 1: Basic Chart.js Loading</h2>
+            <div id="test1-status" class="status info">Testing Chart.js library loading...</div>
+            <button onclick="testBasicChartLoading()">Test Basic Loading</button>
+            <div class="chart-container">
+                <canvas id="test1-chart"></canvas>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>Test 2: Script Execution Timing</h2>
+            <div id="test2-status" class="status info">Testing script execution timing...</div>
+            <button onclick="testScriptExecutionTiming()">Test Script Timing</button>
+            <div class="chart-container">
+                <canvas id="test2-chart"></canvas>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>Test 3: Admin Editor Simulation</h2>
+            <div id="test3-status" class="status info">Testing admin editor content loading...</div>
+            <button onclick="testAdminEditorSimulation()">Test Admin Editor</button>
+            <div id="admin-editor-simulation" class="chart-container">
+                <canvas id="test3-chart"></canvas>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>Test 4: Multiple Charts</h2>
+            <div id="test4-status" class="status info">Testing multiple charts rendering...</div>
+            <button onclick="testMultipleCharts()">Test Multiple Charts</button>
+            <div class="chart-container">
+                <canvas id="test4-chart1"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="test4-chart2"></canvas>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>Test Results Summary</h2>
+            <div id="test-summary" class="status info">No tests run yet</div>
+            <button onclick="runAllTests()" class="success">Run All Tests</button>
+            <button onclick="clearAllTests()">Clear Results</button>
+        </div>
+
+        <div class="test-section">
+            <h2>Sample Chart.js Code (for reference)</h2>
+            <div class="code-block">
+// Timeline Calculation Chart
+const ctx1 = document.getElementById('calculationChart').getContext('2d');
+new Chart(ctx1, {
+    type: 'line',
+    data: {
+        labels: ['445 BC (Start)', '396 BC (49 years)', '32 AD (483 years)', '32 AD (Crucifixion)'],
+        datasets: [{
+            label: '69 Weeks Timeline',
+            data: [0, 49, 483, 483.08],
+            borderColor: '#3498db',
+            backgroundColor: 'rgba(52, 152, 219, 0.1)',
+            borderWidth: 3,
+            pointBackgroundColor: '#e74c3c',
+            pointRadius: 8
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: 'Years from Start'
+                }
+            },
+            x: {
+                title: {
+                    display: true,
+                    text: 'Historical Timeline'
+                }
+            }
+        },
+        plugins: {
+            title: {
+                display: true,
+                text: 'Daniel 9:25-27 Precise Timeline Calculation'
+            }
+        }
+    }
+});
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Test state tracking
+        let testResults = {
+            test1: false,
+            test2: false,
+            test3: false,
+            test4: false
+        };
+
+        // Function to execute scripts in loaded content (for Chart.js and other JavaScript)
+        function executeScriptsInContent(container) {
+            if (!container) return;
+
+            // Check if content contains Chart.js usage
+            const contentHtml = container.innerHTML;
+            const needsChart = contentHtml.includes('Chart') || contentHtml.includes('chart') ||
+                              contentHtml.includes('new Chart') || contentHtml.includes('Chart(');
+
+            // Load Chart.js if needed
+            if (needsChart && !window.Chart) {
+                console.log('Chart.js usage detected, loading Chart.js library...');
+                const chartScript = document.createElement('script');
+                chartScript.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+                chartScript.onload = function() {
+                    console.log('Chart.js library loaded successfully');
+                    executeChartScripts(container);
+                };
+                chartScript.onerror = function() {
+                    console.error('Failed to load Chart.js library');
+                };
+                document.head.appendChild(chartScript);
+            } else if (needsChart && window.Chart) {
+                // Chart.js already loaded, execute scripts
+                executeChartScripts(container);
+            } else {
+                // No Chart.js needed, execute other scripts normally
+                executeOtherScripts(container);
+            }
+        }
+
+        // Execute Chart.js specific scripts with proper timing
+        function executeChartScripts(container) {
+            const scripts = container.querySelectorAll('script');
+
+            scripts.forEach(script => {
+                if (script.src && script.src.includes('chart.js')) {
+                    console.log('Chart.js library script found, skipping execution');
+                    return;
+                }
+
+                try {
+                    if (script.textContent && (script.textContent.includes('Chart') || script.textContent.includes('chart'))) {
+                        // Chart.js script - execute with delay to ensure DOM is ready
+                        const scriptContent = script.textContent;
+                        console.log('Executing Chart.js script:', scriptContent.substring(0, 100) + '...');
+
+                        setTimeout(() => {
+                            try {
+                                const func = new Function(scriptContent);
+                                func();
+                                console.log('Chart.js script executed successfully');
+                            } catch (error) {
+                                console.error('Error executing Chart.js script:', error);
+                            }
+                        }, 100);
+                    } else if (script.src) {
+                        // External script - load it dynamically
+                        const newScript = document.createElement('script');
+                        newScript.src = script.src;
+                        newScript.async = false;
+                        document.head.appendChild(newScript);
+                        console.log('Loaded external script:', script.src);
+                    } else if (script.textContent) {
+                        // Other inline script - execute normally
+                        const scriptContent = script.textContent;
+                        console.log('Executing other inline script:', scriptContent.substring(0, 100) + '...');
+
+                        const func = new Function(scriptContent);
+                        func();
+                    }
+                } catch (error) {
+                    console.error('Error executing script:', error);
+                }
+            });
+        }
+
+        // Execute non-Chart.js scripts
+        function executeOtherScripts(container) {
+            const scripts = container.querySelectorAll('script');
+
+            scripts.forEach(script => {
+                try {
+                    if (script.src) {
+                        // External script - load it dynamically
+                        const newScript = document.createElement('script');
+                        newScript.src = script.src;
+                        newScript.async = false;
+                        document.head.appendChild(newScript);
+                        console.log('Loaded external script:', script.src);
+                    } else if (script.textContent) {
+                        // Inline script - execute it
+                        const scriptContent = script.textContent;
+                        console.log('Executing inline script:', scriptContent.substring(0, 100) + '...');
+
+                        const func = new Function(scriptContent);
+                        func();
+                    }
+                } catch (error) {
+                    console.error('Error executing script:', error);
+                }
+            });
+        }
+
+        // Test functions
+        function testBasicChartLoading() {
+            const statusEl = document.getElementById('test1-status');
+            statusEl.textContent = 'Loading Chart.js...';
+            statusEl.className = 'status info';
+
+            if (!window.Chart) {
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+                script.onload = function() {
+                    statusEl.textContent = 'Chart.js loaded successfully!';
+                    statusEl.className = 'status success';
+                    testResults.test1 = true;
+                    updateTestSummary();
+
+                    // Create a simple test chart
+                    const ctx = document.getElementById('test1-chart').getContext('2d');
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: ['A', 'B', 'C'],
+                            datasets: [{
+                                label: 'Test Data',
+                                data: [10, 20, 30],
+                                backgroundColor: ['red', 'green', 'blue']
+                            }]
+                        }
+                    });
+                };
+                script.onerror = function() {
+                    statusEl.textContent = 'Failed to load Chart.js';
+                    statusEl.className = 'status error';
+                    testResults.test1 = false;
+                    updateTestSummary();
+                };
+                document.head.appendChild(script);
+            } else {
+                statusEl.textContent = 'Chart.js already loaded';
+                statusEl.className = 'status success';
+                testResults.test1 = true;
+                updateTestSummary();
+            }
+        }
+
+        function testScriptExecutionTiming() {
+            const statusEl = document.getElementById('test2-status');
+            statusEl.textContent = 'Testing script execution timing...';
+            statusEl.className = 'status info';
+
+            const container = document.createElement('div');
+            container.innerHTML = `
+                <canvas id="test2-chart-canvas" width="400" height="200"></canvas>
+                <script>
+                    console.log('Script executed at:', new Date().toISOString());
+                    setTimeout(() => {
+                        const ctx = document.getElementById('test2-chart-canvas').getContext('2d');
+                        new Chart(ctx, {
+                            type: 'line',
+                            data: {
+                                labels: ['Jan', 'Feb', 'Mar', 'Apr'],
+                                datasets: [{
+                                    label: 'Timing Test',
+                                    data: [10, 25, 15, 30],
+                                    borderColor: 'blue',
+                                    backgroundColor: 'rgba(0,0,255,0.1)'
+                                }]
+                            }
+                        });
+                        console.log('Chart created successfully');
+                    }, 50);
+                </script>
+            `;
+
+            document.body.appendChild(container);
+
+            setTimeout(() => {
+                executeScriptsInContent(container);
+                statusEl.textContent = 'Script execution test completed';
+                statusEl.className = 'status success';
+                testResults.test2 = true;
+                updateTestSummary();
+            }, 200);
+        }
+
+        function testAdminEditorSimulation() {
+            const statusEl = document.getElementById('test3-status');
+            statusEl.textContent = 'Testing admin editor simulation...';
+            statusEl.className = 'status info';
+
+            const container = document.getElementById('admin-editor-simulation');
+            container.innerHTML = `
+                <h3>Daniel's 70 Weeks Prophecy Timeline</h3>
+                <canvas id="test3-chart" width="400" height="200"></canvas>
+                <script>
+                    // Timeline Calculation Chart
+                    const ctx3 = document.getElementById('test3-chart').getContext('2d');
+                    new Chart(ctx3, {
+                        type: 'line',
+                        data: {
+                            labels: ['445 BC (Start)', '396 BC (49 years)', '32 AD (483 years)', '32 AD (Crucifixion)'],
+                            datasets: [{
+                                label: '69 Weeks Timeline',
+                                data: [0, 49, 483, 483.08],
+                                borderColor: '#3498db',
+                                backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                                borderWidth: 3,
+                                pointBackgroundColor: '#e74c3c',
+                                pointRadius: 8
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    title: {
+                                        display: true,
+                                        text: 'Years from Start'
+                                    }
+                                },
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: 'Historical Timeline'
+                                    }
+                                }
+                            },
+                            plugins: {
+                                title: {
+                                    display: true,
+                                    text: 'Daniel 9:25-27 Precise Timeline Calculation'
+                                }
+                            }
+                        }
+                    });
+                </script>
+            `;
+
+            setTimeout(() => {
+                executeScriptsInContent(container);
+                statusEl.textContent = 'Admin editor simulation completed';
+                statusEl.className = 'status success';
+                testResults.test3 = true;
+                updateTestSummary();
+            }, 300);
+        }
+
+        function testMultipleCharts() {
+            const statusEl = document.getElementById('test4-status');
+            statusEl.textContent = 'Testing multiple charts...';
+            statusEl.className = 'status info';
+
+            const container = document.querySelector('.test-section:nth-child(4)');
+            const chartContainer = container.querySelector('.chart-container');
+
+            chartContainer.innerHTML = `
+                <canvas id="test4-chart1" width="400" height="200"></canvas>
+                <canvas id="test4-chart2" width="400" height="200"></canvas>
+                <script>
+                    // First chart
+                    const ctx41 = document.getElementById('test4-chart1').getContext('2d');
+                    new Chart(ctx41, {
+                        type: 'bar',
+                        data: {
+                            labels: ['Q1', 'Q2', 'Q3', 'Q4'],
+                            datasets: [{
+                                label: 'Revenue',
+                                data: [100, 150, 200, 250],
+                                backgroundColor: 'rgba(75, 192, 192, 0.6)'
+                            }]
+                        }
+                    });
+
+                    // Second chart
+                    const ctx42 = document.getElementById('test4-chart2').getContext('2d');
+                    new Chart(ctx42, {
+                        type: 'pie',
+                        data: {
+                            labels: ['Red', 'Blue', 'Yellow'],
+                            datasets: [{
+                                data: [300, 50, 100],
+                                backgroundColor: ['red', 'blue', 'yellow']
+                            }]
+                        }
+                    });
+                </script>
+            `;
+
+            setTimeout(() => {
+                executeScriptsInContent(chartContainer);
+                statusEl.textContent = 'Multiple charts test completed';
+                statusEl.className = 'status success';
+                testResults.test4 = true;
+                updateTestSummary();
+            }, 400);
+        }
+
+        function runAllTests() {
+            testBasicChartLoading();
+            setTimeout(() => testScriptExecutionTiming(), 500);
+            setTimeout(() => testAdminEditorSimulation(), 1000);
+            setTimeout(() => testMultipleCharts(), 1500);
+        }
+
+        function clearAllTests() {
+            // Clear all test results
+            testResults = {
+                test1: false,
+                test2: false,
+                test3: false,
+                test4: false
+            };
+
+            // Clear status messages
+            document.getElementById('test1-status').textContent = 'Test not run';
+            document.getElementById('test1-status').className = 'status info';
+            document.getElementById('test2-status').textContent = 'Test not run';
+            document.getElementById('test2-status').className = 'status info';
+            document.getElementById('test3-status').textContent = 'Test not run';
+            document.getElementById('test3-status').className = 'status info';
+            document.getElementById('test4-status').textContent = 'Test not run';
+            document.getElementById('test4-status').className = 'status info';
+
+            // Clear chart containers
+            document.getElementById('test1-chart').getContext('2d').clearRect(0, 0, 400, 200);
+            document.getElementById('test2-chart').getContext('2d').clearRect(0, 0, 400, 200);
+            document.getElementById('test3-chart').getContext('2d').clearRect(0, 0, 400, 200);
+            document.getElementById('test4-chart1').getContext('2d').clearRect(0, 0, 400, 200);
+            document.getElementById('test4-chart2').getContext('2d').clearRect(0, 0, 400, 200);
+
+            updateTestSummary();
+        }
+
+        function updateTestSummary() {
+            const summaryEl = document.getElementById('test-summary');
+            const passedTests = Object.values(testResults).filter(result => result).length;
+            const totalTests = Object.keys(testResults).length;
+
+            if (passedTests === 0) {
+                summaryEl.textContent = 'No tests passed';
+                summaryEl.className = 'status info';
+            } else if (passedTests === totalTests) {
+                summaryEl.textContent = `All ${totalTests} tests passed!`;
+                summaryEl.className = 'status success';
+            } else {
+                summaryEl.textContent = `${passedTests}/${totalTests} tests passed`;
+                summaryEl.className = 'status error';
+            }
+        }
+
+        // Initialize test summary
+        updateTestSummary();
+    </script>
+</body>
+</html>

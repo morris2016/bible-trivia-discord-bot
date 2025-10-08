@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom Editor Test</title>
+    <link rel="stylesheet" href="static/custom-editor.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f8fafc;
+        }
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .test-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .editor-section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .toolbar {
+            margin-bottom: 15px;
+        }
+        .editor-output {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            <h1>Custom Editor Test Page</h1>
+            <p>Test all styling functions and features</p>
+        </div>
+
+        <!-- Custom Editor Section -->
+        <div class="editor-section">
+            <h2>Custom Rich Text Editor</h2>
+
+            <!-- Toolbar -->
+            <div class="custom-toolbar" data-editor="test-editor">
+                <!-- Text Formatting -->
+                <div class="toolbar-group">
+                    <button class="toolbar-btn" data-action="bold" title="Bold (Ctrl+B)">
+                        <i class="fas fa-bold"></i>
+                    </button>
+                    <button class="toolbar-btn" data-action="italic" title="Italic (Ctrl+I)">
+                        <i class="fas fa-italic"></i>
+                    </button>
+                    <button class="toolbar-btn" data-action="underline" title="Underline (Ctrl+U)">
+                        <i class="fas fa-underline"></i>
+                    </button>
+                    <button class="toolbar-btn" data-action="strikethrough" title="Strikethrough (Ctrl+Shift+S)">
+                        <i class="fas fa-strikethrough"></i>
+                    </button>
+                </div>
+
+                <div class="toolbar-separator"></div>
+
+                <!-- Headings -->
+                <div class="toolbar-group">
+                    <select class="toolbar-select" data-action="heading">
+                        <option value="normal">Normal</option>
+                        <option value="h1">Heading 1</option>
+                        <option value="h2">Heading 2</option>
+                        <option value="h3">Heading 3</option>
+                        <option value="h4">Heading 4</option>
+                        <option value="h5">Heading 5</option>
+                        <option value="h6">Heading 6</option>
+                    </select>
+                </div>
+
+                <div class="toolbar-separator"></div>
+
+                <!-- Alignment -->
+                <div class="toolbar-group">
+                    <button class="toolbar-btn" data-action="alignLeft" title="Align Left">
+                        <i class="fas fa-align-left"></i>
+                    </button>
+                    <button class="toolbar-btn" data-action="alignCenter" title="Align Center">
+                        <i class="fas fa-align-center"></i>
+                    </button>
+                    <button class="toolbar-btn" data-action="alignRight" title="Align Right">
+                        <i class="fas fa-align-right"></i>
+                    </button>
+                    <button class="toolbar-btn" data-action="alignJustify" title="Justify">
+                        <i class="fas fa-align-justify"></i>
+                    </button>
+                </div>
+
+                <div class="toolbar-separator"></div>
+
+                <!-- Lists -->
+                <div class="toolbar-group">
+                    <button class="toolbar-btn" data-action="bulletList" title="Bullet List">
+                        <i class="fas fa-list-ul"></i>
+                    </button>
+                    <button class="toolbar-btn" data-action="orderedList" title="Numbered List">
+                        <i class="fas fa-list-ol"></i>
+                    </button>
+                </div>
+
+                <div class="toolbar-separator"></div>
+
+                <!-- Special Formatting -->
+                <div class="toolbar-group">
+                    <button class="toolbar-btn" data-action="blockquote" title="Blockquote">
+                        <i class="fas fa-quote-left"></i>
+                    </button>
+                    <button class="toolbar-btn" data-action="code" title="Inline Code">
+                        <i class="fas fa-code"></i>
+                    </button>
+                    <button class="toolbar-btn" data-action="highlight" title="Highlight">
+                        <i class="fas fa-highlighter"></i>
+                    </button>
+                </div>
+
+                <div class="toolbar-separator"></div>
+
+                <!-- Links and Media -->
+                <div class="toolbar-group">
+                    <button class="toolbar-btn" data-action="link" title="Insert Link">
+                        <i class="fas fa-link"></i>
+                    </button>
+                    <button class="toolbar-btn" data-action="image" title="Insert Image">
+                        <i class="fas fa-image"></i>
+                    </button>
+                </div>
+
+                <div class="toolbar-separator"></div>
+
+                <!-- Colors -->
+                <div class="toolbar-group">
+                    <input type="color" class="color-picker" data-action="textColor" title="Text Color" value="#000000">
+                    <input type="color" class="color-picker" data-action="backgroundColor" title="Background Color" value="#ffffff">
+                </div>
+
+                <div class="toolbar-separator"></div>
+
+                <!-- Utility -->
+                <div class="toolbar-group">
+                    <button class="toolbar-btn" data-action="removeFormat" title="Remove Formatting">
+                        <i class="fas fa-eraser"></i>
+                    </button>
+                    <button class="toolbar-btn" data-action="undo" title="Undo">
+                        <i class="fas fa-undo"></i>
+                    </button>
+                    <button class="toolbar-btn" data-action="redo" title="Redo">
+                        <i class="fas fa-redo"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Editor -->
+            <div class="custom-editor-container">
+                <div id="test-editor" data-editor="true" data-placeholder="Start typing to test the custom editor..."></div>
+                <textarea id="test-editor-textarea" style="display: none;"></textarea>
+            </div>
+
+            <!-- Output Display -->
+            <div class="editor-output" id="editor-output"></div>
+        </div>
+
+        <!-- Test Buttons -->
+        <div class="editor-section">
+            <h2>Test Functions</h2>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button onclick="testBold()">Test Bold</button>
+                <button onclick="testItalic()">Test Italic</button>
+                <button onclick="testHeader()">Test Header</button>
+                <button onclick="testList()">Test List</button>
+                <button onclick="testLink()">Test Link</button>
+                <button onclick="testImage()">Test Image</button>
+                <button onclick="testClear()">Clear Editor</button>
+                <button onclick="testGetContent()">Get Content</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="static/custom-editor.js"></script>
+    <script>
+        let editor;
+
+        // Initialize editor when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize the custom editor
+            editor = new EnhancedEditor('test-editor', {
+                placeholder: 'Start typing to test the custom editor...',
+                onChange: function(content) {
+                    document.getElementById('editor-output').textContent = content;
+                }
+            });
+
+            console.log('Custom Editor initialized:', editor);
+        });
+
+        // Test functions
+        function testBold() {
+            if (editor) {
+                editor.toggleBold();
+            }
+        }
+
+        function testItalic() {
+            if (editor) {
+                editor.toggleItalic();
+            }
+        }
+
+        function testHeader() {
+            if (editor) {
+                editor.applyHeader(2);
+            }
+        }
+
+        function testList() {
+            if (editor) {
+                editor.createBulletList();
+            }
+        }
+
+        function testLink() {
+            if (editor) {
+                editor.insertLink();
+            }
+        }
+
+        function testImage() {
+            if (editor) {
+                editor.insertImage();
+            }
+        }
+
+        function testClear() {
+            if (editor) {
+                editor.clear();
+            }
+        }
+
+        function testGetContent() {
+            if (editor) {
+                const content = editor.getContent();
+                console.log('Editor content:', content);
+                alert('Content logged to console');
+            }
+        }
+
+        // Update output in real-time
+        setInterval(() => {
+            if (editor) {
+                document.getElementById('editor-output').textContent = editor.getContent();
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

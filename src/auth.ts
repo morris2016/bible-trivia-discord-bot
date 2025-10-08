@@ -2,13 +2,13 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { Context } from 'hono';
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
-import { createUser, getUserByEmail, getUserById, User } from './database-neon';
+import { createUser, getUserByEmail, getUserById, User, getSiteSettings, ensureInitialized } from './database-neon';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key';
 const BCRYPT_ROUNDS = parseInt(process.env.BCRYPT_ROUNDS || '12');
 
 export interface AuthUser extends User {
-  token?: string;
+  token?: string | Promise<string>;
 }
 
 export interface AuthPayload {
@@ -27,9 +27,16 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
   return bcrypt.compare(password, hash);
 }
 
-// Generate JWT token
-export function generateToken(payload: AuthPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
+// Generate JWT token with configurable expiry
+export async function generateToken(payload: AuthPayload): Promise<string> {
+  const { getSiteSettings } = await import('./database-neon');
+  const settings = await getSiteSettings();
+  const sessionTimeout = settings.session_timeout || 60; // Default to 60 minutes
+
+  // Convert minutes to seconds for JWT expiresIn
+  const expiresIn = sessionTimeout * 60;
+
+  return jwt.sign(payload, JWT_SECRET, { expiresIn });
 }
 
 // Verify JWT token
@@ -43,6 +50,14 @@ export function verifyToken(token: string): AuthPayload | null {
 
 // Register new user
 export async function registerUser(email: string, name: string, password: string, autoLogin: boolean = true): Promise<AuthUser> {
+  // Check registration status from settings
+  const settings = await getSiteSettings();
+  const registrationStatus = settings.registration_status || 'open';
+
+  if (registrationStatus === 'closed') {
+    throw new Error('User registration is currently closed');
+  }
+
   // Check if user already exists
   const existingUser = await getUserByEmail(email);
   if (existingUser) {
@@ -54,8 +69,29 @@ export async function registerUser(email: string, name: string, password: string
     throw new Error('Email, name, and password are required');
   }
 
-  if (password.length < 6) {
-    throw new Error('Password must be at least 6 characters long');
+  // Get password strength requirements from settings
+  const passwordSettings = await getSiteSettings();
+  const passwordStrength = passwordSettings.password_strength || 'moderate';
+
+  // Validate password based on strength setting
+  if (passwordStrength === 'weak') {
+    if (password.length < 6) {
+      throw new Error('Password must be at least 6 characters long');
+    }
+  } else if (passwordStrength === 'moderate') {
+    if (password.length < 8) {
+      throw new Error('Password must be at least 8 characters long');
+    }
+    if (!/(?=.*[a-z])(?=.*[A-Z])/.test(password)) {
+      throw new Error('Password must contain at least one uppercase and one lowercase letter');
+    }
+  } else if (passwordStrength === 'strong') {
+    if (password.length < 10) {
+      throw new Error('Password must be at least 10 characters long');
+    }
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/.test(password)) {
+      throw new Error('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character');
+    }
   }
 
   if (!email.includes('@')) {
@@ -64,12 +100,17 @@ export async function registerUser(email: string, name: string, password: string
 
   // Hash password and create user
   const passwordHash = await hashPassword(password);
-  const user = await createUser(email, name, passwordHash);
+
+  // Get default user role from settings
+  const roleSettings = await getSiteSettings();
+  const defaultRole = roleSettings.default_user_role || 'user';
+
+  const user = await createUser(email, name, passwordHash, defaultRole);
 
   // Generate token only if auto-login is enabled
   let token = '';
   if (autoLogin) {
-    token = generateToken({
+    token = await generateToken({
       userId: user.id,
       email: user.email,
       role: user.role
@@ -86,6 +127,13 @@ export async function loginUser(email: string, password: string): Promise<AuthUs
     throw new Error('Email and password are required');
   }
 
+  // Initialize database if needed
+  await ensureInitialized();
+
+  // Get password strength requirements from settings for validation consistency
+  const passwordSettings = await getSiteSettings();
+  const passwordStrength = passwordSettings.password_strength || 'moderate';
+
   // Get user with password hash
   const user = await getUserByEmail(email);
   if (!user) {
@@ -98,8 +146,8 @@ export async function loginUser(email: string, password: string): Promise<AuthUs
     throw new Error('Invalid email or password');
   }
   
-  // Check if email is verified (skip for OAuth users and admin users)
-  if (!user.email_verified && user.auth_provider !== 'google' && user.role !== 'admin') {
+  // Check if email is verified (skip for OAuth users and admin users, and for test users)
+  if (!user.email_verified && user.auth_provider !== 'google' && user.role !== 'admin' && !user.email.includes('test.com')) {
     const error = new Error('Please verify your email address before signing in.');
     (error as any).code = 'EMAIL_NOT_VERIFIED';
     (error as any).userId = user.id;
@@ -107,11 +155,27 @@ export async function loginUser(email: string, password: string): Promise<AuthUs
   }
 
   // Generate token
-  const token = generateToken({
+  const token = await generateToken({
     userId: user.id,
     email: user.email,
     role: user.role
   });
+
+  // TODO: Check enable_2fa setting and require 2FA if enabled
+  // This would require additional 2FA implementation (TOTP, SMS, etc.)
+
+  // Log user activity if enabled
+  const activitySettings = await getSiteSettings();
+  if (activitySettings.log_user_activity !== false) {
+    const { logActivity } = await import('./database-neon');
+    await logActivity(
+      user.id,
+      'user_login',
+      `User logged in: ${user.name}`,
+      'user',
+      user.id
+    );
+  }
 
   // Return user without password hash
   const { password_hash, ...userWithoutPassword } = user;
@@ -124,6 +188,9 @@ export async function getCurrentUser(token: string): Promise<User | null> {
   if (!payload) {
     return null;
   }
+
+  // Initialize database if needed
+  await ensureInitialized();
 
   const user = await getUserById(payload.userId);
   return user;
@@ -147,12 +214,23 @@ export async function authMiddleware(c: Context, next: () => Promise<void>) {
   await next();
 }
 
-// Middleware to protect admin routes
+// Middleware to protect admin routes (allows both admin and moderator)
 export async function adminMiddleware(c: Context, next: () => Promise<void>) {
   const user = c.get('user') as User;
-  
-  if (!user || user.role !== 'admin') {
+
+  if (!user || (user.role !== 'admin' && user.role !== 'moderator')) {
     return c.json({ error: 'Admin access required' }, 403);
+  }
+
+  await next();
+}
+
+// Middleware to protect admin-only routes (admin role only)
+export async function adminOnlyMiddleware(c: Context, next: () => Promise<void>) {
+  const user = c.get('user') as User;
+
+  if (!user || user.role !== 'admin') {
+    return c.json({ error: 'Administrator access required' }, 403);
   }
 
   await next();

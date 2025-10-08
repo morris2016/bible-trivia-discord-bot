@@ -1,31 +1,28 @@
 // Dashboard JavaScript
 
 let currentTab = 'overview';
-let dashboardEditor = null;
 
 function showTab(tabName) {
   // Hide all tabs
   document.querySelectorAll('.tab-content').forEach(tab => {
     tab.style.display = 'none';
   });
-  
+
   // Remove active class from all tab buttons
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.classList.remove('active');
   });
-  
+
   // Show selected tab
   document.getElementById(`${tabName}-tab`).style.display = 'block';
-  
+
   // Add active class to selected tab button
   event.target.classList.add('active');
-  
+
   currentTab = tabName;
-  
+
   if (tabName === 'overview') {
     loadUserContent();
-  } else if (tabName === 'create-article' && !dashboardEditor) {
-    initializeDashboardEditor();
   }
 }
 
@@ -102,116 +99,14 @@ async function loadUserContent() {
   }
 }
 
-// Initialize Custom Editor for Dashboard
-function initializeDashboardEditor() {
-  if (typeof CustomEditor === 'undefined') {
-    console.error('CustomEditor is not loaded');
-    return;
-  }
 
-  dashboardEditor = new CustomEditor('article-content-editor');
-}
-
-// Create Article Form
-document.getElementById('create-article-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  
-  // Update hidden textarea with custom editor content before submitting
-  if (dashboardEditor) {
-    dashboardEditor.syncContent();
-  }
-  
-  const formData = new FormData(e.target);
-  const title = formData.get('title');
-  const excerpt = formData.get('excerpt');
-  const content = formData.get('content');
-  const published = formData.get('published') === 'on';
-  
-  try {
-    showMessage('Creating article...', 'info');
-    
-    const response = await fetch('/api/articles', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ title, excerpt, content, published }),
-      credentials: 'include'
-    });
-    
-    const data = await response.json();
-    
-    if (data.success) {
-      showMessage('Article created successfully!', 'success');
-      e.target.reset();
-      
-      // Clear custom editor
-      if (dashboardEditor) {
-        dashboardEditor.clear();
-      }
-      
-      // Switch to overview tab to see the new article
-      setTimeout(() => {
-        showTab('overview');
-        loadUserContent();
-      }, 1000);
-    } else {
-      showMessage(data.error || 'Failed to create article', 'error');
-    }
-  } catch (error) {
-    console.error('Article creation error:', error);
-    showMessage('Network error. Please try again.', 'error');
-  }
-});
-
-// Create Resource Form
-document.getElementById('create-resource-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  
-  const formData = new FormData(e.target);
-  const title = formData.get('title');
-  const description = formData.get('description');
-  const url = formData.get('url');
-  const resource_type = formData.get('resource_type');
-  
-  try {
-    showMessage('Adding resource...', 'info');
-    
-    const response = await fetch('/api/resources', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ title, description, url, resource_type }),
-      credentials: 'include'
-    });
-    
-    const data = await response.json();
-    
-    if (data.success) {
-      showMessage('Resource added successfully!', 'success');
-      e.target.reset();
-      
-      // Switch to overview tab to see the new resource
-      setTimeout(() => {
-        showTab('overview');
-        loadUserContent();
-      }, 1000);
-    } else {
-      showMessage(data.error || 'Failed to add resource', 'error');
-    }
-  } catch (error) {
-    console.error('Resource creation error:', error);
-    showMessage('Network error. Please try again.', 'error');
-  }
-});
 
 // Check URL for tab parameter
 document.addEventListener('DOMContentLoaded', () => {
   const urlParams = new URLSearchParams(window.location.search);
   const tab = urlParams.get('tab');
-  
-  if (tab && ['overview', 'create-article', 'create-resource'].includes(tab)) {
+
+  if (tab && ['overview', 'settings'].includes(tab)) {
     // Find and click the appropriate tab button
     const tabButtons = document.querySelectorAll('.tab-btn');
     tabButtons.forEach(btn => {

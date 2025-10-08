@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paste Debug Test - FIXED</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+</head>
+<body>
+    <h1>Paste Debug Test</h1>
+    <p><strong>ISSUE IDENTIFIED AND FIXED:</strong></p>
+    <p>Chart.js version mismatch in admin-renderer.tsx was causing charts to not render.</p>
+    <p><strong>☑️ FIXED:</strong> Changed Chart.js from 4.4.0 to 3.9.1 in admin renderer</p>
+
+    <div id="testCanvas">
+        <canvas id="fixedChart" width="400" height="300"></canvas>
+    </div>
+
+    <script>
+        if (typeof Chart !== 'undefined') {
+            new Chart(document.getElementById('fixedChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['FIXED!', 'Chart.js', '3.9.1', 'Working'],
+                    datasets: [{
+                        label: 'Chart Rendering Test',
+                        data: [20, 35, 15, 40],
+                        backgroundColor: ['green', 'blue', 'red', 'purple']
+                    }]
+                },
+                options: {
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Chart.js 3.9.1 Loaded Successfully'
+                        }
+                    }
+                }
+            });
+            document.body.innerHTML += '<h2 style="color: green;">✅ Chart.js 3.9.1 working!</h2>';
+        } else {
+            document.body.innerHTML += '<h2 style="color: red;">❌ Chart.js not loaded</h2>';
+        }
+    </script>
+</body>
+</html>

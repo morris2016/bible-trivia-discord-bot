@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Admin Editor Chart Fix</title>
+
+    <!-- Load same dependencies as admin pages -->
+    <link href="/static/admin.css" rel="stylesheet" />
+    <link href="/static/custom-editor.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+    <!-- Chart.js for interactive chart rendering in admin editor - MUST MATCH POPUP VERSION -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+
+    <!-- Admin scripts -->
+    <script src="/static/admin.js"></script>
+    <script src="/static/custom-editor.js"></script>
+
+    <style>
+        body { padding: 20px; background: #f5f5f5; }
+        .test-container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .sample-content { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 4px; background: #f9f9f9; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Test Admin Editor Chart Fix</h1>
+        <p>This page tests if charts render properly in the admin editor after adding Chart.js.</p>
+
+        <div id="admin-content-editor-container" class="custom-editor-container">
+            <div id="admin-content-editor" data-editor="true" data-placeholder="Paste HTML with charts here..."></div>
+            <textarea name="content" id="admin-content-editor-textarea" style="display: none;"></textarea>
+        </div>
+
+        <div class="sample-content">
+            <h3>Sample HTML with Chart to Paste:</h3>
+            <button onclick="pasteSampleChart()" class="admin-btn admin-btn-primary">Paste Sample Chart HTML</button>
+            <pre id="sample-html" style="margin-top: 10px; padding: 10px; background: #f4f4f4; border: 1px solid #ddd; border-radius: 4px; white-space: pre-wrap; font-size: 0.8em;">
+<canvas id="chartMyChart" width="400" height="200"></canvas>
+<script>
+new Chart(document.getElementById('chartMyChart'), {
+    type: 'bar',
+    data: {
+        labels: ['Red', 'Blue', 'Yellow'],
+        datasets: [{
+            label: '# of Votes',
+            data: [12, 19, 3],
+            backgroundColor: [
+                'rgba(255, 99, 132, 0.5)',
+                'rgba(54, 162, 235, 0.5)',
+                'rgba(255, 205, 86, 0.5)'
+            ]
+        }]
+    }
+});
+</script></pre>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <h3>Test Results:</h3>
+            <div id="test-status">Waiting for test...</div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize editor when page loads
+        let testEditor;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Wait for Chart.js and editor code to load
+            setTimeout(() => {
+                if (typeof EnhancedEditor !== 'undefined') {
+                    testEditor = new EnhancedEditor('admin-content-editor', {
+                        placeholder: 'Paste HTML with charts here to test...',
+                        minHeight: 300,
+                        maxHeight: 500,
+                        toolbar: true,
+                        autosave: false
+                    });
+
+                    document.getElementById('test-status').textContent = 'Admin editor initialized successfully. Chart.js is ' +
+                        (typeof Chart !== 'undefined' ? 'loaded!' : 'NOT loaded!');
+                    document.getElementById('test-status').style.color = (typeof Chart !== 'undefined' ? 'green' : 'red');
+                } else {
+                    document.getElementById('test-status').textContent = 'EnhancedEditor not loaded!';
+                    document.getElementById('test-status').style.color = 'red';
+                }
+            }, 1000);
+        });
+
+        function pasteSampleChart() {
+            // Simple string with regular quotes
+            const sampleHTML = '<canvas id="chartMyChart" width="400" height="200"></canvas><script>new Chart(document.getElementById("chartMyChart"), {type: "bar", data: {labels: ["Red", "Blue", "Yellow"], datasets: [{label: "# of Votes", data: [12, 19, 3], backgroundColor: ["rgba(255, 99, 132, 0.5)", "rgba(54, 162, 235, 0.5)", "rgba(255, 205, 86, 0.5)"]}]}});</script>';
+
+            // Set content in editor
+            if (testEditor) {
+                testEditor.setContent(sampleHTML);
+                setTimeout(() => {
+                    document.getElementById('test-status').textContent = 'Sample chart HTML pasted! Check if chart renders.';
+                }, 100);
+            } else {
+                // Fallback to injecting directly
+                document.getElementById('admin-content-editor').innerHTML = sampleHTML;
+
+                // Try to execute the chart script
+                setTimeout(() => {
+                    try {
+                        if (typeof Chart !== 'undefined' && document.getElementById('chartMyChart')) {
+                            new Chart(document.getElementById('chartMyChart'), {
+                                type: 'bar',
+                                data: {
+                                    labels: ['Red', 'Blue', 'Yellow'],
+                                    datasets: [{
+                                        label: '# of Votes',
+                                        data: [12, 19, 3],
+                                        backgroundColor: [
+                                            'rgba(255, 99, 132, 0.5)',
+                                            'rgba(54, 162, 235, 0.5)',
+                                            'rgba(255, 205, 86, 0.5)'
+                                        ]
+                                    }]
+                                }
+                            });
+                            document.getElementById('test-status').textContent = 'Chart rendered successfully!';
+                            document.getElementById('test-status').style.color = 'green';
+                        } else {
+                            document.getElementById('test-status').textContent = 'Chart.js not available for chart rendering';
+                            document.getElementById('test-status').style.color = 'red';
+                        }
+                    } catch (error) {
+                        console.error('Error in fallback chart rendering:', error);
+                        document.getElementById('test-status').textContent = 'Error rendering chart: ' + error.message;
+                        document.getElementById('test-status').style.color = 'red';
+                    }
+                }, 500);
+            }
+        }
+
+        // Quick status check
+        setTimeout(() => {
+            const status = document.getElementById('test-status');
+            if (status.textContent === 'Waiting for test...') {
+                status.textContent = 'Chart.js loaded: ' + (typeof Chart !== 'undefined' ? 'YES' : 'NO') +
+                                   ', Editor loaded: ' + (typeof EnhancedEditor !== 'undefined' ? 'YES' : 'NO');
+                status.style.color = (typeof Chart !== 'undefined' && typeof EnhancedEditor !== 'undefined') ? 'green' : 'red';
+            }
+        }, 2000);
+    </script>
+</body>
+</html>

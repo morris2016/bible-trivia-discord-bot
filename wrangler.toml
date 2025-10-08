@@ -1,11 +1,10 @@
-name = "gospelways"
+name = "faith-defenders"
 compatibility_date = "2024-01-01"
 compatibility_flags = ["nodejs_compat"]
 
 [env.production]
 routes = [
-  { pattern = "gospelways.com", zone_name = "gospelways.com" },
-  { pattern = "gospelways.pages.dev", zone_name = "gospelways.pages.dev" }
+  { pattern = "faithdefenders.pages.dev", zone_name = "faithdefenders.pages.dev" }
 ]
 
 # R2 Bucket for file storage
@@ -16,7 +15,7 @@ preview_bucket_name = "faith-defenders-files-preview"
 
 # CORS configuration for R2 bucket
 [[r2_buckets.cors]]
-allowed_origins = ["http://localhost:3000", "http://localhost:5173", "http://localhost:5174", "https://*.pages.dev", "https://*.e2b.dev"]
+allowed_origins = ["http://localhost:3000", "http://localhost:5173", "http://localhost:5174", "https://*.pages.dev", "https://*.e2b.dev", "https://gospelways.com"]
 allowed_methods = ["GET", "HEAD", "OPTIONS"]
 allowed_headers = ["*"]
 exposed_headers = ["Content-Type", "Content-Length", "ETag"]
@@ -31,31 +30,12 @@ max_age_seconds = 3600
 # Environment variables
 [vars]
 ENVIRONMENT = "production"
-JWT_SECRET = "your_super_secret_jwt_key_for_local_development"
-DATABASE_URL = "postgres://neondb_owner:npg_bCSE8mA2YjgT@ep-weathered-mode-adqdxv9w-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require"
-RESEND_API_KEY = "re_cQQ2ajE4_Ddjaxar7FpNkgcsmT49GEuuw"
-FROM_EMAIL = "Gospel Ways <noreply@gospelways.com>"
-GOOGLE_CLIENT_ID = "592210387998-nfit7m1leceshiiqkdg5bv65606vrbbs.apps.googleusercontent.com"
-GOOGLE_CLIENT_SECRET = "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"
-CF_ACCOUNT_ID = "4d05c1c47e783fccaa7cfc1f8dfb4473"
-R2_ACCESS_KEY_ID = "76c9553ebc93980512da998f77298758"
-R2_SECRET_ACCESS_KEY = "d937c00d0f03aae7719dac7ecdf5e4e917190cc8436ace863ad5c41a9f95f55f"
-R2_PUBLIC_BUCKET_URL = "https://4d05c1c47e783fccaa7cfc1f8dfb4473.r2.cloudflarestorage.com"
-FILES_BUCKET_NAME = "faith-defenders-files"
-OPENROUTER_API_KEY = "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"
-OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
-AI_MODEL = "x-ai/grok-4-fast:free"
+JWT_SECRET = "your_production_jwt_secret_here"
 ADMIN_EMAIL = "siagmoo26@gmail.com"
 ADMIN_NAME = "Admin"
 ADMIN_PASSWORD = "Famous2016?"
 
-# Redirect rules for static files
-[[redirects]]
-from = "/bible-contest"
-to = "/bible-contest.html"
-status = 301
-
-# Google OAuth (configure in Cloudflare dashboard)
+# Google OAuth (configure in Cloudflare dashboard - NOT FOR DISCORD BOT)
 # GOOGLE_CLIENT_ID = ""
 # GOOGLE_CLIENT_SECRET = ""
 
@@ -66,7 +46,27 @@ status = 301
 # RESEND_API_KEY = ""
 # FROM_EMAIL = ""
 
-# Durable Objects for real-time messaging
+# AI API Configuration (configure in Cloudflare dashboard)
+# OPENROUTER_API_KEY = ""
+# OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
+# AI_MODEL = "x-ai/grok-4-fast:free"
+
+# Durable Objects for real-time messaging and progress tracking
 [[durable_objects.bindings]]
 name = "CHAT_ROOM"
 class_name = "ChatRoom"
+
+[[durable_objects.bindings]]
+name = "PROGRESS_TRACKER"
+class_name = "QuestionGenerationTracker"
+
+[[durable_objects.bindings]]
+name = "AI_GENERATOR"
+class_name = "AIGenerationDO"
+
+# Discord Bot Worker
+[[workers]]
+name = "discord-bot-worker"
+main = "discord-bot-worker.js"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]

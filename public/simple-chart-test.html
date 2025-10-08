@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Chart.js Test</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+</head>
+<body>
+    <h1>Chart.js Test</h1>
+    <canvas id="testChart" width="400" height="200"></canvas>
+
+    <script>
+        if (typeof Chart !== 'undefined') {
+            console.log('✅ Chart.js loaded successfully!');
+            new Chart(document.getElementById('testChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['Test Works!', 'Charts', 'Loaded'],
+                    datasets: [{
+                        label: 'Success!',
+                        data: [15, 25, 35],
+                        backgroundColor: ['#28a745', '#007bff', '#ffc107']
+                    }]
+                }
+            });
+        } else {
+            console.log('❌ Chart.js not loaded');
+            document.body.innerHTML += '<h2 style="color: red;">Chart.js NOT loaded</h2>';
+        }
+    </script>
+</body>
+</html>
