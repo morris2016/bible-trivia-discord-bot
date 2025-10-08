@@ -6,6 +6,9 @@ services:
       buildpack: nodejs
     instances: 1
     ports: []
+    processes:
+      - name: discord-bot
+        command: npm start
     env:
       - key: NODE_ENV
         value: production
