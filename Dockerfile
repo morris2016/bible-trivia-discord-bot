@@ -13,6 +13,9 @@ COPY src/ ./src/
 # Install dependencies
 RUN npm ci --only=production
 
+# Install TypeScript and ts-node for handling .ts imports
+RUN npm install typescript ts-node --save-dev
+
 # Make the start script executable
 RUN chmod +x start-bot.sh
 
