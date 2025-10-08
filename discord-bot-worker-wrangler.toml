@@ -4,6 +4,6 @@ compatibility_date = "2024-01-01"
 compatibility_flags = ["nodejs_compat"]
 
 [env.production]
-vars.DISCORD_TOKEN = "MTQyNTE1NjcxNDM4NjE2NTk4MA.Gz4gGN.fXpELHcz6-PW4w8aNqwGUaqdo_xswECvBTiSvE"
-vars.DISCORD_CLIENT_ID = "1425156714386165980"
+vars.DISCORD_TOKEN = ""
+vars.DISCORD_CLIENT_ID = ""
 vars.API_BASE_URL = "https://5363a3be.gospelways.pages.dev/api/bible-games"
