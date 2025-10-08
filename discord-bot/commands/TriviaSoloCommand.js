@@ -62,7 +62,7 @@ export class TriviaSoloCommand {
                     .setFooter({ text: 'Questions will appear in this channel shortly' })
                     .setTimestamp();
 
-                await interaction.editReply({ embeds: [embed] });
+                await interaction.editReply({ embeds: [embed], ephemeral: true });
 
             } else {
                 const embed = new EmbedBuilder()

@@ -221,6 +221,7 @@ export class TriviaGameManager {
                 players: new Map(),
                 gameData: createResult.game,
                 isSolo: true,
+                interaction: interaction, // Store interaction for ephemeral messages
                 participants: createResult.participants || [],
                 questionReviews: [] // Store answers for each question for review
             };
@@ -402,7 +403,7 @@ export class TriviaGameManager {
     }
 
     /**
-     * Display question to the channel (public) or player (solo game - private)
+     * Display question to the channel
      */
     async displayQuestion(gameState) {
         if (gameState.currentQuestionIndex >= gameState.questions.length) {
@@ -475,36 +476,21 @@ export class TriviaGameManager {
                     .setStyle(ButtonStyle.Primary)
             );
 
-        // For solo games, send questions privately to the player only
+        // For solo games, send ephemerally to the solo player
         if (gameState.isSolo) {
-            try {
-                const user = await this.client.users.fetch(gameState.creatorId);
-                // Send question as direct message to the player
-                const message = await user.send({
-                    embeds: [embed],
-                    components: [row]
-                });
-                // Store message for cleanup
-                gameState.currentMessage = message;
-                this.logger.debug(`Solo question sent privately to ${user.username}`);
-            } catch (error) {
-                this.logger.warn(`Failed to DM solo user ${gameState.creatorId}:`, error.message);
-                // Fallback to channel if DM fails
-                const channel = await this.client.channels.fetch(gameState.channelId);
-                const message = await channel.send({
-                    embeds: [embed],
-                    components: [row]
-                });
-                gameState.currentMessage = message;
-                this.logger.warn(`Fallback: Solo question sent to channel instead`);
-            }
+            await gameState.interaction.followUp({
+                embeds: [embed],
+                components: [row],
+                ephemeral: true
+            });
         } else {
-            // For multiplayer games, send to channel (public)
+            // For multiplayer, send to channel
             const channel = await this.client.channels.fetch(gameState.channelId);
             const message = await channel.send({
                 embeds: [embed],
                 components: [row]
             });
+
             // Store message for cleanup
             gameState.currentMessage = message;
         }
@@ -629,7 +615,7 @@ export class TriviaGameManager {
             player.answeredAt = null;
         }
 
-        // Send results privately for solo games, publicly for multiplayer
+        // Send results
         const resultEmbed = new EmbedBuilder()
             .setColor(0x00FF00)
             .setTitle('⏰ Time\'s Up!')
@@ -641,19 +627,14 @@ export class TriviaGameManager {
                 ).join('\n'), inline: false }
             );
 
+        // For solo games, send ephemerally to the solo player
         if (gameState.isSolo) {
-            // Send results privately to the solo player
-            try {
-                const user = await this.client.users.fetch(gameState.creatorId);
-                await user.send({ embeds: [resultEmbed] });
-                this.logger.debug(`Solo results sent privately to ${user.username}`);
-            } catch (error) {
-                this.logger.warn(`Failed to DM solo user ${gameState.creatorId}, sending to channel:`, error.message);
-                const channel = await this.client.channels.fetch(gameState.channelId);
-                await channel.send({ embeds: [resultEmbed] });
-            }
+            await gameState.interaction.followUp({
+                embeds: [resultEmbed],
+                ephemeral: true
+            });
         } else {
-            // Send results publicly for multiplayer games
+            // Send results to channel for multiplayer games
             const channel = await this.client.channels.fetch(gameState.channelId);
             await channel.send({ embeds: [resultEmbed] });
         }
@@ -666,7 +647,7 @@ export class TriviaGameManager {
     }
 
     /**
-     * End the game (private final results for solo games, public for multiplayer)
+     * End the game
      */
     async endGame(gameState) {
         this.logger.game(`Ending game ${gameState.id}`);
@@ -693,7 +674,7 @@ export class TriviaGameManager {
         const playersArray = Array.from(gameState.players.values())
             .sort((a, b) => b.score - a.score);
 
-        // Send final results privately for solo games, publicly for multiplayer
+        // Send final results
         const resultEmbed = new EmbedBuilder()
             .setColor(0xFFD700)
             .setTitle('🏆 Game Over!')
@@ -715,65 +696,27 @@ export class TriviaGameManager {
             resultEmbed.setDescription(`👑 **${winner.username}** wins with ${winner.score} points!\n\n**Final Results:**`);
         }
 
+        // For solo games, send ephemerally to the solo player
         if (gameState.isSolo) {
-            // Send final results privately to the solo player
-            try {
-                const user = await this.client.users.fetch(gameState.creatorId);
+            await gameState.interaction.followUp({
+                embeds: [resultEmbed],
+                ephemeral: true
+            });
 
-                // For solo games, update title to indicate it's solo
-                resultEmbed.setTitle('🏆 Solo Game Complete!');
-
-                await user.send({
-                    embeds: [resultEmbed],
-                    content: 'Congratulations on completing your solo Bible trivia game! 🎉'
-                });
-
-                // Send question review privately too
-                setTimeout(async () => {
-                    await this.sendQuestionReview(gameState, null, null); // No channel/playerMentions needed for private
-                }, 1000);
-
-                this.logger.debug(`Solo game results sent privately to ${user.username}`);
-
-                // Also send a brief completion message to the channel (without spoilers)
-                const channel = await this.client.channels.fetch(gameState.channelId);
-                await channel.send({
-                    content: `🎯 <@${gameState.creatorId}> has completed their solo Bible trivia game!`
-                });
-
-            } catch (error) {
-                this.logger.warn(`Failed to DM solo user ${gameState.creatorId}, sending to channel:`, error.message);
-
-                // Fallback: send to channel
-                const channel = await this.client.channels.fetch(gameState.channelId);
-                const playerMentions = Array.from(gameState.players.keys()).map(id => `<@${id}>`).join(' ');
-
-                resultEmbed.setTitle('🏆 Solo Game Complete!');
-                resultEmbed.setDescription(`👑 **${playersArray[0]?.username}** completes solo game with ${playersArray[0]?.score} points!\n\n**Final Results:**`);
-
-                await channel.send({
-                    embeds: [resultEmbed],
-                    content: `${playerMentions} - Solo game complete! 🎉`
-                });
-
-                // Send question review with fallback
-                setTimeout(async () => {
-                    await this.sendQuestionReview(gameState, channel, playerMentions);
-                }, 2000);
-
-                this.logger.warn(`Fallback: Solo game results sent to channel instead`);
-            }
+            // Send question review after a short delay
+            setTimeout(async () => {
+                await this.sendQuestionReview(gameState);
+            }, 2000);
         } else {
-            // Send public final results for multiplayer games
+            // Send to channel for multiplayer games
             const channel = await this.client.channels.fetch(gameState.channelId);
             const playerMentions = Array.from(gameState.players.keys()).map(id => `<@${id}>`).join(' ');
-
             await channel.send({
                 embeds: [resultEmbed],
                 content: `${playerMentions} - Game complete! 🎉`
             });
 
-            // Send question review publicly after a short delay
+            // Send question review after a short delay
             setTimeout(async () => {
                 await this.sendQuestionReview(gameState, channel, playerMentions);
             }, 2000);
@@ -936,6 +879,24 @@ export class TriviaGameManager {
             return;
         }
 
+        // Get game state from interaction to check if solo
+        const gameId = this.playerGames.get(interaction.user.id);
+        const gameState = gameId ? this.activeGames.get(gameId) : null;
+
+        // Skip countdown for solo games (send ephemerally instead)
+        if (gameState && gameState.isSolo) {
+            const countdownEmbed = new EmbedBuilder()
+                .setColor(0x0099FF)
+                .setTitle('🚀 Get Ready!')
+                .setDescription('**GO! Questions starting now...** 🎯');
+
+            await gameState.interaction.followUp({
+                embeds: [countdownEmbed],
+                ephemeral: true
+            });
+            return;
+        }
+
         const channel = await this.client.channels.fetch(channelId);
 
         const countdownEmbed = new EmbedBuilder()
@@ -972,7 +933,7 @@ export class TriviaGameManager {
     }
 
     /**
-     * Send question review after game completion (private for solo, public for multiplayer)
+     * Send question review after game completion
      */
     async sendQuestionReview(gameState, channel, playerMentions) {
         try {
@@ -1019,51 +980,21 @@ export class TriviaGameManager {
             // Split content if too long (Discord embed limit)
             const chunks = this.splitMessage(reviewContent, 1000);
 
-            if (gameState.isSolo) {
-                // Send review privately to the solo player
-                try {
-                    const user = await this.client.users.fetch(gameState.creatorId);
+            for (let i = 0; i < chunks.length; i++) {
+                const embed = new EmbedBuilder()
+                    .setColor(0x0099FF)
+                    .setTitle(i === 0 ? '📝 Question Review & Answers' : '📝 Question Review (Continued)')
+                    .setDescription(chunks[i])
+                    .setTimestamp();
 
-                    for (let i = 0; i < chunks.length; i++) {
-                        const embed = new EmbedBuilder()
-                            .setColor(0x0099FF)
-                            .setTitle(i === 0 ? '📝 Solo Game Question Review & Answers' : '📝 Solo Game Question Review (Continued)')
-                            .setDescription(chunks[i])
-                            .setTimestamp();
-
-                        await user.send({
-                            embeds: [embed],
-                            content: i === 0 ? 'Here\'s your detailed question review for your solo game! 📚' : null
-                        });
-                    }
-
-                    this.logger.debug(`Solo question review sent privately to ${user.username}`);
-                } catch (error) {
-                    this.logger.warn(`Failed to DM solo user ${gameState.creatorId} question review:`, error.message);
-                    // Fallback to channel if DM fails
-                    for (let i = 0; i < chunks.length; i++) {
-                        const embed = new EmbedBuilder()
-                            .setColor(0x0099FF)
-                            .setTitle(i === 0 ? '📝 Question Review & Answers' : '📝 Question Review (Continued)')
-                            .setDescription(chunks[i])
-                            .setTimestamp();
-
-                        await channel.send({
-                            embeds: [embed],
-                            content: i === 0 ? `${playerMentions} - Here's your detailed question review! 📚` : null
-                        });
-                    }
-                    this.logger.warn(`Fallback: Solo question review sent to channel instead`);
-                }
-            } else {
-                // Send review publicly for multiplayer games
-                for (let i = 0; i < chunks.length; i++) {
-                    const embed = new EmbedBuilder()
-                        .setColor(0x0099FF)
-                        .setTitle(i === 0 ? '📝 Question Review & Answers' : '📝 Question Review (Continued)')
-                        .setDescription(chunks[i])
-                        .setTimestamp();
-
+                // For solo games, send ephemerally to the solo player
+                if (gameState.isSolo) {
+                    await gameState.interaction.followUp({
+                        embeds: [embed],
+                        ephemeral: true
+                    });
+                } else {
+                    // For multiplayer games, send to channel
                     await channel.send({
                         embeds: [embed],
                         content: i === 0 ? `${playerMentions} - Here's your detailed question review! 📚` : null
