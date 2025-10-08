@@ -239,8 +239,8 @@ export class TriviaGameManager {
             this.activeGames.set(gameId, gameState);
             this.playerGames.set(userId, gameId);
 
-            // Start progress simulation
-            await this.startGameProgress(gameState, interaction);
+            // For solo games, skip API polling and go directly to local generation for speed
+            await this.startSoloGameplay(gameState, interaction);
 
             return {
                 success: true,
@@ -253,6 +253,69 @@ export class TriviaGameManager {
                 success: false,
                 message: `❌ Failed to start solo game: ${error.message}`
             };
+        }
+    }
+
+    /**
+     * Start solo gameplay directly (skip API polling)
+     */
+    async startSoloGameplay(gameState, interaction) {
+        try {
+            this.logger.game(`Starting solo gameplay directly for game ${gameState.id}`);
+
+            // Use local question generation immediately
+            const localQuestions = this.apiService.generateQuestionsLocally(
+                gameState.difficulty,
+                gameState.totalQuestions,
+                gameState.guildId
+            );
+
+            this.logger.game(`Generated ${localQuestions.length} solo questions for game ${gameState.id}`);
+
+            // Update game state with local questions
+            gameState.questions = localQuestions;
+            gameState.currentQuestionIndex = 0;
+            gameState.status = 'active';
+
+            // Check if we have questions
+            if (gameState.questions.length === 0) {
+                this.logger.warn(`No questions generated for solo game ${gameState.id}, ending game`);
+
+                const embed = new EmbedBuilder()
+                    .setColor(0xFFAA00)
+                    .setTitle('📖 No Questions Available')
+                    .setDescription('Sorry, no Bible questions are currently available for this game. Please try again later or contact an administrator.');
+
+                await interaction.followUp({ embeds: [embed], ephemeral: true });
+
+                // End the game immediately
+                await this.endGame(gameState);
+                return;
+            }
+
+            // Send "Get Ready" message and immediately start first question
+            const countdownEmbed = new EmbedBuilder()
+                .setColor(0x0099FF)
+                .setTitle('🚀 Get Ready!')
+                .setDescription('**GO! Questions starting now...** 🎯');
+
+            await gameState.interaction.followUp({
+                embeds: [countdownEmbed],
+                ephemeral: true
+            });
+
+            // Start first question immediately
+            await this.displayQuestion(gameState);
+
+        } catch (error) {
+            this.logger.error('Error starting solo gameplay:', error);
+
+            const embed = new EmbedBuilder()
+                .setColor(0xFF0000)
+                .setTitle('❌ Solo Game Start Failed')
+                .setDescription('Failed to start the solo trivia game. Please try again.');
+
+            await interaction.followUp({ embeds: [embed], ephemeral: true });
         }
     }
 
@@ -318,18 +381,30 @@ export class TriviaGameManager {
      */
     async handleGameTimeout(gameState, interaction) {
         try {
+            // For solo games, skip channel timeout message entirely - just proceed with local questions
+            if (gameState.isSolo) {
+                this.logger.game(`Solo game ${gameState.id} timed out waiting for questions, using local generation`);
+                await this.startGameplay(gameState, interaction);
+                return;
+            }
+
             const embed = new EmbedBuilder()
                 .setColor(0xFFAA00)
                 .setTitle('⏰ Generation Timeout')
                 .setDescription('Question generation is taking longer than expected. Attempting to start with available questions...');
 
-            const isSoloGame = gameState.isSolo || false;
-            await interaction.followUp({ embeds: [embed], ephemeral: isSoloGame });
+            await interaction.followUp({ embeds: [embed] });
 
             // Try to start gameplay anyway
             await this.startGameplay(gameState, interaction);
         } catch (error) {
             this.logger.error('Error handling game timeout:', error);
+
+            // For solo games, don't send error message to channel
+            if (gameState.isSolo) {
+                this.logger.error(`Failed to handle timeout for solo game ${gameState.id}:`, error.message);
+                return;
+            }
 
             const embed = new EmbedBuilder()
                 .setColor(0xFF0000)
@@ -337,8 +412,7 @@ export class TriviaGameManager {
                 .setDescription('Failed to generate questions. Please try again.');
 
             try {
-                const isSoloGame = gameState.isSolo || false;
-                await interaction.followUp({ embeds: [embed], ephemeral: isSoloGame });
+                await interaction.followUp({ embeds: [embed] });
             } catch (followUpError) {
                 this.logger.error('Failed to send timeout error message:', followUpError);
             }
