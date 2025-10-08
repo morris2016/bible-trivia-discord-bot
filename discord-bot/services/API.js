@@ -261,16 +261,16 @@ export class APIService {
                 return [];
             }
 
-            // Shuffle and select questions
-            const shuffled = [...difficultyQuestions].sort(() => Math.random() - 0.5);
+            // Shuffle and select questions using Fisher-Yates algorithm
+            const shuffled = this.shuffleArray([...difficultyQuestions]);
             const selected = shuffled.slice(0, Math.min(count, shuffled.length));
 
             this.logger.debug(`Generated ${selected.length} questions for difficulty ${difficulty}`);
 
             // Convert to the format expected by the game manager
             return selected.map((q, index) => {
-                // Create a copy of options and shuffle them
-                const shuffledOptions = [...q.options].sort(() => Math.random() - 0.5);
+                // Create a copy of options and shuffle them using Fisher-Yates algorithm
+                const shuffledOptions = this.shuffleArray([...q.options]);
 
                 // Find the new index of the correct answer after shuffling
                 const correctAnswerIndex = shuffledOptions.findIndex(option => option === q.correctAnswer);
@@ -295,6 +295,19 @@ export class APIService {
             this.logger.error('Error generating questions locally:', error);
             return [];
         }
+    }
+
+    /**
+     * Fisher-Yates shuffle algorithm for uniform randomization
+     * This is the same algorithm used by the website version for fair randomization
+     */
+    shuffleArray(array) {
+        const shuffled = [...array];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
     }
 
     /**
