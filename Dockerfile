@@ -10,8 +10,8 @@ COPY discord-bot/ ./
 # Also copy src directory for bible-questions-data.ts
 COPY src/ ./src/
 
-# Install dependencies
-RUN npm ci --only=production
+# Install dependencies (use install to update lock file)
+RUN npm install --only=production
 
 # Install TypeScript and ts-node, then compile to JS
 RUN npm install typescript ts-node --save-dev
