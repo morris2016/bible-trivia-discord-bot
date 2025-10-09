@@ -1173,6 +1173,7 @@ h3 {
   height: auto;
   min-height: auto;
   overflow: visible;
+  max-height: none;
 }
 
 .results-section::before {
@@ -1264,6 +1265,8 @@ h3 {
   transition: var(--transition);
   height: auto;
   min-height: auto;
+  overflow: visible;
+  position: relative;
 }
 
 .question-review-item:hover {
@@ -1815,8 +1818,9 @@ h3 {
   .question-review {
     padding: 15px;
     margin: 15px 0;
-    max-height: calc(100vh - 250px);
-    overflow-y: auto;
+    height: auto;
+    max-height: none;
+    overflow: visible;
   }
 
   .question-review-item {
