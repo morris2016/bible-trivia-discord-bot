@@ -3,9 +3,22 @@ import { TriviaGameManager } from './services/TriviaGameManager.js';
 import { APIService } from './services/API.js';
 import { CommandHandler } from './commands/CommandHandler.js';
 import { Logger } from './utils/Logger.js';
+import express from 'express';
 
 // Initialize logger
 const logger = new Logger();
+
+// Start health check server
+const app = express();
+const HEALTH_PORT = process.env.PORT || 8000;
+
+app.get('/health', (req, res) => {
+    res.status(200).send('Bot is running!');
+});
+
+app.listen(HEALTH_PORT, () => {
+    logger.log(`🚀 Health check server running on port ${HEALTH_PORT}`);
+});
 
 // Create Discord client
 const client = new Client({

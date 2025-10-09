@@ -2,7 +2,8 @@ import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
 import { Logger } from '../utils/Logger.js';
-import BIBLE_QUESTIONS_JSON from '../../bible-questions-database-export.json' with { type: 'json' };
+import { bibleQuestionsData } from '../bible-questions-data.js';
+const BIBLE_QUESTIONS_JSON = bibleQuestionsData;
 
 export class APIService {
     constructor(options = {}) {
