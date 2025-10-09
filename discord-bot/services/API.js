@@ -2,7 +2,7 @@ import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
 import { Logger } from '../utils/Logger.js';
-import { BIBLE_QUESTIONS } from '../src/bible-questions-data.js';
+import BIBLE_QUESTIONS_JSON from '../../bible-questions-database-export.json' with { type: 'json' };
 
 export class APIService {
     constructor(options = {}) {
@@ -268,7 +268,7 @@ export class APIService {
             this.logger.debug(`Generating ${count} ${difficulty} questions locally from database${guildId ? ` for guild ${guildId}` : ''}`);
 
             // Filter questions by difficulty
-            let availableQuestions = BIBLE_QUESTIONS.filter(q => q.difficulty === difficulty);
+            let availableQuestions = BIBLE_QUESTIONS_JSON.filter(q => q.difficulty === difficulty);
 
             if (availableQuestions.length === 0) {
                 this.logger.warn(`No questions found for difficulty: ${difficulty}`);

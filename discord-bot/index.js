@@ -206,51 +206,6 @@ client.on('interactionCreate', async (interaction) => {
                         components: []
                     });
                 }
-            } else if (interaction.customId === 'solo_support_help') {
-                // Handle solo game support button
-                await interaction.deferUpdate();
-
-                const helpEmbed = new EmbedBuilder()
-                    .setColor(0x0099FF)
-                    .setTitle('❓ Solo Game Help')
-                    .setDescription('**Getting Started with Bible Trivia**\n\n' +
-                        'Your solo game is completely private - only you can see the questions and answers!\n\n' +
-                        '**How to Play:**\n' +
-                        '• Answer each question by clicking A, B, C, or D\n' +
-                        '• Questions are timed for maximum challenge\n' +
-                        '• Wrong answers = 0 points, correct answers earn points based on difficulty')
-                    .addFields(
-                        { name: '⏱️ Timer', value: 'Questions have time limits - answer quickly!', inline: true },
-                        { name: '📏 Difficulty', value: 'Easy: 12s | Medium: 16.5s | Hard: 21s | Expert: 25.5s', inline: true },
-                        { name: '🏆 Scoring', value: 'Easy: 1pt | Medium: 2pts | Hard: 3pts | Expert: 4pts', inline: true }
-                    )
-                    .addFields({
-                        name: '🎮 Game Controls',
-                        value: '• Click answer buttons (A/B/C/D) to respond\n' +
-                               '• Use `/trivia-status` to check your current game progress\n' +
-                               '• Use `/trivia-quit` to exit the game early\n' +
-                               '• Use `/trivia-leaderboard` to see global rankings',
-                        inline: false
-                    })
-                    .addFields({
-                        name: '🆘 Need More Help?',
-                        value: '• Use `/help` for complete bot documentation\n' +
-                               '• Check our [website](https://gospelways.com) for tutorials\n' +
-                               '• Contact support if you encounter technical issues',
-                        inline: false
-                    })
-                    .setFooter({ text: 'Happy studying God\'s Word! 📖✝️' })
-                    .setTimestamp();
-
-                await interaction.editReply({ embeds: [helpEmbed], components: [] });
-            } else if (interaction.customId.startsWith('leaderboard_')) {
-                // Handle leaderboard difficulty selection
-                const selectedDifficulty = interaction.customId.split('_')[1];
-                const command = commandHandler.commands['trivia-leaderboard'];
-                if (command) {
-                    await interaction.deferUpdate();
-                    await command.showDifficultyLeaderboard(interaction, {}, selectedDifficulty, 10);
-                }
             } else {
                 // Unknown button - ignore
                 logger.debug(`Unknown button interaction: ${interaction.customId}`);

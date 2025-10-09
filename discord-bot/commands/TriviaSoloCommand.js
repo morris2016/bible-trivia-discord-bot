@@ -1,4 +1,4 @@
-import { EmbedBuilder, MessageFlags, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
+import { EmbedBuilder, MessageFlags } from 'discord.js';
 
 export class TriviaSoloCommand {
     constructor(client, gameManager, apiService, logger) {
@@ -60,16 +60,7 @@ export class TriviaSoloCommand {
                     .setFooter({ text: 'Questions will appear in this channel shortly' })
                     .setTimestamp();
 
-                // Add support button
-                const supportButton = new ActionRowBuilder()
-                    .addComponents(
-                        new ButtonBuilder()
-                            .setURL('https://buymeacoffee.com/siagmoo26i')
-                            .setLabel('☕ Support')
-                            .setStyle(ButtonStyle.Link)
-                    );
-
-                await interaction.reply({ embeds: [embed], components: [supportButton], ephemeral: true });
+                await interaction.reply({ embeds: [embed], ephemeral: true });
 
                 // Continue with solo gameplay after sending initial reply
                 const gameState = result.game;

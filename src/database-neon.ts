@@ -4329,16 +4329,17 @@ export async function importQuestionsBatch(questions: any[]): Promise<QuestionIm
           INSERT INTO bible_questions (
             question_text, correct_answer, options, bible_reference, difficulty,
             points, category, subcategory, tags, question_type, verse_context,
-            explanation, source
+            explanation, source, quality_score, created_at, updated_at
           )
           VALUES (
             ${question.questionText}, ${question.correctAnswer}, ${JSON.stringify(question.options)}::jsonb,
             ${question.bibleReference}, ${question.difficulty}, ${question.points},
             ${question.category}, ${question.subcategory || null}, ${JSON.stringify(question.tags || [])}::jsonb,
             ${question.questionType}, ${question.verseContext || null}, ${question.explanation || null},
-            ${question.source}
+            ${question.source}, ${question.qualityScore || null}, NOW(), NOW()
           )
           ON CONFLICT (question_text, correct_answer, bible_reference) DO NOTHING
+          RETURNING id
         `;
 
         if (result.length > 0) {
@@ -4452,15 +4453,15 @@ export async function getRandomQuestionsByDifficulty(
 
   try {
     const result = await sql`
-      SELECT question_text, correct_answer, options, bible_reference, difficulty, points
+      SELECT id, question_text, correct_answer, options, bible_reference, difficulty, points
       FROM bible_questions
       WHERE difficulty = ${difficulty}
       ORDER BY RANDOM()
       LIMIT ${count}
     `;
 
-    return result.map((row: any, index: number) => ({
-      id: index + 1, // Generate a temporary ID for compatibility
+    return result.map((row: any) => ({
+      id: row.id,
       text: row.question_text,
       correctAnswer: row.correct_answer,
       options: Array.isArray(row.options) ? row.options : JSON.parse(row.options || '[]'),
