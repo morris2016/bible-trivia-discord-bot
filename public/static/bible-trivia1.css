@@ -436,16 +436,18 @@ h3 {
   overflow: visible;
 }
 
-/* Results Section Styling */
+/* Results Section Styling - Force Auto Height */
 .results-section {
-  background: var(--primary-white);
-  border: 2px solid var(--success-emerald);
-  border-radius: 12px;
-  padding: 30px;
-  margin: 20px 0;
-  box-shadow: var(--shadow);
-  height: auto;
-  overflow: visible;
+  background: var(--primary-white) !important;
+  border: 2px solid var(--success-emerald) !important;
+  border-radius: 12px !important;
+  padding: 30px !important;
+  margin: 20px 0 !important;
+  box-shadow: var(--shadow) !important;
+  height: auto !important;
+  min-height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
 }
 
 .results-section h2 {
