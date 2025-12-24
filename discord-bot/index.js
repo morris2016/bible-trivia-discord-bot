@@ -70,6 +70,14 @@ const commands = [
     {
         name: 'trivia-join',
         description: 'Join a waiting trivia game',
+        options: [
+            {
+                name: 'game_id',
+                description: 'Specific game ID to join (optional)',
+                type: 3, // STRING
+                required: false,
+            },
+        ],
     },
     {
         name: 'trivia-quit',
@@ -184,8 +192,8 @@ client.on('interactionCreate', async (interaction) => {
             } else if (interaction.customId.startsWith('join_game_')) {
                 // Handle join game button from TriviaJoinCommand
                 await interaction.deferUpdate();
-                const gameId = interaction.customId.split('_')[2];
-                await commandHandler.commands['trivia-join'].joinSpecificGame(interaction, parseInt(gameId));
+                const gameId = interaction.customId.split('_')[2]; // Keep as string for local games
+                await commandHandler.commands['trivia-join'].joinSpecificGame(interaction, gameId);
             } else if (interaction.customId === 'join_quick') {
                 // Handle quick join
                 await interaction.deferUpdate();
@@ -205,7 +213,7 @@ client.on('interactionCreate', async (interaction) => {
             } else if (interaction.customId.startsWith('start_game_')) {
                 // Handle start game button from TriviaStartCommand
                 await interaction.deferUpdate();
-                const gameId = parseInt(interaction.customId.split('_')[2]);
+                const gameId = interaction.customId.split('_')[2]; // Keep as string for local games
 
                 // Check if the user is the creator of this game
                 const gameState = gameManager.activeGames.get(gameId);

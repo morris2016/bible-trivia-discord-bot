@@ -10,6 +10,7 @@ export class TriviaJoinCommand {
 
     async execute(interaction) {
         const userId = interaction.user.id;
+        const gameId = interaction.options.getString('game_id');
 
         // Check if user is already in a game
         if (this.gameManager.playerGames.has(userId)) {
@@ -22,13 +23,44 @@ export class TriviaJoinCommand {
             return;
         }
 
+        // If specific game ID provided, try to join it directly
+        if (gameId) {
+            await interaction.deferReply();
+            await this.joinSpecificGame(interaction, gameId);
+            return;
+        }
+
         await interaction.deferReply();
 
         try {
-            // Get available games
+            // Get available games from API
             const gamesResult = await this.apiService.getWaitingGames();
 
-            if (!gamesResult.success || !gamesResult.games || gamesResult.games.length === 0) {
+            // Also get local waiting games
+            const localGames = Array.from(this.gameManager.activeGames.values())
+                .filter(game => game.status === 'waiting' && game.isLocalMultiplayer);
+
+            const allAvailableGames = [];
+
+            // Add API games
+            if (gamesResult.success && gamesResult.games) {
+                const apiGames = gamesResult.games.filter(game => game.current_players < game.max_players);
+                allAvailableGames.push(...apiGames.map(game => ({ ...game, isLocal: false })));
+            }
+
+            // Add local games
+            allAvailableGames.push(...localGames.map(game => ({
+                id: game.id,
+                name: `${game.creatorName}'s Bible Trivia Game`,
+                difficulty: game.difficulty,
+                questions_per_game: game.totalQuestions,
+                current_players: game.players.size,
+                max_players: 10,
+                created_by_name: game.creatorName,
+                isLocal: true
+            })));
+
+            if (allAvailableGames.length === 0) {
                 const embed = new EmbedBuilder()
                     .setColor(0xFFA500)
                     .setTitle('🎯 No Games Available')
@@ -40,7 +72,7 @@ export class TriviaJoinCommand {
             }
 
             // Filter games that have space
-            const availableGames = gamesResult.games.filter(game =>
+            const availableGames = allAvailableGames.filter(game =>
                 game.current_players < game.max_players
             );
 

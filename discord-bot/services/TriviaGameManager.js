@@ -21,7 +21,7 @@ export class TriviaGameManager {
     }
 
     /**
-     * Start a new multiplayer game
+     * Start a new multiplayer game (local, no API)
      */
     async startMultiplayerGame(interaction, options) {
         const { difficulty, questions } = options;
@@ -29,25 +29,12 @@ export class TriviaGameManager {
         const creatorName = interaction.user.username;
 
         try {
-            this.logger.game(`Creating multiplayer game for ${creatorName} (${creatorId})`);
+            this.logger.game(`Creating local multiplayer game for ${creatorName} (${creatorId})`);
 
-            const createResult = await this.apiService.createGame({
-                name: `${creatorName}'s Bible Trivia Game`,
-                difficulty: difficulty,
-                maxPlayers: 10,
-                questionsPerGame: questions || 10,
-                timePerQuestion: 15,
-                playerName: creatorName
-            });
+            // Generate a unique local game ID
+            const gameId = `multi-${Date.now()}-${creatorId}`;
 
-            if (!createResult.success) {
-                throw new Error(createResult.error || 'Failed to create game');
-            }
-
-            const gameId = createResult.game.id;
-            this.logger.game(`Game created with ID: ${gameId}`);
-
-            // Initialize game state
+            // Initialize game state locally
             const gameState = {
                 id: gameId,
                 creatorId: creatorId,
@@ -59,8 +46,9 @@ export class TriviaGameManager {
                 channelId: interaction.channelId,
                 guildId: interaction.guildId,
                 players: new Map(),
-                gameData: createResult.game,
-                participants: createResult.participants || []
+                gameData: null, // No API game data for local games
+                isLocalMultiplayer: true,
+                participants: [] // No API participants for local games
             };
 
             this.activeGames.set(gameId, gameState);
@@ -72,12 +60,12 @@ export class TriviaGameManager {
                 joinedAt: new Date(),
                 score: 0,
                 correctAnswers: 0,
-                participantId: createResult.participant?.guest_id || 0
+                participantId: 0 // Local participant ID
             });
 
             this.playerGames.set(creatorId, gameId);
 
-            this.logger.game(`Player ${creatorName} joined game ${gameId}`);
+            this.logger.game(`Player ${creatorName} joined local game ${gameId}`);
 
             return {
                 success: true,
@@ -91,7 +79,7 @@ export class TriviaGameManager {
             };
 
         } catch (error) {
-            this.logger.error('Error creating multiplayer game:', error);
+            this.logger.error('Error creating local multiplayer game:', error);
             return {
                 success: false,
                 message: `❌ Failed to create game: ${error.message}`
@@ -123,7 +111,15 @@ export class TriviaGameManager {
             // Get game state
             let gameState = this.activeGames.get(gameId);
             if (!gameState) {
-                // Try to join via API first
+                // For local games, don't try API
+                if (gameId.startsWith('multi-') || gameId.startsWith('solo-')) {
+                    return {
+                        success: false,
+                        message: 'Game not found. Please check the game ID and try again.'
+                    };
+                }
+
+                // Try to join via API for non-local games
                 const joinResult = await this.apiService.joinGame(gameId, {
                     playerName: username
                 });
@@ -151,7 +147,7 @@ export class TriviaGameManager {
                 joinedAt: new Date(),
                 score: 0,
                 correctAnswers: 0,
-                participantId: gameState.participants.find(p => p.player_name === username)?.guest_id
+                participantId: gameState.participants.find(p => p.player_name === username)?.guest_id || 0
             });
 
             this.playerGames.set(userId, gameId);
@@ -312,7 +308,39 @@ export class TriviaGameManager {
     async startGameProgress(gameState, interaction) {
         const gameId = gameState.id;
 
-        // Start progress polling
+        // For local multiplayer games, generate questions immediately and start gameplay
+        if (gameState.isLocalMultiplayer) {
+            this.logger.game(`Starting local multiplayer game ${gameId} directly`);
+
+            // Generate local questions
+            const localQuestions = this.apiService.generateQuestionsLocally(
+                gameState.difficulty,
+                gameState.totalQuestions,
+                gameState.guildId
+            );
+
+            this.logger.game(`Generated ${localQuestions.length} local questions for multiplayer game ${gameId}`);
+
+            // Update game state with local questions
+            gameState.questions = localQuestions;
+            gameState.currentQuestionIndex = 0;
+            gameState.status = 'active';
+
+            // Send "Get Ready" message
+            const countdownEmbed = new EmbedBuilder()
+                .setColor(0x0099FF)
+                .setTitle('🚀 Get Ready!')
+                .setDescription('**GO! Questions starting now...** 🎯');
+
+            const channel = await this.client.channels.fetch(gameState.channelId);
+            await channel.send({ embeds: [countdownEmbed] });
+
+            // Start first question
+            await this.displayQuestion(gameState);
+            return;
+        }
+
+        // For API-based games (if any), use polling
         const progressInterval = setInterval(async () => {
             try {
                 this.logger.debug(`Polling progress for game ${gameId}`);
