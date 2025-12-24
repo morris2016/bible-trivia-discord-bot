@@ -61,6 +61,6 @@ The bot deployment includes:
 ## What's Deployed
 - Bot runs from the `discord-bot/` directory
 - Uses `discord-bot/package.json` for dependencies
-- Connects to https://gospelways.com API
+- Connects to https://gospelways.pages.dev API
 - Registers slash commands automatically
 - Runs continuous background worker

@@ -32,7 +32,7 @@ const client = new Client({
 
 // Initialize services
 const apiService = new APIService({
-    baseURL: process.env.API_GAME_URL || 'https://gospelways.com/api/bible-games',
+    baseURL: process.env.API_GAME_URL || 'https://gospelways.pages.dev/api/bible-games',
 });
 
 const gameManager = new TriviaGameManager(apiService, logger);

@@ -16,9 +16,9 @@ services:
       - key: DISCORD_CLIENT_ID
         secret: DISCORD_CLIENT_ID
       - key: API_BASE_URL
-        value: https://gospelways.com
+        value: https://gospelways.pages.dev
       - key: API_GAME_URL
-        value: https://gospelways.com/api/bible-games
+        value: https://gospelways.pages.dev/api/bible-games
       - key: LOG_LEVEL
         value: info
     public: false

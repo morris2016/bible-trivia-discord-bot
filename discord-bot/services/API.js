@@ -7,7 +7,7 @@ const BIBLE_QUESTIONS_JSON = BIBLE_QUESTIONS;
 
 export class APIService {
     constructor(options = {}) {
-        this.baseURL = options.baseURL || 'https://gospelways.com/api/bible-games';
+        this.baseURL = options.baseURL || 'https://gospelways.pages.dev/api/bible-games';
         this.logger = new Logger();
         this.questionTrackingDir = path.join(process.cwd(), 'discord-bot', 'data', 'question-tracking');
 
