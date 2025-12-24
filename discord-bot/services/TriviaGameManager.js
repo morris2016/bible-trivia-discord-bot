@@ -312,31 +312,52 @@ export class TriviaGameManager {
         if (gameState.isLocalMultiplayer) {
             this.logger.game(`Starting local multiplayer game ${gameId} directly`);
 
-            // Generate local questions
-            const localQuestions = this.apiService.generateQuestionsLocally(
-                gameState.difficulty,
-                gameState.totalQuestions,
-                gameState.guildId
-            );
+            try {
+                // Generate local questions
+                const localQuestions = this.apiService.generateQuestionsLocally(
+                    gameState.difficulty,
+                    gameState.totalQuestions,
+                    gameState.guildId
+                );
 
-            this.logger.game(`Generated ${localQuestions.length} local questions for multiplayer game ${gameId}`);
+                this.logger.game(`Generated ${localQuestions.length} local questions for multiplayer game ${gameId}`);
 
-            // Update game state with local questions
-            gameState.questions = localQuestions;
-            gameState.currentQuestionIndex = 0;
-            gameState.status = 'active';
+                // Update game state with local questions
+                gameState.questions = localQuestions;
+                gameState.currentQuestionIndex = 0;
+                gameState.status = 'active';
 
-            // Send "Get Ready" message
-            const countdownEmbed = new EmbedBuilder()
-                .setColor(0x0099FF)
-                .setTitle('🚀 Get Ready!')
-                .setDescription('**GO! Questions starting now...** 🎯');
+                // Send "Get Ready" message
+                const countdownEmbed = new EmbedBuilder()
+                    .setColor(0x0099FF)
+                    .setTitle('🚀 Get Ready!')
+                    .setDescription('**GO! Questions starting now...** 🎯');
 
-            const channel = await this.client.channels.fetch(gameState.channelId);
-            await channel.send({ embeds: [countdownEmbed] });
+                const channel = await this.client.channels.fetch(gameState.channelId);
+                await channel.send({ embeds: [countdownEmbed] });
 
-            // Start first question
-            await this.displayQuestion(gameState);
+                // Start first question
+                await this.displayQuestion(gameState);
+            } catch (error) {
+                this.logger.error(`Failed to start local multiplayer game ${gameId}:`, error);
+
+                // Try to send error via interaction followUp
+                try {
+                    await interaction.followUp({
+                        embeds: [new EmbedBuilder()
+                            .setColor(0xFF0000)
+                            .setTitle('❌ Game Start Failed')
+                            .setDescription('Unable to access the channel to start the game. Please check bot permissions.')
+                        ],
+                        ephemeral: true
+                    });
+                } catch (followUpError) {
+                    this.logger.error('Failed to send error message:', followUpError);
+                }
+
+                // Clean up the game
+                this.cleanupGame(gameId);
+            }
             return;
         }
 
@@ -599,14 +620,32 @@ export class TriviaGameManager {
             });
         } else {
             // For multiplayer, send to channel
-            const channel = await this.client.channels.fetch(gameState.channelId);
-            const message = await channel.send({
-                embeds: [embed],
-                components: [row]
-            });
+            try {
+                const channel = await this.client.channels.fetch(gameState.channelId);
+                const message = await channel.send({
+                    embeds: [embed],
+                    components: [row]
+                });
 
-            // Store message for cleanup
-            gameState.currentMessage = message;
+                // Store message for cleanup
+                gameState.currentMessage = message;
+            } catch (error) {
+                this.logger.error(`Failed to send question to channel for game ${gameState.id}:`, error);
+
+                // Try to notify players via their interactions if possible
+                for (const [userId, player] of gameState.players) {
+                    try {
+                        // If we have the interaction stored, we could send ephemeral, but we don't
+                        // For now, just log and end the game
+                    } catch (notifyError) {
+                        this.logger.error(`Failed to notify player ${userId}:`, notifyError);
+                    }
+                }
+
+                // End the game
+                await this.endGame(gameState);
+                return;
+            }
         }
 
         // Start timer
@@ -750,8 +789,13 @@ export class TriviaGameManager {
             });
         } else {
             // Send results to channel for multiplayer games
-            const channel = await this.client.channels.fetch(gameState.channelId);
-            await channel.send({ embeds: [resultEmbed] });
+            try {
+                const channel = await this.client.channels.fetch(gameState.channelId);
+                await channel.send({ embeds: [resultEmbed] });
+            } catch (error) {
+                this.logger.error(`Failed to send results to channel for game ${gameState.id}:`, error);
+                // Continue with the game flow even if sending fails
+            }
         }
 
         // Move to next question after delay
@@ -828,17 +872,25 @@ export class TriviaGameManager {
             }, 2000);
         } else {
             // Send to channel for multiplayer games
-            const channel = await this.client.channels.fetch(gameState.channelId);
-            const playerMentions = Array.from(gameState.players.keys()).map(id => `<@${id}>`).join(' ');
-            await channel.send({
-                embeds: [resultEmbed],
-                content: `${playerMentions} - Game complete! 🎉`
-            });
+            try {
+                const channel = await this.client.channels.fetch(gameState.channelId);
+                const playerMentions = Array.from(gameState.players.keys()).map(id => `<@${id}>`).join(' ');
+                await channel.send({
+                    embeds: [resultEmbed],
+                    content: `${playerMentions} - Game complete! 🎉`
+                });
 
-            // Send question review after a short delay
-            setTimeout(async () => {
-                await this.sendQuestionReview(gameState, channel, playerMentions);
-            }, 2000);
+                // Send question review after a short delay
+                setTimeout(async () => {
+                    await this.sendQuestionReview(gameState, channel, playerMentions);
+                }, 2000);
+            } catch (error) {
+                this.logger.error(`Failed to send final results to channel for game ${gameState.id}:`, error);
+                // Still send question review if possible
+                setTimeout(async () => {
+                    await this.sendQuestionReview(gameState);
+                }, 2000);
+            }
         }
 
         // Clean up
