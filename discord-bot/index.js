@@ -177,7 +177,7 @@ client.on('interactionCreate', async (interaction) => {
             // Handle button interactions for game answering
             if (interaction.customId.startsWith('answer_')) {
                 const parts = interaction.customId.split('_');
-                const gameId = parseInt(parts[1]);
+                const gameId = parts[1]; // Keep as string for solo games
                 const answer = parts[2]; // A, B, C, or D
 
                 await gameManager.handleInteraction(interaction, gameId, answer);
