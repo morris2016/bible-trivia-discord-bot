@@ -174,7 +174,7 @@ export class TriviaGameManager {
     }
 
     /**
-     * Start a solo game
+     * Start a solo game (fully offline using local questions)
      */
     async startSoloGame(interaction, options) {
         const { difficulty, questions } = options;
@@ -192,21 +192,8 @@ export class TriviaGameManager {
                 };
             }
 
-            const createResult = await this.apiService.createGame({
-                name: `${username}'s Solo Bible Trivia`,
-                difficulty: difficulty,
-                maxPlayers: 1,
-                questionsPerGame: questions || 10,
-                timePerQuestion: this.difficultyConfig[difficulty].time,
-                playerName: username,
-                isSolo: true
-            });
-
-            if (!createResult.success) {
-                throw new Error(createResult.error || 'Failed to create solo game');
-            }
-
-            const gameId = createResult.game.id;
+            // Generate a unique game ID for local games
+            const gameId = `solo-${Date.now()}-${userId}`;
 
             const gameState = {
                 id: gameId,
@@ -219,10 +206,10 @@ export class TriviaGameManager {
                 channelId: interaction.channelId,
                 guildId: interaction.guildId,
                 players: new Map(),
-                gameData: createResult.game,
+                gameData: null, // No API game data for local games
                 isSolo: true,
                 interaction: interaction, // Store interaction for ephemeral messages
-                participants: createResult.participants || [],
+                participants: [], // No API participants for local games
                 questionReviews: [] // Store answers for each question for review
             };
 
@@ -233,7 +220,7 @@ export class TriviaGameManager {
                 joinedAt: new Date(),
                 score: 0,
                 correctAnswers: 0,
-                participantId: createResult.participant?.guest_id || 0
+                participantId: 0 // Local participant ID
             });
 
             this.activeGames.set(gameId, gameState);
@@ -760,14 +747,18 @@ export class TriviaGameManager {
             this.gameTimers.delete(gameState.id);
         }
 
-        // Mark game as completed in the database
-        try {
-            await this.apiService.post(`/${gameState.id}/force-complete`, {
-                guestId: gameState.creatorId === Object.keys(gameState.players)[0] ? 0 : 1
-            });
-            this.logger.game(`Marked game ${gameState.id} as completed in database`);
-        } catch (error) {
-            this.logger.warn(`Failed to mark game ${gameState.id} as completed:`, error.message);
+        // Mark game as completed in the database (skip for local solo games)
+        if (!gameState.isSolo || gameState.gameData) {
+            try {
+                await this.apiService.post(`/${gameState.id}/force-complete`, {
+                    guestId: gameState.creatorId === Object.keys(gameState.players)[0] ? 0 : 1
+                });
+                this.logger.game(`Marked game ${gameState.id} as completed in database`);
+            } catch (error) {
+                this.logger.warn(`Failed to mark game ${gameState.id} as completed:`, error.message);
+            }
+        } else {
+            this.logger.game(`Skipping API completion for local solo game ${gameState.id}`);
         }
 
         // Calculate final standings
