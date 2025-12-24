@@ -1,9 +1,0 @@
-name = "discord-bot-worker"
-main = "discord-bot-worker-simple.js"
-compatibility_date = "2024-01-01"
-compatibility_flags = ["nodejs_compat"]
-
-[env.production]
-vars.DISCORD_TOKEN = ""
-vars.DISCORD_CLIENT_ID = ""
-vars.API_BASE_URL = "https://5363a3be.gospelways.pages.dev/api/bible-games"
