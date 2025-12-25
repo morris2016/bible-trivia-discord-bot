@@ -23,7 +23,7 @@ export class TriviaSoloCommand {
         }
 
         const difficulty = interaction.options.getString('difficulty');
-        const questions = parseInt(interaction.options.getString('questions')) || 10;
+        const questions = parseInt(interaction.options.getString('questions'));
 
         // Validate question count
         if (questions > 20 || questions < 5) {

@@ -61,7 +61,7 @@ const commands = [
                 name: 'questions',
                 description: 'Number of questions',
                 type: 3, // STRING
-                required: false,
+                required: true,
                 choices: [
                     { name: '5 Questions', value: '5' },
                     { name: '10 Questions', value: '10' },
@@ -137,7 +137,7 @@ const commands = [
                 name: 'questions',
                 description: 'Number of questions',
                 type: 3, // STRING
-                required: false,
+                required: true,
                 choices: [
                     { name: '5 Questions', value: '5' },
                     { name: '10 Questions', value: '10' },
