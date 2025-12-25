@@ -175,16 +175,27 @@ async function registerCommands() {
 
 // Keep-alive mechanism for Railway
 function startKeepAlive() {
-    const keepAliveInterval = 5 * 60 * 1000; // 5 minutes
-    const healthUrl = `http://localhost:${HEALTH_PORT}/health`;
+    const keepAliveInterval = 4 * 60 * 1000; // 4 minutes (more frequent for Railway)
+    const internalHealthUrl = `http://localhost:${HEALTH_PORT}/health`;
 
-    logger.log('🔄 Starting keep-alive mechanism (5-minute intervals)');
+    // Use Railway's public URL for external keep-alive requests
+    const railwayUrl = process.env.RAILWAY_STATIC_URL || process.env.RAILWAY_PUBLIC_DOMAIN;
+    const externalHealthUrl = railwayUrl ? `${railwayUrl}/health` : null;
+
+    logger.log('🔄 Starting Railway keep-alive mechanism (4-minute intervals)');
+    logger.log(`🔗 External URL: ${externalHealthUrl || 'Not available'}`);
 
     setInterval(async () => {
         try {
-            // Ping health endpoint
-            const healthResponse = await axios.get(healthUrl, { timeout: 5000 });
-            logger.debug(`💓 Keep-alive: Health check - ${healthResponse.status}`);
+            // Internal health check (for logging)
+            const internalResponse = await axios.get(internalHealthUrl, { timeout: 5000 });
+            logger.debug(`💓 Keep-alive: Internal health - ${internalResponse.status}`);
+
+            // External keep-alive request (if Railway URL is available)
+            if (externalHealthUrl) {
+                const externalResponse = await axios.get(externalHealthUrl, { timeout: 10000 });
+                logger.debug(`🌐 Keep-alive: External ping - ${externalResponse.status}`);
+            }
 
             // Check API service health
             const apiHealth = await apiService.healthCheck();
