@@ -4,6 +4,7 @@ import { APIService } from './services/API.js';
 import { CommandHandler } from './commands/CommandHandler.js';
 import { Logger } from './utils/Logger.js';
 import express from 'express';
+import axios from 'axios';
 
 // Initialize logger
 const logger = new Logger();
@@ -172,6 +173,37 @@ async function registerCommands() {
     }
 }
 
+// Keep-alive mechanism for Railway
+function startKeepAlive() {
+    const keepAliveInterval = 5 * 60 * 1000; // 5 minutes
+    const healthUrl = `http://localhost:${HEALTH_PORT}/health`;
+
+    logger.log('🔄 Starting keep-alive mechanism (5-minute intervals)');
+
+    setInterval(async () => {
+        try {
+            // Ping health endpoint
+            const healthResponse = await axios.get(healthUrl, { timeout: 5000 });
+            logger.debug(`💓 Keep-alive: Health check - ${healthResponse.status}`);
+
+            // Check API service health
+            const apiHealth = await apiService.healthCheck();
+            logger.debug(`💓 Keep-alive: API health - ${apiHealth ? 'OK' : 'FAIL'}`);
+
+            // Check Discord connection
+            const discordPing = client.ws.ping;
+            logger.debug(`💓 Keep-alive: Discord ping - ${discordPing}ms`);
+
+            // Log memory usage
+            const memUsage = process.memoryUsage();
+            logger.debug(`💓 Keep-alive: Memory - ${(memUsage.heapUsed / 1024 / 1024).toFixed(2)}MB used`);
+
+        } catch (error) {
+            logger.warn('💓 Keep-alive: Error during health check:', error.message);
+        }
+    }, keepAliveInterval);
+}
+
 // Event handlers
 client.once('ready', () => {
     logger.log(`✅ Bible Trivia Bot is online as ${client.user.tag}!`);
@@ -182,6 +214,9 @@ client.once('ready', () => {
 
     // Register commands
     registerCommands();
+
+    // Start keep-alive mechanism
+    startKeepAlive();
 });
 
 client.on('interactionCreate', async (interaction) => {
