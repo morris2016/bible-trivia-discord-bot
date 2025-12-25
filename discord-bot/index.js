@@ -179,7 +179,9 @@ function startKeepAlive() {
     const internalHealthUrl = `http://localhost:${HEALTH_PORT}/health`;
 
     // Use Railway's public URL for external keep-alive requests
-    const railwayUrl = process.env.RAILWAY_STATIC_URL || process.env.RAILWAY_PUBLIC_DOMAIN;
+    const railwayUrl = process.env.RAILWAY_STATIC_URL ||
+                      process.env.RAILWAY_PUBLIC_DOMAIN ||
+                      process.env.RAILWAY_PUBLIC_URL; // Add this as manual env var
     const externalHealthUrl = railwayUrl ? `${railwayUrl}/health` : null;
 
     logger.log('🔄 Starting Railway keep-alive mechanism (4-minute intervals)');
