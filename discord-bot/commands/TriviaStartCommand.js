@@ -23,7 +23,7 @@ export class TriviaStartCommand {
         }
 
         const difficulty = interaction.options.getString('difficulty');
-        const questions = interaction.options.getInteger('questions') || 10;
+        const questions = parseInt(interaction.options.getString('questions')) || 10;
 
         // Validate question count
         if (questions > 20 || questions < 5) {

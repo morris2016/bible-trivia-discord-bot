@@ -59,11 +59,15 @@ const commands = [
             },
             {
                 name: 'questions',
-                description: 'Number of questions (5-20)',
-                type: 4, // INTEGER
+                description: 'Number of questions',
+                type: 3, // STRING
                 required: false,
-                min_value: 5,
-                max_value: 20,
+                choices: [
+                    { name: '5 Questions', value: '5' },
+                    { name: '10 Questions', value: '10' },
+                    { name: '15 Questions', value: '15' },
+                    { name: '20 Questions', value: '20' },
+                ],
             },
         ],
     },
@@ -131,11 +135,15 @@ const commands = [
             },
             {
                 name: 'questions',
-                description: 'Number of questions (5-20)',
-                type: 4, // INTEGER
+                description: 'Number of questions',
+                type: 3, // STRING
                 required: false,
-                min_value: 5,
-                max_value: 20,
+                choices: [
+                    { name: '5 Questions', value: '5' },
+                    { name: '10 Questions', value: '10' },
+                    { name: '15 Questions', value: '15' },
+                    { name: '20 Questions', value: '20' },
+                ],
             },
         ],
     },
