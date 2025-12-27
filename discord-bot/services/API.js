@@ -281,13 +281,16 @@ export class APIService {
                 const recentlyAskedIds = this.getRecentlyAskedQuestionIds(guildId);
                 const originalCount = availableQuestions.length;
 
-                availableQuestions = availableQuestions.filter(q => !recentlyAskedIds.has(q.id));
+                const freshQuestions = availableQuestions.filter(q => !recentlyAskedIds.has(q.id));
 
-                this.logger.debug(`Guild ${guildId}: Filtered ${originalCount} -> ${availableQuestions.length} questions (excluded ${recentlyAskedIds.size} recently asked)`);
+                this.logger.debug(`Guild ${guildId}: Filtered ${originalCount} -> ${freshQuestions.length} questions (excluded ${recentlyAskedIds.size} recently asked)`);
 
-                // If we don't have enough questions after filtering, warn but continue
-                if (availableQuestions.length < count) {
-                    this.logger.warn(`Guild ${guildId}: Only ${availableQuestions.length} fresh questions available for ${difficulty} difficulty`);
+                // If we don't have enough fresh questions, fall back to using all questions (allowing repeats)
+                if (freshQuestions.length >= count) {
+                    availableQuestions = freshQuestions;
+                } else {
+                    this.logger.warn(`Guild ${guildId}: Only ${freshQuestions.length} fresh questions available for ${difficulty} difficulty, falling back to all questions (may include repeats)`);
+                    // Keep all availableQuestions (no filtering)
                 }
             }
 
