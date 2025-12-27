@@ -48,14 +48,12 @@ const commands = [
         options: [
             {
                 name: 'difficulty',
-                description: 'Difficulty level (easy, medium, hard, expert)',
+                description: 'Difficulty level (beginner, advanced)',
                 type: 3, // STRING
                 required: true,
                 choices: [
-                    { name: 'Easy - Basic Bible Stories', value: 'easy' },
-                    { name: 'Medium - Bible Books & Context', value: 'medium' },
-                    { name: 'Hard - Deep Scripture Knowledge', value: 'hard' },
-                    { name: 'Expert - Biblical Languages & Exegesis', value: 'expert' },
+                    { name: 'Beginner - Basic Bible Stories', value: 'beginner' },
+                    { name: 'Advanced - In-Depth Bible Knowledge', value: 'advanced' },
                 ],
             },
             {
@@ -102,10 +100,8 @@ const commands = [
                 type: 3, // STRING
                 required: false,
                 choices: [
-                    { name: 'Easy', value: 'easy' },
-                    { name: 'Medium', value: 'medium' },
-                    { name: 'Hard', value: 'hard' },
-                    { name: 'Expert', value: 'expert' },
+                    { name: 'Beginner', value: 'beginner' },
+                    { name: 'Advanced', value: 'advanced' },
                 ],
             },
             {
@@ -124,14 +120,12 @@ const commands = [
         options: [
             {
                 name: 'difficulty',
-                description: 'Difficulty level (easy, medium, hard, expert)',
+                description: 'Difficulty level (beginner, advanced)',
                 type: 3, // STRING
                 required: true,
                 choices: [
-                    { name: 'Easy - Basic Bible Stories', value: 'easy' },
-                    { name: 'Medium - Bible Books & Context', value: 'medium' },
-                    { name: 'Hard - Deep Scripture Knowledge', value: 'hard' },
-                    { name: 'Expert - Biblical Languages & Exegesis', value: 'expert' },
+                    { name: 'Beginner - Basic Bible Stories', value: 'beginner' },
+                    { name: 'Advanced - In-Depth Bible Knowledge', value: 'advanced' },
                 ],
             },
             {

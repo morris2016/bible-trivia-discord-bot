@@ -269,7 +269,15 @@ export class APIService {
             this.logger.debug(`Generating ${count} ${difficulty} questions locally from database${guildId ? ` for guild ${guildId}` : ''}`);
 
             // Filter questions by difficulty
-            let availableQuestions = BIBLE_QUESTIONS_JSON.filter(q => q.difficulty === difficulty);
+            let availableQuestions;
+            if (difficulty === 'beginner') {
+                availableQuestions = BIBLE_QUESTIONS_JSON.filter(q => q.difficulty === 'easy');
+            } else if (difficulty === 'advanced') {
+                availableQuestions = BIBLE_QUESTIONS_JSON.filter(q => ['medium', 'hard', 'expert'].includes(q.difficulty));
+            } else {
+                // Fallback for old difficulties
+                availableQuestions = BIBLE_QUESTIONS_JSON.filter(q => q.difficulty === difficulty);
+            }
 
             if (availableQuestions.length === 0) {
                 this.logger.warn(`No questions found for difficulty: ${difficulty}`);

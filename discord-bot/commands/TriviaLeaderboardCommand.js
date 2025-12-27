@@ -50,7 +50,7 @@ export class TriviaLeaderboardCommand {
     }
 
     async showLeaderboardOverview(interaction, leaderboard, limit) {
-        const difficulties = ['easy', 'medium', 'hard', 'expert'];
+        const difficulties = ['beginner', 'advanced'];
         const embeds = [];
 
         // Create overview embed
@@ -168,20 +168,16 @@ export class TriviaLeaderboardCommand {
 
     getDifficultyColor(difficulty) {
         const colors = {
-            easy: 0x00FF00,
-            medium: 0xFFA500,
-            hard: 0xFF0000,
-            expert: 0x800080
+            beginner: 0x00FF00,
+            advanced: 0xFFA500
         };
         return colors[difficulty] || 0x0099FF;
     }
 
     getDifficultyThumbnail(difficulty) {
         const thumbnails = {
-            easy: 'https://cdn.discordapp.com/attachments/1000000000000000000/easy-difficulty.png',
-            medium: 'https://cdn.discordapp.com/attachments/1000000000000000000/medium-difficulty.png',
-            hard: 'https://cdn.discordapp.com/attachments/1000000000000000000/hard-difficulty.png',
-            expert: 'https://cdn.discordapp.com/attachments/1000000000000000000/expert-difficulty.png'
+            beginner: 'https://cdn.discordapp.com/attachments/1000000000000000000/beginner-difficulty.png',
+            advanced: 'https://cdn.discordapp.com/attachments/1000000000000000000/advanced-difficulty.png'
         };
         return thumbnails[difficulty];
     }

@@ -22,7 +22,7 @@ export class HelpCommand {
                         name: '🎮 Game Commands',
                         value: [
                             '**`/trivia-start`** - Create a new multiplayer game',
-                            '• Choose difficulty (easy/medium/hard/expert)',
+                            '• Choose difficulty (beginner/advanced)',
                             '• Set number of questions (5-20)',
                             '• Invite friends to join!',
                             '',
@@ -54,10 +54,8 @@ export class HelpCommand {
                             '1. **Join or Create** a game using `/trivia-start` or `/trivia-join`',
                             '2. **Wait** for questions to generate (AI-powered!)',
                             '3. **Answer Fast!** Questions have time limits based on difficulty:',
-                            '   • Easy: 12 seconds',
-                            '   • Medium: 16.5 seconds',
-                            '   • Hard: 21 seconds',
-                            '   • Expert: 25.5 seconds',
+                            '   • Beginner: 12 seconds',
+                            '   • Advanced: 16.5 seconds',
                             '4. **Score Points** for correct answers + speed bonus!',
                             '5. **Race to Victory!** in multiplayer games'
                         ].join('\n'),
@@ -67,10 +65,8 @@ export class HelpCommand {
                         name: '🏆 Scoring System',
                         value: [
                             '**Base Points** (difficulty-based):',
-                            '• Easy: 1 point',
-                            '• Medium: 2 points',
-                            '• Hard: 3 points',
-                            '• Expert: 4 points',
+                            '• Beginner: 1 point',
+                            '• Advanced: 2 points',
                             '',
                             '**Speed Bonus**: Up to full question value',
                             '**Time-based**: Faster = higher bonus!',
@@ -84,7 +80,8 @@ export class HelpCommand {
                         value: [
                             '• Games use **AI-generated questions** from Bible text',
                             '• All 66 Bible books covered',
-                            '• Questions get harder/expert level includes original languages',
+                            '• Beginner level: Basic Bible stories',
+                            '• Advanced level: In-depth Bible knowledge',
                             '• Features automatic game cleanup (2+ hours old)',
                             '• Max players: 10 per game',
                             '• Questions: 5-20 per game (more = longer wait time)'

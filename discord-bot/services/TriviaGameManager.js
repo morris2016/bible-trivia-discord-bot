@@ -13,10 +13,8 @@ export class TriviaGameManager {
 
         // Difficulty configurations
         this.difficultyConfig = {
-            easy: { time: 12, points: 1 },
-            medium: { time: 16.5, points: 2 },
-            hard: { time: 21, points: 3 },
-            expert: { time: 25.5, points: 4 }
+            beginner: { time: 12, points: 1 },
+            advanced: { time: 16.5, points: 2 }
         };
     }
 
