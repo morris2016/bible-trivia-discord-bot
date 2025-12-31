@@ -550,31 +550,9 @@ export class TriviaGameManager {
         this.logger.game(`Displaying question ${gameState.currentQuestionIndex + 1}/${gameState.questions.length} for game ${gameState.id}`);
 
         const embed = new EmbedBuilder()
-            .setColor(0x0099FF)
+            .setColor(0x5865F2)
             .setTitle(`📖 Bible Trivia - Question ${gameState.currentQuestionIndex + 1}`)
-            .setDescription(`**${question.question_text}**`)
-            .addFields(
-                {
-                    name: 'A',
-                    value: question.options[0] || 'Option A',
-                    inline: false
-                },
-                {
-                    name: 'B',
-                    value: question.options[1] || 'Option B',
-                    inline: false
-                },
-                {
-                    name: 'C',
-                    value: question.options[2] || 'Option C',
-                    inline: false
-                },
-                {
-                    name: 'D',
-                    value: question.options[3] || 'Option D',
-                    inline: false
-                }
-            )
+            .setDescription(`**${question.question_text}**\n\n*Click on your answer below:*`)
             .setFooter({
                 text: `⏰ ${timeLimit} seconds | Difficulty: ${this.capitalizeFirst(gameState.difficulty)}`
             })
@@ -588,25 +566,31 @@ export class TriviaGameManager {
             });
         }
 
-        // Create reaction buttons
+        // Create accessible buttons with full answer text
+        // Truncate long answers to fit Discord's 80-character button label limit
+        const truncateAnswer = (text, maxLength = 75) => {
+            if (text.length <= maxLength) return text;
+            return text.substring(0, maxLength - 3) + '...';
+        };
+
         const row = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
                     .setCustomId(`answer_${gameState.id}_A`)
-                    .setLabel('A')
+                    .setLabel(`A: ${truncateAnswer(question.options[0] || 'Option A')}`)
                     .setStyle(ButtonStyle.Primary),
                 new ButtonBuilder()
                     .setCustomId(`answer_${gameState.id}_B`)
-                    .setLabel('B')
+                    .setLabel(`B: ${truncateAnswer(question.options[1] || 'Option B')}`)
                     .setStyle(ButtonStyle.Primary),
                 new ButtonBuilder()
                     .setCustomId(`answer_${gameState.id}_C`)
-                    .setLabel('C')
-                    .setStyle(ButtonStyle.Primary),
+                    .setLabel(`C: ${truncateAnswer(question.options[2] || 'Option C')}`)
+                    .setStyle(ButtonStyle.Success),
                 new ButtonBuilder()
                     .setCustomId(`answer_${gameState.id}_D`)
-                    .setLabel('D')
-                    .setStyle(ButtonStyle.Primary)
+                    .setLabel(`D: ${truncateAnswer(question.options[3] || 'Option D')}`)
+                    .setStyle(ButtonStyle.Success)
             );
 
         // For solo games, send ephemerally to the solo player
@@ -1209,5 +1193,107 @@ export class TriviaGameManager {
 
     set client(client) {
         this._client = client;
+    }
+
+    /**
+     * Handle !pause command
+     */
+    async handlePauseCommand(message) {
+        const userId = message.author.id;
+        const gameId = this.playerGames.get(userId);
+
+        if (!gameId) {
+            await message.reply('❌ You are not in any game.');
+            return;
+        }
+
+        const gameState = this.activeGames.get(gameId);
+        if (!gameState) {
+            this.playerGames.delete(userId);
+            await message.reply('❌ Your game was not found.');
+            return;
+        }
+
+        // Check if user is the game creator
+        if (gameState.creatorId !== userId) {
+            await message.reply('❌ Only the game creator can pause the game.');
+            return;
+        }
+
+        // Check if there's an active timer
+        if (!this.gameTimers.has(gameId)) {
+            await message.reply('❌ No active question to pause.');
+            return;
+        }
+
+        // Clear the timer (pause)
+        clearTimeout(this.gameTimers.get(gameId));
+        this.gameTimers.delete(gameId);
+
+        await message.reply('⏸️ Game paused. Use `!next` to resume or `!stop` to end the game.');
+    }
+
+    /**
+     * Handle !next command
+     */
+    async handleNextCommand(message) {
+        const userId = message.author.id;
+        const gameId = this.playerGames.get(userId);
+
+        if (!gameId) {
+            await message.reply('❌ You are not in any game.');
+            return;
+        }
+
+        const gameState = this.activeGames.get(gameId);
+        if (!gameState) {
+            this.playerGames.delete(userId);
+            await message.reply('❌ Your game was not found.');
+            return;
+        }
+
+        // Check if user is the game creator
+        if (gameState.creatorId !== userId) {
+            await message.reply('❌ Only the game creator can skip questions.');
+            return;
+        }
+
+        // If there's an active timer, clear it and evaluate answers
+        if (this.gameTimers.has(gameId)) {
+            clearTimeout(this.gameTimers.get(gameId));
+            this.gameTimers.delete(gameId);
+            await this.evaluateAnswers(gameState);
+        } else {
+            await message.reply('❌ No active question to skip.');
+        }
+    }
+
+    /**
+     * Handle !stop command
+     */
+    async handleStopCommand(message) {
+        const userId = message.author.id;
+        const gameId = this.playerGames.get(userId);
+
+        if (!gameId) {
+            await message.reply('❌ You are not in any game.');
+            return;
+        }
+
+        const gameState = this.activeGames.get(gameId);
+        if (!gameState) {
+            this.playerGames.delete(userId);
+            await message.reply('❌ Your game was not found.');
+            return;
+        }
+
+        // Check if user is the game creator
+        if (gameState.creatorId !== userId) {
+            await message.reply('❌ Only the game creator can stop the game.');
+            return;
+        }
+
+        await message.reply('🛑 Stopping the game...');
+        await this.endGame(gameState);
     }
 }
