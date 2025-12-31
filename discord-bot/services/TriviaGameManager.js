@@ -553,12 +553,9 @@ export class TriviaGameManager {
         const embed = new EmbedBuilder()
             .setColor(0xFF6B35)
             .setTitle(`📖 Bible Trivia - Question ${gameState.currentQuestionIndex + 1}`)
-            .setDescription(`# ${question.question_text}\n\n### Click on your answer below:`)
-            .setFooter({
-                text: `⏰ ${timeLimit} seconds | Difficulty: ${this.capitalizeFirst(gameState.difficulty)}`
-            })
             .setTimestamp();
 
+        // Add reference and timer info at the top
         if (question.bible_reference) {
             embed.addFields({
                 name: '📚 Reference',
@@ -566,6 +563,15 @@ export class TriviaGameManager {
                 inline: true
             });
         }
+
+        embed.addFields({
+            name: '⏰ Time & Difficulty',
+            value: `${timeLimit} seconds • ${this.capitalizeFirst(gameState.difficulty)}`,
+            inline: true
+        });
+
+        // Add question text and instruction
+        embed.setDescription(`# ${question.question_text}\n\n### Click on your answer below:`);
 
         // Create buttons with full answer text
         // Handle long answers by using multiple rows if needed
@@ -670,12 +676,9 @@ export class TriviaGameManager {
                 const embed = new EmbedBuilder()
                     .setColor(0xFF6B35)
                     .setTitle(`📖 Bible Trivia - Question ${gameState.currentQuestionIndex + 1}`)
-                    .setDescription(`# ${question.question_text}\n\n### Click on your answer below:`)
-                    .setFooter({
-                        text: `⏰ ${remainingTime} seconds remaining | Difficulty: ${this.capitalizeFirst(gameState.difficulty)}`
-                    })
                     .setTimestamp();
 
+                // Add reference and timer info at the top
                 if (question.bible_reference) {
                     embed.addFields({
                         name: '📚 Reference',
@@ -683,6 +686,15 @@ export class TriviaGameManager {
                         inline: true
                     });
                 }
+
+                embed.addFields({
+                    name: '⏰ Time & Difficulty',
+                    value: `${remainingTime} seconds remaining • ${this.capitalizeFirst(gameState.difficulty)}`,
+                    inline: true
+                });
+
+                // Add question text and instruction
+                embed.setDescription(`# ${question.question_text}\n\n### Click on your answer below:`);
 
                 // Recreate components with current question
                 const options = [
