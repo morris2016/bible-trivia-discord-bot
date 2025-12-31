@@ -550,9 +550,9 @@ export class TriviaGameManager {
         this.logger.game(`Displaying question ${gameState.currentQuestionIndex + 1}/${gameState.questions.length} for game ${gameState.id}`);
 
         const embed = new EmbedBuilder()
-            .setColor(0x5865F2)
+            .setColor(0xFF6B35)
             .setTitle(`📖 Bible Trivia - Question ${gameState.currentQuestionIndex + 1}`)
-            .setDescription(`**${question.question_text}**\n\n*Click on your answer below:*`)
+            .setDescription(`# ${question.question_text}\n\n### Click on your answer below:`)
             .setFooter({
                 text: `⏰ ${timeLimit} seconds | Difficulty: ${this.capitalizeFirst(gameState.difficulty)}`
             })
