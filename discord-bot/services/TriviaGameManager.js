@@ -10,6 +10,7 @@ export class TriviaGameManager {
         this.playerGames = new Map(); // userId -> gameId
         this.gameTimers = new Map(); // gameId -> timer instance
         this.progressTimers = new Map(); // gameId -> progress poll timer
+        this.countdownIntervals = new Map(); // gameId -> countdown interval
 
         // Difficulty configurations
         this.difficultyConfig = {
@@ -652,8 +653,109 @@ export class TriviaGameManager {
             }
         }
 
-        // Start timer
-        this.startQuestionTimer(gameState, Math.floor(timeLimit));
+        // Start live countdown timer
+        this.startCountdownTimer(gameState, Math.floor(timeLimit));
+    }
+
+    /**
+     * Start a live countdown timer that updates the message
+     */
+    async startCountdownTimer(gameState, timeLimit) {
+        const gameId = gameState.id;
+        let remainingTime = timeLimit;
+
+        // Update footer with countdown
+        const updateCountdown = async () => {
+            try {
+                const embed = new EmbedBuilder()
+                    .setColor(0xFF6B35)
+                    .setTitle(`📖 Bible Trivia - Question ${gameState.currentQuestionIndex + 1}`)
+                    .setDescription(`# ${question.question_text}\n\n### Click on your answer below:`)
+                    .setFooter({
+                        text: `⏰ ${remainingTime} seconds remaining | Difficulty: ${this.capitalizeFirst(gameState.difficulty)}`
+                    })
+                    .setTimestamp();
+
+                if (question.bible_reference) {
+                    embed.addFields({
+                        name: '📚 Reference',
+                        value: question.bible_reference,
+                        inline: true
+                    });
+                }
+
+                // Recreate components with current question
+                const options = [
+                    { letter: 'A', text: question.options[0] || 'Option A' },
+                    { letter: 'B', text: question.options[1] || 'Option B' },
+                    { letter: 'C', text: question.options[2] || 'Option C' },
+                    { letter: 'D', text: question.options[3] || 'Option D' }
+                ];
+
+                const createButtonLabel = (letter, text) => {
+                    const maxLength = 75;
+                    if (text.length <= maxLength) {
+                        return `${letter}: ${text}`;
+                    }
+                    return `${letter}: ${text.substring(0, maxLength - 3)}...`;
+                };
+
+                const components = [];
+                
+                const firstRow = new ActionRowBuilder()
+                    .addComponents(
+                        new ButtonBuilder()
+                            .setCustomId(`answer_${gameState.id}_A`)
+                            .setLabel(createButtonLabel('A', options[0].text))
+                            .setStyle(ButtonStyle.Primary),
+                        new ButtonBuilder()
+                            .setCustomId(`answer_${gameState.id}_B`)
+                            .setLabel(createButtonLabel('B', options[1].text))
+                            .setStyle(ButtonStyle.Primary)
+                    );
+                components.push(firstRow);
+
+                const secondRow = new ActionRowBuilder()
+                    .addComponents(
+                        new ButtonBuilder()
+                            .setCustomId(`answer_${gameState.id}_C`)
+                            .setLabel(createButtonLabel('C', options[2].text))
+                            .setStyle(ButtonStyle.Success),
+                        new ButtonBuilder()
+                            .setCustomId(`answer_${gameState.id}_D`)
+                            .setLabel(createButtonLabel('D', options[3].text))
+                            .setStyle(ButtonStyle.Success)
+                    );
+                components.push(secondRow);
+
+                // Update the message
+                if (gameState.currentMessage) {
+                    await gameState.currentMessage.edit({
+                        embeds: [embed],
+                        components: components
+                    });
+                }
+            } catch (error) {
+                this.logger.error(`Failed to update countdown for game ${gameId}:`, error);
+            }
+        };
+
+        // Store the countdown interval for cleanup
+        if (this.countdownIntervals) {
+            this.countdownIntervals.set(gameId, setInterval(() => {
+                remainingTime--;
+                updateCountdown();
+            }, 1000));
+        } else {
+            this.countdownIntervals = new Map();
+            this.countdownIntervals.set(gameId, setInterval(() => {
+                remainingTime--;
+                updateCountdown();
+            }, 1000));
+        }
+
+        // Start the actual question timer
+        this.startQuestionTimer(gameState, timeLimit);
     }
 
     /**
@@ -709,10 +811,15 @@ export class TriviaGameManager {
      * Evaluate answers when time runs out
      */
     async evaluateAnswers(gameState) {
-        // Clear timer
+        // Clear timer and countdown
         if (this.gameTimers.has(gameState.id)) {
             clearTimeout(this.gameTimers.get(gameState.id));
             this.gameTimers.delete(gameState.id);
+        }
+
+        if (this.countdownIntervals.has(gameState.id)) {
+            clearInterval(this.countdownIntervals.get(gameState.id));
+            this.countdownIntervals.delete(gameState.id);
         }
 
         const question = gameState.questions[gameState.currentQuestionIndex];
@@ -821,6 +928,12 @@ export class TriviaGameManager {
         if (this.gameTimers.has(gameState.id)) {
             clearTimeout(this.gameTimers.get(gameState.id));
             this.gameTimers.delete(gameState.id);
+        }
+
+        // Clear countdown intervals
+        if (this.countdownIntervals.has(gameState.id)) {
+            clearInterval(this.countdownIntervals.get(gameState.id));
+            this.countdownIntervals.delete(gameState.id);
         }
 
         // Mark game as completed in the database (skip for local solo games)
@@ -1019,6 +1132,11 @@ export class TriviaGameManager {
             if (this.progressTimers.has(gameId)) {
                 clearInterval(this.progressTimers.get(gameId));
                 this.progressTimers.delete(gameId);
+            }
+
+            if (this.countdownIntervals.has(gameId)) {
+                clearInterval(this.countdownIntervals.get(gameId));
+                this.countdownIntervals.delete(gameId);
             }
 
             // Clear current message
