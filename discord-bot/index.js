@@ -316,6 +316,36 @@ client.on('messageReactionAdd', async (reaction, user) => {
     }
 });
 
+client.on('messageCreate', async (message) => {
+    // Don't respond to bot's own messages
+    if (message.author.bot) return;
+
+    // Only handle messages that start with !
+    if (!message.content.startsWith('!')) return;
+
+    const args = message.content.slice(1).trim().split(/ +/);
+    const command = args.shift().toLowerCase();
+
+    try {
+        switch (command) {
+            case 'pause':
+                await gameManager.handlePauseCommand(message);
+                break;
+            case 'next':
+                await gameManager.handleNextCommand(message);
+                break;
+            case 'stop':
+                await gameManager.handleStopCommand(message);
+                break;
+            default:
+                // Ignore unknown commands
+                break;
+        }
+    } catch (error) {
+        logger.error('Error handling message command:', error);
+    }
+});
+
 // Handle process termination gracefully
 process.on('SIGINT', () => {
     logger.log('⏹️ Received SIGINT, shutting down gracefully...');

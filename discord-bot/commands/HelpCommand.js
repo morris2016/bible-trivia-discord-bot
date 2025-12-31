@@ -32,7 +32,12 @@ export class HelpCommand {
                             '',
                             '**`/trivia-solo`** - Start a practice game alone',
                             '• Perfect for studying',
-                            '• Same question quality as multiplayer'
+                            '• Same question quality as multiplayer',
+                            '',
+                            '**Message Commands** (during games):',
+                            '• `!pause` - Pause the current question',
+                            '• `!next` - Skip to next question',
+                            '• `!stop` - End the game immediately'
                         ].join('\n'),
                         inline: false
                     },
