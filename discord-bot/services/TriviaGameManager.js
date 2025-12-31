@@ -552,7 +552,29 @@ export class TriviaGameManager {
         const embed = new EmbedBuilder()
             .setColor(0xFF6B35)
             .setTitle(`📖 Bible Trivia - Question ${gameState.currentQuestionIndex + 1}`)
-            .setDescription(`# ${question.question_text}\n\n### Click on your answer below:`)
+            .setDescription(`# ${question.question_text}\n\n### Answer Options:`)
+            .addFields(
+                {
+                    name: '🅰️ Option A',
+                    value: question.options[0] || 'Option A',
+                    inline: false
+                },
+                {
+                    name: '🅱️ Option B',
+                    value: question.options[1] || 'Option B',
+                    inline: false
+                },
+                {
+                    name: '🅲 Option C',
+                    value: question.options[2] || 'Option C',
+                    inline: false
+                },
+                {
+                    name: '🅳 Option D',
+                    value: question.options[3] || 'Option D',
+                    inline: false
+                }
+            )
             .setFooter({
                 text: `⏰ ${timeLimit} seconds | Difficulty: ${this.capitalizeFirst(gameState.difficulty)}`
             })
@@ -566,30 +588,24 @@ export class TriviaGameManager {
             });
         }
 
-        // Create accessible buttons with full answer text
-        // Truncate long answers to fit Discord's 80-character button label limit
-        const truncateAnswer = (text, maxLength = 75) => {
-            if (text.length <= maxLength) return text;
-            return text.substring(0, maxLength - 3) + '...';
-        };
-
+        // Create large, accessible buttons with just letters and emojis
         const row = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
                     .setCustomId(`answer_${gameState.id}_A`)
-                    .setLabel(`A: ${truncateAnswer(question.options[0] || 'Option A')}`)
+                    .setLabel('🅰️ A')
                     .setStyle(ButtonStyle.Primary),
                 new ButtonBuilder()
                     .setCustomId(`answer_${gameState.id}_B`)
-                    .setLabel(`B: ${truncateAnswer(question.options[1] || 'Option B')}`)
+                    .setLabel('🅱️ B')
                     .setStyle(ButtonStyle.Primary),
                 new ButtonBuilder()
                     .setCustomId(`answer_${gameState.id}_C`)
-                    .setLabel(`C: ${truncateAnswer(question.options[2] || 'Option C')}`)
+                    .setLabel('🅲 C')
                     .setStyle(ButtonStyle.Success),
                 new ButtonBuilder()
                     .setCustomId(`answer_${gameState.id}_D`)
-                    .setLabel(`D: ${truncateAnswer(question.options[3] || 'Option D')}`)
+                    .setLabel('🅳 D')
                     .setStyle(ButtonStyle.Success)
             );
 
