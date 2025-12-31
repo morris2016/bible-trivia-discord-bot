@@ -55,7 +55,7 @@ export class TriviaJoinCommand {
                 difficulty: game.difficulty,
                 questions_per_game: game.totalQuestions,
                 current_players: game.players.size,
-                max_players: 10,
+                max_players: 999, // Unlimited players
                 created_by_name: game.creatorName,
                 isLocal: true
             })));
@@ -108,12 +108,15 @@ export class TriviaJoinCommand {
     }
 
     async showGameSelection(interaction, games) {
-        const gameOptions = games.slice(0, 5).map((game, index) => ({
-            label: `${game.name} (${game.current_players}/${game.max_players})`,
-            description: `${this.capitalizeFirst(game.difficulty)} • ${game.questions_per_game} questions • By ${game.created_by_name}`,
-            value: game.id.toString(),
-            emoji: ['🎯', '🎲', '🎮', '🎪', '🎨'][index]
-        }));
+        const gameOptions = games.slice(0, 5).map((game, index) => {
+            const playerCount = game.max_players >= 999 ? 'unlimited' : `${game.current_players}/${game.max_players}`;
+            return {
+                label: `${game.name} (${playerCount})`,
+                description: `${this.capitalizeFirst(game.difficulty)} • ${game.questions_per_game} questions • By ${game.created_by_name}`,
+                value: game.id.toString(),
+                emoji: ['🎯', '🎲', '🎮', '🎪', '🎨'][index]
+            };
+        });
 
         const row = new ActionRowBuilder()
             .addComponents(
