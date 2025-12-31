@@ -552,29 +552,7 @@ export class TriviaGameManager {
         const embed = new EmbedBuilder()
             .setColor(0xFF6B35)
             .setTitle(`📖 Bible Trivia - Question ${gameState.currentQuestionIndex + 1}`)
-            .setDescription(`# ${question.question_text}\n\n### Answer Options:`)
-            .addFields(
-                {
-                    name: '🅰️ Option A',
-                    value: question.options[0] || 'Option A',
-                    inline: false
-                },
-                {
-                    name: '🅱️ Option B',
-                    value: question.options[1] || 'Option B',
-                    inline: false
-                },
-                {
-                    name: '🅲 Option C',
-                    value: question.options[2] || 'Option C',
-                    inline: false
-                },
-                {
-                    name: '🅳 Option D',
-                    value: question.options[3] || 'Option D',
-                    inline: false
-                }
-            )
+            .setDescription(`# ${question.question_text}\n\n### Click on your answer below:`)
             .setFooter({
                 text: `⏰ ${timeLimit} seconds | Difficulty: ${this.capitalizeFirst(gameState.difficulty)}`
             })
@@ -588,32 +566,60 @@ export class TriviaGameManager {
             });
         }
 
-        // Create large, accessible buttons with just letters and emojis
-        const row = new ActionRowBuilder()
+        // Create buttons with full answer text
+        // Handle long answers by using multiple rows if needed
+        const options = [
+            { letter: 'A', text: question.options[0] || 'Option A' },
+            { letter: 'B', text: question.options[1] || 'Option B' },
+            { letter: 'C', text: question.options[2] || 'Option C' },
+            { letter: 'D', text: question.options[3] || 'Option D' }
+        ];
+
+        // Helper function to truncate text for Discord's 80-character button limit
+        const createButtonLabel = (letter, text) => {
+            const maxLength = 75; // Leave room for letter and format
+            if (text.length <= maxLength) {
+                return `${letter}: ${text}`;
+            }
+            return `${letter}: ${text.substring(0, maxLength - 3)}...`;
+        };
+
+        // Create button rows
+        const components = [];
+        
+        // First row: A and B
+        const firstRow = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
                     .setCustomId(`answer_${gameState.id}_A`)
-                    .setLabel('🅰️ A')
+                    .setLabel(createButtonLabel('A', options[0].text))
                     .setStyle(ButtonStyle.Primary),
                 new ButtonBuilder()
                     .setCustomId(`answer_${gameState.id}_B`)
-                    .setLabel('🅱️ B')
-                    .setStyle(ButtonStyle.Primary),
+                    .setLabel(createButtonLabel('B', options[1].text))
+                    .setStyle(ButtonStyle.Primary)
+            );
+        components.push(firstRow);
+
+        // Second row: C and D
+        const secondRow = new ActionRowBuilder()
+            .addComponents(
                 new ButtonBuilder()
                     .setCustomId(`answer_${gameState.id}_C`)
-                    .setLabel('🅲 C')
+                    .setLabel(createButtonLabel('C', options[2].text))
                     .setStyle(ButtonStyle.Success),
                 new ButtonBuilder()
                     .setCustomId(`answer_${gameState.id}_D`)
-                    .setLabel('🅳 D')
+                    .setLabel(createButtonLabel('D', options[3].text))
                     .setStyle(ButtonStyle.Success)
             );
+        components.push(secondRow);
 
         // For solo games, send ephemerally to the solo player
         if (gameState.isSolo) {
             await gameState.interaction.followUp({
                 embeds: [embed],
-                components: [row],
+                components: components,
                 ephemeral: true
             });
         } else {
@@ -622,7 +628,7 @@ export class TriviaGameManager {
                 const channel = await this.client.channels.fetch(gameState.channelId);
                 const message = await channel.send({
                     embeds: [embed],
-                    components: [row]
+                    components: components
                 });
 
                 // Store message for cleanup
